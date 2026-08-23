@@ -72,7 +72,7 @@ def join_beneficiary(e: dict, bene: dict | None) -> dict:
     if bene is None:
         e.setdefault("chronic_conditions", {})
         return e
-    yearly = bene.get("years", {})
+    yearly = {int(k): v for k, v in (bene.get("years") or {}).items()}
     y = e.get("year")
     if y not in yearly:
         candidates = sorted(yearly, key=lambda v: abs(v - (y if y else 0)))

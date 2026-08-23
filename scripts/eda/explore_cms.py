@@ -73,6 +73,11 @@ def to_int0(v):
         return None
 
 
+def years_of(bene_rec: dict) -> dict:
+    """Beneficiary per-year records keyed by int year (JSON stores strings)."""
+    return {to_int0(k): v for k, v in (bene_rec.get("years") or {}).items()}
+
+
 class Reservoir:
     """Fixed-size reservoir sample for percentile estimation on streams."""
 
@@ -147,20 +152,21 @@ def scan_beneficiaries() -> dict:
             if st:
                 s["state_top"][SSA_STATES.get(st, str(st))] += 1
             s["esrd"][b.get("bene_esrd_ind") or "N"] += 1
-            if b["birth_dt"]:
+            if b.get("birth_dt"):
                 age08 = 2008 - int(b["birth_dt"][:4])
                 band = "<65" if age08 < 65 else "65-74" if age08 < 75 else "75-84" if age08 < 85 else "85+"
                 s["age_band_2008"][band] += 1
-            if b["death_dt"]:
+            if b.get("death_dt"):
                 s["death_years"][b["death_dt"][:4]] += 1
+            yearly = years_of(b)
             for y in (2008, 2009, 2010):
-                yd = b["years"].get(y)
+                yd = yearly.get(y)
                 if not yd:
                     continue
-                for k, v in yd["cc"].items():
+                for k, v in (yd.get("cc") or {}).items():
                     if v == 1:
                         s["cc_prevalence_years"][y][k] += 1
-                for m, v in yd["money"].items():
+                for m, v in (yd.get("money") or {}).items():
                     if v:
                         s["money_totals_by_year"][y][m] += v
     return s
@@ -245,8 +251,6 @@ def scan_events(sample_budget: int, bene_ids: set[str], carrier_npi_counter: Cou
                     s["dx_counter"]["outpatient"][c] += 1
                 for h in e.get("hcpcs_codes", []):
                     s["hcpcs_counter"]["outpatient"][h] += 1
-                for p in e.get("procedure_codes", []):
-                    s["proc_counter"][p] += 1
                 if e.get("prvdr_num"):
                     s["npi_sets"]["institutional_prvdr"].add(("op", e["prvdr_num"]))
                 cnt, tot = s["empty_dx_rate"][t]
@@ -356,7 +360,7 @@ def fig_comorbidity(s: dict) -> str:
     mat = np.zeros((len(conds), len(conds)))
     with jopen(CMS_DIR / "beneficiaries.jsonl.gz") as fh:
         for line in fh:
-            cc = json.loads(line)["years"].get(2010, {}).get("cc", {})
+            cc = years_of(json.loads(line)).get(2010, {}).get("cc") or {}
             flags = [k for k in conds if cc.get(k) == 1]
             for i, a in enumerate(flags):
                 for b in flags:
@@ -526,7 +530,7 @@ def main() -> int:
     figs["drugs"] = fig_top_drugs(es)
     figs["prov"] = fig_provider_concentration(carrier_counts)
     figs["util"] = fig_utilization(es)
-    figs["reimb"] = fig_reimbursements(es)
+    figs["reimb"] = fig_reimbursements(bs)
 
     # ---------------- stats ----------------
     stats = build_stats(bs, es, carrier_counts, link)
@@ -560,7 +564,7 @@ def build_stats(bs, es, carrier_counts, link) -> dict:
         "unlinked_by_type": dict(link["unlinked"]),
     }
     st["cost_percentiles"] = {
-        t: {q: round(res.pct(q), 2) for q in (10, 25, 50, 75, 90, 95, 99)}
+        t: {str(q): round(res.pct(q), 2) for q in (10, 25, 33, 50, 66, 75, 90, 95, 99)}
         for t, res in es["cost_samples"].items()
     }
     st["cost_sums"] = {t: round(v, 2) for t, v in es["cost_paid_sum"].items()}
@@ -666,7 +670,11 @@ def write_report(bs, es, st, figs, carrier_counts) -> None:
     A(f"\n![dx]({figs['dx']})")
 
     A("\n## 8. Procedures, HCPCS & Drugs\n")
-    A("\n**Top inpatient ICD-9 procedures:**\n")
+    A("\n**Top inpatient ICD-9 procedure-slot codes:**\n")
+    A("_Data quirk: SynPUF's generator populated `ICD9_PRCDR_CD_*` slots with a mix of true "
+      "procedure codes (9904 transfusion, 8154 joint replacement, 3893 vessel repair, 3995 "
+      "hemodialysis) and high-frequency *diagnosis* codes (4019, 25000). Treat procedure-slot "
+      "GT with care when evaluating extraction._\n")
     A(md_table(["Code", "Claims"], [[c, fmt_int(n)] for c, n in st["top_ip_procs"]]))
     A("\n**Top outpatient HCPCS:**\n")
     A(md_table(["Code", "Claims"], [[c, fmt_int(n)] for c, n in st["top_hcpcs_outpatient"]]))
@@ -701,6 +709,8 @@ def write_report(bs, es, st, figs, carrier_counts) -> None:
     A(md_table(["Year", "IP", "OP", "CAR"],
                [[y, fmt_usd(mt[y]["MEDREIMB_IP"]), fmt_usd(mt[y]["MEDREIMB_OP"]), fmt_usd(mt[y]["MEDREIMB_CAR"])]
                 for y in ("2008", "2009", "2010")]))
+    A(f"\n2010 totals sit ~45% below 2009 because the claims window tapers after "
+      f"mid-2010 -- visible in the monthly volume chart above; treat 2010 as a partial year.")
     A(f"\n![reimbursements]({figs['reimb']})")
 
     A("\n## 12. Pipeline Fit Assessment (llm-mailroom `insurance_claim`)\n")
@@ -752,6 +762,9 @@ def write_findings(st) -> None:
       f"top 20% of patients generate {u['top20pct_event_share_pct']}% of all events.")
     A("- **Diagnosis coverage is high**: empty-diagnosis rates stay below "
       f"{max(st['empty_dx_rate_pct'].values(), default=0)}% across claim types — ICD-9 lists are reliable GT anchors.")
+    A("- **Generator artifact**: inpatient `ICD9_PRCDR_CD_*` slots mix real procedure codes "
+      "with frequent diagnosis codes (4019, 25000) -- a synthetic-generation quirk; flagged for "
+      "anyone using procedure fields as extraction targets.")
     A("- **Pipeline fit**: maps 1:1 onto the mailroom `insurance_claim` schema except `adjuster` (absent) and "
       "`coverage_determination`/`denial_reasons` (always approved/empty — no negative class exists in SynPUF).")
     A("- **Provenance caveat**: Sample-1's 2010 beneficiary file plus Carrier (A/B) and PDE archives were "

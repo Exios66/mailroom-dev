@@ -80,6 +80,7 @@ def render_inpatient(e: dict) -> str:
         "=" * 74,
         "",
         f"Insurer:                  {INSURER}",
+        f"Line of business:         health",
         "",
         _bene_block(e),
         "",
@@ -107,6 +108,7 @@ def render_inpatient(e: dict) -> str:
         f"  Primary payer paid:           {money(e.get('primary_payer_amt'))}",
         "",
         "COVERAGE DETERMINATION: APPROVED - this claim has been adjudicated and paid.",
+        "  Stated outcome (verbatim): approved",
         "",
     ]
     return "\n".join(parts)
@@ -124,6 +126,7 @@ def render_outpatient(e: dict) -> str:
         "=" * 74,
         "",
         f"Insurer:                  {INSURER}",
+        f"Line of business:         health",
         "",
         _bene_block(e),
         "",
@@ -145,6 +148,7 @@ def render_outpatient(e: dict) -> str:
         f"  Primary payer paid:           {money(e.get('primary_payer_amt'))}",
         "",
         "COVERAGE DETERMINATION: APPROVED - this claim has been adjudicated and paid.",
+        "  Stated outcome (verbatim): approved",
         "",
     ]
     return "\n".join(parts)
@@ -172,6 +176,7 @@ def render_carrier(e: dict) -> str:
         "=" * 74,
         "",
         f"Insurer:                  {INSURER}",
+        f"Line of business:         health",
         "",
         _bene_block(e),
         "",
@@ -190,6 +195,7 @@ def render_carrier(e: dict) -> str:
         f"  Claim total paid by Medicare: {money(e.get('claimed_amount'))}",
         "",
         "COVERAGE DETERMINATION: APPROVED - this claim has been adjudicated and paid.",
+        "  Stated outcome (verbatim): approved",
         "",
     ]
     return "\n".join(parts)
@@ -203,6 +209,7 @@ def render_pde(e: dict) -> str:
         "=" * 74,
         "",
         f"Insurer:                  {INSURER} Part D",
+        f"Line of business:         health",
         "",
         _bene_block(e),
         "",
@@ -217,6 +224,7 @@ def render_pde(e: dict) -> str:
         f"  Patient pay amount:       {money(e.get('patient_pay_amt'))}",
         "",
         "COVERAGE DETERMINATION: APPROVED - this fill was covered under the plan.",
+        "  Stated outcome (verbatim): approved",
         "",
     ]
     return "\n".join(parts)
@@ -305,7 +313,7 @@ def render(e: dict) -> tuple[str, dict]:
     doc = RENDERERS[etype](ev)
     gt = gt_fields(ev)
     # verbatim contract: every scalar GT value must occur in the document text
-    for key in ("claim_number", "policy_number", "insurer", "insured_party"):
+    for key in ("claim_number", "policy_number", "insurer", "insured_party", "claim_type"):
         assert gt[key] in doc, f"verbatim contract violated for {key}"
     if gt["claimed_amount"] is not None:
         assert money(gt["claimed_amount"]) in doc, "verbatim contract violated for claimed_amount"
