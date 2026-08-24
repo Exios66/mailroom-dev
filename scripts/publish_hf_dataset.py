@@ -34,7 +34,7 @@ HF_REPO = "Lucius-Morningstar/cms-desynpuf-insurance-claims"
 CARD = """---
 license: other
 license_name: cms-public-use
-license_link: https://www.cms.gov/data-research/statistics-trends-reports/medicare-claims-synthetic-public-use-files
+license_link: https://www.cms.gov/data-research/statistics-trends-and-reports/medicare-claims-synthetic-public-use-files
 task_categories:
   - token-classification
   - text-classification

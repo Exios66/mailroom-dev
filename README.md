@@ -248,7 +248,7 @@ python scripts/publish_hf_dataset.py             # upload + sha256 VERIFY: GREEN
 
 ## 📜 Provenance & License
 
-- **Source**: [CMS 2008–2010 DE-SynPUF](https://www.cms.gov/data-research/statistics-trends-reports/medicare-claims-synthetic-public-use-files), Sample 1 — direct download, free, no request.
+- **Source**: [CMS 2008–2010 DE-SynPUF](https://www.cms.gov/data-research/statistics-trends-and-reports/medicare-claims-synthetic-public-use-files), Sample 1 — direct download, free, no request.
 - **Synthetic**: CMS states the files have "very limited inferential research
   utility" — treat everything here as **pipeline evaluation substrate, not
   epidemiology**. No real PHI exists; beneficiary names are deterministic
