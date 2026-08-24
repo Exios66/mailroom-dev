@@ -399,3 +399,55 @@ def test_schema_mirror_covers_upstream_contract():
     assert ps.SPECIALIST_BY_DOC_CLASS["insurance_claim"] == "insurance_claims_specialist"
     schema = ps.PipelineSchema.load()
     assert schema.judge_band_high == 0.85
+
+
+def test_docclass_eval_trace_maps_to_classify_station():
+    """Entity-repo docclass runner traces (name docclass_classification,
+    output {"sorter": {...}}) display at the SORTER station with doc_type +
+    classification confidence — pilot runs become floor-visible data."""
+    from mailroom_ui.trace_interpreter import interpret_trace
+
+    now = "2026-08-24T12:00:00Z"
+    run = interpret_trace({
+        "id": "dc-1", "name": "docclass_classification", "timestamp": now,
+        "session_id": "qwen3.7-flash_sorter_docclass_pilot_v1_pilot140",
+        "environment": "pilot",
+        "tags": ["llm-dojo", "pilot"],
+        "input": {"filename": "sample.pdf", "expected": "contract"},
+        "output": {"sorter": {"doc_type": "contract", "contract_subtype": "license",
+                              "doc_subclass": None, "confidence": 0.93,
+                              "reasoning": "title says LICENSE"}},
+    })
+    assert run.stage.value == "classify"
+    assert run.phase.value == "intake_sort"
+    assert run.doc_type == "contract"
+    assert abs(run.classification_confidence - 0.93) < 1e-9
+    assert run.filename == "sample.pdf"
+
+
+def test_list_recent_runs_honors_trace_names_env(monkeypatch):
+    """MAILROOM_TRACE_NAMES extends the floor's trace-name universe and
+    merges results across names without duplicates."""
+    from datetime import datetime, timedelta, timezone
+
+    import mailroom_ui.langfuse_source as ls
+
+    calls = []
+
+    class StubSource:
+        def list_traces(self, *, since=None, limit=200, name=None, tags=None, environments=None):
+            calls.append(name)
+            if name == "document-pipeline":
+                return [{"id": "t1", "timestamp": "2026-08-24T12:00:00Z"}]
+            if name == "docclass_classification":
+                return [{"id": "t1", "timestamp": "2026-08-24T12:00:00Z"},   # duplicate
+                        {"id": "t2", "timestamp": "2026-08-24T12:01:00Z"}]
+            return []
+
+        def get_score_configs(self):
+            return {}
+
+    monkeypatch.setattr(ls.os, "environ", {**ls.os.environ, "MAILROOM_TRACE_NAMES": "document-pipeline,docclass_classification"})
+    runs = ls.list_recent_runs(StubSource(), since=datetime.now(timezone.utc), limit=10)
+    assert sorted(calls) == ["docclass_classification", "document-pipeline"]
+    assert [r.trace_id for r in runs] == ["t2", "t1"]

@@ -154,7 +154,14 @@ def derive_stage(
     reaches a terminal stage.
     """
     raw = _clean(output.get("stage"))
-    if raw:
+    if not raw:
+        # Docclass-eval traces (entity-repo runner): output is
+        # {"sorter": {doc_type, confidence, ...}} with no pipeline stage —
+        # they are classification runs; display them at the sorter station.
+        sorter = _as_dict(output.get("sorter"))
+        if _clean(sorter.get("doc_type")):
+            return Stage.CLASSIFY
+    else:
         mapped = _OUTPUT_STAGE_MAP.get(raw.lower(), None)
         if mapped is not None:
             if mapped is Stage.INGEST and spans:
@@ -428,7 +435,9 @@ def interpret_trace(
     stage = derive_stage(t_output, spans, schema=schema)
     routing_path = build_routing_path(spans)
 
-    doc_type = _clean(t_output.get("doc_type")) or _clean(t_input.get("doc_type"))
+    sorter_out = _as_dict(t_output.get("sorter"))
+    doc_type = (_clean(sorter_out.get("doc_type")) or _clean(t_output.get("doc_type"))
+                or _clean(t_input.get("doc_type")))
     attempt = _pick(t_input, "attempt", "run_attempt")
     if attempt is None:
         attempt = metadata.get("attempt")
@@ -473,7 +482,8 @@ def interpret_trace(
         phase=STAGE_PHASE.get(stage, STAGE_PHASE[Stage.UNKNOWN]),
         doc_type=doc_type,
         classification_confidence=_float(score_map.get("classification_confidence"))
-        or _float(t_output.get("classification_confidence")),
+        or _float(t_output.get("classification_confidence"))
+        or _float(sorter_out.get("confidence")),
         extraction_confidence=_float(score_map.get("extraction_confidence"))
         or _float(t_output.get("extraction_confidence")),
         review_decision=_clean(t_output.get("review_decision")),

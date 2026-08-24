@@ -462,8 +462,19 @@ def list_recent_runs(
     since = since or (datetime.now(timezone.utc) - timedelta(hours=6))
     tags = [t.strip() for t in os.environ.get("MAILROOM_TRACE_TAGS", "").split(",") if t.strip()] or None
     environments = [e.strip() for e in os.environ.get("MAILROOM_TRACE_ENVIRONMENTS", "").split(",") if e.strip()] or None
-    traces = source.list_traces(since=since, limit=limit, name="document-pipeline",
-                                tags=tags, environments=environments)
+    # Trace-name universe: the llm-mailroom pipeline plus optional extra
+    # producers whose traces should surface on the floor (e.g. the
+    # entity-repo docclass eval runner -> "docclass_classification").
+    names = [n.strip() for n in os.environ.get("MAILROOM_TRACE_NAMES", "document-pipeline").split(",") if n.strip()]
+    traces: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for name in names:
+        for t in source.list_traces(since=since, limit=limit, name=name,
+                                     tags=tags, environments=environments):
+            tid = t.get("id")
+            if tid and tid not in seen:
+                seen.add(tid)
+                traces.append(t)
     score_configs = source.get_score_configs()
     runs = []
     for t in traces:
