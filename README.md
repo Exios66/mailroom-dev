@@ -1,6 +1,7 @@
 # The-Mailroom
 
 ![version](https://img.shields.io/badge/version-0.2.0-blue)
+[![release](https://img.shields.io/badge/release-v0.2.0-blue)](https://github.com/Exios66/The-Mailroom/releases/tag/v0.2.0)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![data source](https://img.shields.io/badge/data%20source-Langfuse%20only-6C5CE7)
 
@@ -77,12 +78,32 @@ mailroom-tui              # AgentLab-style live console (same data, in a termina
   subscribes to the same WebSocket floor snapshots as the web UI (`--once`
   renders a single frame for scripting).
 
+## Screenshots
+
+Official captures of **v0.2.0** — real UI/TUI pixels rendered from genuine
+pipeline traces (fixture-seeded exactly like the test suite; Langfuse remains
+the sole display source):
+
+| | |
+|---|---|
+| ![The Mailroom floor — conveyor, stations, envelopes](docs/screenshots/floor.png) |
+| **FLOOR** — the animated conveyor: seven stations, per-doc-type envelope tints, verdict stamps, review siding & failed bin. |
+| ![REVIEW siding — human-review queue](docs/screenshots/review.png) |
+| **REVIEW** — runs waiting on a human, with escalation reasons and confidence. |
+| ![METRICS dashboard](docs/screenshots/metrics.png) |
+| **METRICS** — docs processed, archived/review/failed split, cost, tokens, judge-verdict mix, per-doc-type counts. |
+| ![TUI console](docs/screenshots/tui-console.png) |
+| **TUI** (`mailroom-tui --once`) — the same pipeline in a terminal: per-doc table, verdicts, station banners, live log. |
+
 ---
 
 ## Demo data (play-testing without a live run)
 
 Demo runs are seeded **into** Langfuse (env `demo`) — the visualizer still
 reads Langfuse only, so nothing on screen is ever canned data:
+
+<details>
+<summary>Demo seeding commands (click to expand)</summary>
 
 ```bash
 python scripts/seed_demo.py                       # seed 13 demo runs (incl.
@@ -95,6 +116,8 @@ python scripts/seed_demo.py --check-logs <dir>    # verify against run logs save
                                                   # by llm-mailroom's
                                                   # scripts/sync_langfuse_logs.py
 ```
+
+</details>
 
 ## Requirements
 
@@ -161,6 +184,9 @@ endpoint index plus active sources and version. Snapshot builds add
 
 ## Configuration
 
+<details>
+<summary>Configuration reference (click to expand)</summary>
+
 All knobs live in `.env` (see `.env.example`): Langfuse keys/host
 (`LANGFUSE_HOST`, default `https://us.cloud.langfuse.com`), poll cadence
 (`MAILROOM_POLL_INTERVAL`), recent window, trace limit, optional tag/env
@@ -173,6 +199,8 @@ Pages edition adds `MAILROOM_SOURCE` (`langfuse|phoenix|both`),
 > `pipeline_schema.py` is cached at process level — editing `taxonomy.yaml`
 > (or pointing `MAILROOM_TAXONOMY` at the pipeline's copy) requires a server
 > restart to take effect.
+
+</details>
 
 ---
 
@@ -197,6 +225,9 @@ pipeline internals alongside the pipeline's own `AGENTS.md`.
 
 ## Project layout
 
+<details>
+<summary>Directory map</summary>
+
 ```
 mailroom_ui/   data core — Langfuse + Phoenix adapters, trace interpreter,
                topology mirror, models, metrics (reads trace sources only)
@@ -208,6 +239,8 @@ scripts/       seed_demo (demo runs INTO Langfuse) · export_snapshot (Pages
 docs/ + wiki/  mirrored documentation (wiki/sync-wiki.sh publishes the wiki)
 tests/         pytest suite against fake clients — never the real APIs
 ```
+
+</details>
 
 ## Tests
 

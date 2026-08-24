@@ -57,6 +57,8 @@ All notable changes to The-Mailroom are documented here, following
 
 ## [0.2.0] - 2026-08-23
 
+## [0.2.0] - 2026-08-24
+
 ### Added
 - Langfuse v4 SDK tolerance: camelCase observation fields (`startTime`,
   `endTime`, `modelId`, `totalTokens`, `inputTokens`, `outputTokens`,
@@ -115,6 +117,15 @@ All notable changes to The-Mailroom are documented here, following
   source adapter's primary score path is exercised by every test.
 
 ### Changed
+- **Release furnishing (v0.2.0 official):** official GitHub release published
+  for the pre-declared `[0.2.0]` milestone. README gains a **Screenshots**
+  gallery — four real captures (`docs/screenshots/`: FLOOR conveyor, REVIEW
+  siding, METRICS dashboard, TUI console) rendered from genuine pipeline
+  traces through the production stack, fixture-seeded exactly like the test
+  suite so Langfuse stays the sole display source — plus **collapsible
+  sections** (`<details>`) for demo seeding commands, configuration
+  reference, and project layout, and a linked `release v0.2.0` badge.
+- **README overhaul — governed-constellation edition:** root README rebuilt from 102 to 177 lines around the family story while keeping every operational byte (quick start, screens, demo seeding, requirements, config, layout, tests, releases). Added: a factual static badge row (`version 0.2.0`, `python 3.11+`, `data source: Langfuse only`); a **"The governed constellation"** section with an ASCII YOU-ARE-HERE diagram and an at-a-glance table covering all seven family repos (llm-mailroom upstream · llm-entity-extraction prompt loop + shared board · llm-dojo-scoring engine · Enron-Evaluation-Environment + claims-data-eda corpus feeds · atticus-investigation eval sibling · both graphify sites) linking llm-mailroom's canonical `docs/sister-repos.md`; a new **"The trace contract & the mirror duty"** section documenting the #1 maintenance rule (mirror span names / roster / doc classes / thresholds / judge scores in the same change window) with the visible-by-design breakage map, deferring to `AGENTS.md` as authority; an `[!IMPORTANT]` alert on the schema-cache restart gotcha; dividers between major parts; honest "No license published yet" close. Docs-only; suite unchanged.
 - Generation cost is read from `cost_details` (v2/v3) or top-level
   `totalCost`/`totalPrice` (v4), never from a single fixed field — v4 also
   stores the field camelCase as `costDetails`.
