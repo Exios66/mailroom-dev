@@ -28,6 +28,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -97,11 +98,22 @@ def build_snapshot(source_name: str, since_hours: float, limit: int) -> dict:
         src = LangfuseSource()
 
     since_dt = _utcnow() - timedelta(hours=since_hours)
-    try:
-        runs = enriched_recent_runs(src, since=since_dt, limit=limit)
-    except Exception as exc:
-        print(f"WARN: source fetch failed ({exc}); exporting empty snapshot", file=sys.stderr)
-        runs = []
+    # Transient cloud blips (read timeouts, 429s) must not silently produce an
+    # empty snapshot: bounded retry with backoff, then honest empty.
+    runs: list = []
+    for attempt in range(1, 4):
+        try:
+            runs = enriched_recent_runs(src, since=since_dt, limit=limit)
+            break
+        except Exception as exc:
+            if attempt < 3:
+                wait = 5 * attempt
+                print(f"WARN: source fetch failed ({exc}); retry {attempt}/2 in {wait}s",
+                      file=sys.stderr)
+                time.sleep(wait)
+            else:
+                print(f"WARN: source fetch failed after retries ({exc}); "
+                      "exporting empty snapshot", file=sys.stderr)
 
     try:
         schema = PipelineSchema.load()

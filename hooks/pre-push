@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Keep the published Pages site in sync with main — no GitHub Actions.
+#
+# Fires on every `git push`: when refs/heads/main moves, it republishes
+# gh-pages:/docs from the current working tree (scripts/publish_pages.sh).
+#
+# Failure policy (deliberately soft by default): a failed publish (e.g. a
+# Langfuse hiccup) warns loudly but does NOT block the code push — re-run
+# scripts/publish_pages.sh afterwards. Set MAILROOM_STRICT_SYNC=1 to make a
+# failed republish abort the push instead.
+#
+# Enable once per clone (core.hooksPath is not cloned):
+#   git config core.hooksPath hooks
+set -uo pipefail
+
+ZERO=0000000000000000000000000000000000000000
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  # Only react to updates of main (never branch deletions).
+  [ "$remote_ref" = "refs/heads/main" ] || continue
+  [ "$local_sha" = "$ZERO" ] && continue
+
+  echo "[pages-sync] main is moving to ${local_sha:0:7} — republishing site..."
+  if scripts/publish_pages.sh --source "${MAILROOM_PUBLISH_SOURCE:-langfuse}"; then
+    echo "[pages-sync] site republished in sync with main"
+  else
+    echo "" >&2
+    echo "[pages-sync] WARNING: site republish FAILED — gh-pages is stale vs ${local_sha:0:7}" >&2
+    echo "[pages-sync] fix the source, then run: scripts/publish_pages.sh" >&2
+    echo "[pages-sync] (push proceeded; set MAILROOM_STRICT_SYNC=1 to block pushes on failure)" >&2
+    [ "${MAILROOM_STRICT_SYNC:-0}" = "1" ] && exit 1
+  fi
+done
+
+exit 0

@@ -8,6 +8,17 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- **main ↔ gh-pages sync discipline (still no Actions):** committed
+  `hooks/pre-push` republishes `gh-pages:/docs` automatically on every push
+  of `main` once `git config core.hooksPath hooks` is set per clone; failures
+  warn by default (`MAILROOM_STRICT_SYNC=1` blocks the push instead).
+  New `scripts/publish_pages.sh --status` compares the deployed
+  `docs/debug/build-info.json` git SHA against HEAD (exit 1 = stale), always
+  fetching fresh since publishes ride a temp clone. The publisher now refuses
+  to run from any branch other than `main` (clear error when e.g. GitHub
+  Desktop left `gh-pages` checked out) and the snapshot exporter retries
+  transient source fetches 3× with backoff so a cloud blip can't blank a
+  populated site.
 - **GitHub Pages edition (static site, NO GitHub Actions):** the pixel-art
   SPA now deploys to GitHub Pages via `scripts/publish_pages.sh` using Pages'
   native "Deploy from a branch" mode (one-time Settings toggle; Actions is

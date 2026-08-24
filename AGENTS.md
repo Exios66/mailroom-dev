@@ -31,6 +31,7 @@ scripts/publish_pages.sh       # build site/ + push gh-pages:/docs (NO Actions;
 - **No linter, formatter, or typechecker is configured — don't invent one.**
 - Frontend is **vanilla HTML/CSS/JS with no build step and no npm** — never introduce a Node toolchain.
 - **GitHub Pages is deploy-from-branch only** (`scripts/publish_pages.sh` → `gh-pages:/docs`, folder `/docs` selected in Settings → Pages) — never add an Actions workflow for it (account cannot rely on Actions).
+- **main ↔ gh-pages sync**: enable the committed hook once per clone (`git config core.hooksPath hooks`) so pushing main auto-republishes the site; check drift with `scripts/publish_pages.sh --status` (exit 1 = stale). The publisher runs only from `main` — if GitHub Desktop left another branch checked out, switch back first.
 - Config lives in `.env` (see `.env.example`); copy `.env.example` → `.env` and add `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY`.
 
 ## Architecture (not obvious from filenames)

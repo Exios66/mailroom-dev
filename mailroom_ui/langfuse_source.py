@@ -10,6 +10,7 @@ core `Langfuse(...)` client). Attribute guards keep it version-tolerant.
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 import time
@@ -19,6 +20,8 @@ from typing import Any, Callable, Optional
 from .models import PipelineRun
 from .sources import TraceSourceUnavailable
 from .trace_interpreter import interpret_trace
+
+log = logging.getLogger("mailroom.langfuse_source")
 
 
 class LangfuseUnavailable(TraceSourceUnavailable):
@@ -491,9 +494,6 @@ def enriched_recent_runs(
     limited observations index + list harvest, and parallelism on Langfuse's
     read endpoints just trips the per-endpoint rate limiter faster.
     """
-    import logging
-
-    log = logging.getLogger("mailroom.langfuse_source")
     runs = list_recent_runs(source, since=since, limit=limit)
     out = []
     for r in runs:

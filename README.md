@@ -138,7 +138,17 @@ modes:
 scripts/publish_pages.sh                          # build site/ + push gh-pages docs/
 scripts/publish_pages.sh --source both            # Langfuse + Phoenix snapshot
 scripts/publish_pages.sh --dry-run                # build + verify, don't push
+scripts/publish_pages.sh --status                 # is the live site in sync with HEAD?
 ```
+
+**Keeping main and gh-pages in sync** (no Actions): enable the committed
+pre-push hook once per clone — `git config core.hooksPath hooks` — and every
+push of `main` republishes `gh-pages:/docs` automatically. A failed
+republish (e.g. a Langfuse hiccup) warns without blocking the code push;
+set `MAILROOM_STRICT_SYNC=1` to make failures block instead.
+`scripts/publish_pages.sh --status` reports drift any time (exit 1 = stale).
+The publisher must run from `main` — it refuses cleanly if another branch
+(e.g. `gh-pages` in GitHub Desktop) is checked out.
 
 The publisher needs no GitHub Actions (deliberately — it uses Pages' native
 deploy-from-branch mode): it stages `web/` with relative asset paths, exports

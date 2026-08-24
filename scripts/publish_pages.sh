@@ -30,6 +30,7 @@ LIMIT="200"
 SKIP_EXPORT=0
 ALLOW_EMPTY=0
 DRY_RUN=0
+STATUS_ONLY=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --source)      SOURCE="$2"; shift 2 ;;
@@ -38,6 +39,7 @@ while [[ $# -gt 0 ]]; do
     --skip-export) SKIP_EXPORT=1; shift ;;
     --allow-empty) ALLOW_EMPTY=1; shift ;;
     --dry-run)     DRY_RUN=1; shift ;;
+    --status)      STATUS_ONLY=1; shift ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
@@ -47,6 +49,41 @@ REMOTE="${PAGES_REMOTE:-origin}"
 REPO_URL="$(git remote get-url "$REMOTE")"
 HEAD_SHA="$(git rev-parse --short HEAD)"
 DIRTY=$(git status --porcelain | head -1)
+
+# The site is built from a main checkout (web/, scripts/). Running from
+# another branch (e.g. gh-pages left checked out in GitHub Desktop) fails in
+# confusing ways — fail clearly instead.
+CURRENT_BRANCH="$(git branch --show-current)"
+if [[ "$CURRENT_BRANCH" != "main" && "${ALLOW_ANY_BRANCH:-0}" != "1" ]]; then
+  echo "error: publish_pages.sh must run from 'main' (currently on '${CURRENT_BRANCH:-detached}')." >&2
+  echo "switch first:  git switch main   — then re-run." >&2
+  exit 1
+fi
+
+# --status: is the deployed site built from this commit? Exit 0 = in sync.
+if [[ "$STATUS_ONLY" -eq 1 ]]; then
+  if ! git ls-remote --heads "$REMOTE" "refs/heads/$BRANCH" | grep -q .; then
+    echo "SYNC STATUS: NOT PUBLISHED ($REMOTE@$BRANCH does not exist)"
+    exit 1
+  fi
+  # Always fetch: publishes go through a temp clone, so the local
+  # remote-tracking ref can lag the real branch.
+  git fetch --quiet "$REMOTE" "$BRANCH"
+  DEPLOYED="$(git show "FETCH_HEAD:docs/debug/build-info.json" 2>/dev/null || true)"
+  if [[ -z "$DEPLOYED" ]]; then
+    echo "SYNC STATUS: UNKNOWN ($BRANCH has no docs/debug/build-info.json)"
+    exit 1
+  fi
+  DEP_SHA="$(python3 -c "import json,sys;print(json.load(sys.stdin).get('git_sha','?'))" <<<"$DEPLOYED")"
+  DEP_AT="$(python3 -c "import json,sys;print(json.load(sys.stdin).get('generated_at','?'))" <<<"$DEPLOYED")"
+  if [[ "$DEP_SHA" == "$HEAD_SHA" ]]; then
+    echo "SYNC STATUS: IN SYNC (deployed ${DEP_SHA} @ ${DEP_AT} == HEAD)"
+    exit 0
+  fi
+  echo "SYNC STATUS: STALE (deployed ${DEP_SHA} @ ${DEP_AT}; HEAD is ${HEAD_SHA})"
+  echo "run: scripts/publish_pages.sh"
+  exit 1
+fi
 
 if [[ -n "$DIRTY" ]]; then
   echo "note: working tree has uncommitted changes; build-info records HEAD ${HEAD_SHA} anyway"
