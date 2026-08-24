@@ -140,13 +140,25 @@ else
 fi
 
 # Site root on the branch is docs/. Clean legacy root-level site files from
-# older publishes; leave anything else at the branch root untouched.
-for legacy in index.html .nojekyll static data debug; do
+# older publishes AND any sensitive/junk files that must never ride this
+# branch (a previous Desktop mishap committed .env to gh-pages root); leave
+# anything else untouched.
+for legacy in index.html .nojekyll static data debug .env .DS_Store mailroom_ui server site tests tui web scripts docs.wiki; do
   rm -rf "$CLONE/$legacy"
 done
 rm -rf "$CLONE/docs"
 mkdir -p "$CLONE/docs"
 rsync -a --exclude '.git' site/ "$CLONE/docs/"
+
+# Final guard: never push secrets or env files to a public-serving branch.
+if find "$CLONE" -name ".env" -o -name "*.env" | grep -q .; then
+  echo "ABORT: .env-like file present in staging tree — refusing to push" >&2
+  exit 1
+fi
+if grep -rl "sk-lf-\|pk-lf-" --exclude-dir=.git "$CLONE" >/dev/null 2>&1; then
+  echo "ABORT: Langfuse key material detected in staged files — refusing to push" >&2
+  exit 1
+fi
 
 (
   cd "$CLONE"

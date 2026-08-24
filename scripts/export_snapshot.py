@@ -123,6 +123,7 @@ def build_snapshot(source_name: str, since_hours: float, limit: int) -> dict:
 
     metrics = compute_metrics(runs, since=since_dt)
     review = [r for r in runs if r.needs_human]
+    sessions = _sessions(runs)
 
     meta = {
         "mode": "snapshot",
@@ -142,7 +143,7 @@ def build_snapshot(source_name: str, since_hours: float, limit: int) -> dict:
         "traces": {"count": len(runs), "runs": [floor_payload(r) for r in runs]},
         "runs": {r.trace_id: _detail(r) for r in runs if r.trace_id},
         "metrics": {"source": source_name, **metrics.model_dump()},
-        "sessions": {"count": 0, "sessions": _sessions(runs)},
+        "sessions": {"count": len(sessions), "sessions": sessions},
         "review_queue": {
             "count": len(review),
             "runs": [floor_payload(r) for r in review],

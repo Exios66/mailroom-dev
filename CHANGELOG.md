@@ -6,6 +6,25 @@ All notable changes to The-Mailroom are documented here, following
 
 ## [Unreleased]
 
+### Fixed
+
+- **SECURITY: leaked `.env` purged from gh-pages history** — a Desktop
+  branch-switch mishap had committed `.env` (Langfuse keys) plus stray dirs
+  (`mailroom_ui/`, `server/`, `site/`, `.DS_Store`) to the branch root.
+  `gh-pages` was force-pushed to a single fresh orphan commit containing
+  only `docs/` (the deployed site never exposed the file — Pages serves
+  `docs/` only — but clones could read it). Keys must still be rotated at
+  the Langfuse UI: unreachable objects can persist on GitHub's side.
+  Recurrence guards: `scripts/publish_pages.sh` now strips `.env`/
+  `.DS_Store`/stray dirs from the publish clone and aborts if `.env` files
+  or `sk-lf-`/`pk-lf-` key material appear anywhere in the staged tree;
+  `hooks/pre-push` rejects direct `gh-pages` pushes whose tree contains any
+  `.env`-like file.
+- `export_snapshot.py`: `sessions.json` top-level `count` was hardcoded to
+  `0` regardless of content — now the real session count (matches
+  `/api/sessions` shape; agents reading the static snapshot get honest
+  numbers).
+
 ### Added
 
 - **main ↔ gh-pages sync discipline (still no Actions):** committed
