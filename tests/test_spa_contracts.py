@@ -88,3 +88,16 @@ def test_error_banner_is_outside_overflow_hidden_screen():
 def test_favicon_is_inline_to_avoid_pages_404():
     assert 'rel="icon"' in INDEX
     assert "data:image/svg+xml" in INDEX
+
+
+def test_desk_tabs_show_loading_placeholder():
+    """SESSIONS / REVIEW / METRICS / HISTORY used to stay blank while a
+    2-minute Langfuse enrich ran, so verification looked like empty desks."""
+    review = (ROOT / "web" / "js" / "review.js").read_text()
+    sessions = (ROOT / "web" / "js" / "sessions.js").read_text()
+    metrics = (ROOT / "web" / "js" / "metrics.js").read_text()
+    history = (ROOT / "web" / "js" / "history.js").read_text()
+    assert "LOADING REVIEW QUEUE FROM LANGFUSE" in review
+    assert "LOADING SESSIONS FROM LANGFUSE" in sessions
+    assert "LOADING METRICS FROM LANGFUSE" in metrics
+    assert "LOADING RUN HISTORY FROM LANGFUSE" in history

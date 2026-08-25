@@ -119,6 +119,7 @@ const HistoryView = (() => {
   }
 
   async function refresh() {
+    listEl.innerHTML = `<div class="hint mono">LOADING RUN HISTORY FROM LANGFUSE…</div>`;
     try {
       const data = await Mailroom.api.traces(604800, 200);
       runsCache = data.runs || [];

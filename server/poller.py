@@ -67,6 +67,11 @@ class PollHub:
         self.detail_ttl = detail_ttl
         self.clients: set[WebSocket] = set()
         self.snapshot: list[dict[str, Any]] = []
+        # Last successful enriched PipelineRun list (same traces as snapshot).
+        # Desk endpoints (sessions / review / metrics) read this instead of
+        # walking Langfuse again — a 2-minute sequential enrich blocked the
+        # inspector overlay on the single uvicorn worker.
+        self.runs: list[PipelineRun] = []
         self._details: dict[str, tuple[float, dict[str, Any]]] = {}
         self._task: Optional[asyncio.Task] = None
         self._stop = asyncio.Event()
@@ -139,24 +144,31 @@ class PollHub:
             return None
         now = time.monotonic()
         out: list[dict[str, Any]] = []
+        full_runs: list[PipelineRun] = []
         current_ids: set[str] = set()
+        prev_by_id = {r.trace_id: r for r in self.runs if r.trace_id}
         for run in runs:
             if not run.trace_id:
                 continue
             current_ids.add(run.trace_id)
             cached = self._details.get(run.trace_id)
             payload = None
+            chosen: PipelineRun = run
             if cached is not None and now - cached[0] < self.detail_ttl:
                 payload = cached[1]
+                chosen = prev_by_id.get(run.trace_id) or run
             else:
                 try:
                     full = self.source.get_run(run.trace_id)
                 except Exception:
                     full = None
-                payload = floor_payload(full) if full is not None else floor_payload(run)
+                chosen = full if full is not None else run
+                payload = floor_payload(chosen)
                 self._details[run.trace_id] = (now, payload)
+            full_runs.append(chosen)
             out.append(payload)
         for tid in list(self._details):
             if tid not in current_ids:
                 del self._details[tid]
+        self.runs = full_runs
         return out

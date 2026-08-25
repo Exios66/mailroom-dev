@@ -64,6 +64,25 @@ def test_sessions_serve_enriched_runs():
         assert run["llm_call_count"] > 0
 
 
+def test_desk_runs_prefer_poller_snapshot():
+    """SESSIONS/REVIEW/METRICS must reuse the poller's enriched list instead
+    of walking Langfuse again (that blocked the inspector overlay)."""
+    from unittest.mock import patch
+
+    from server.main import _desk_runs
+    from server.poller import PollHub
+
+    src = LangfuseSource(client=FakeClient(_fresh_traces()))
+    hub = PollHub(src, interval=60, window=21600, limit=100)
+    assert hub._fetch() is not None
+    assert len(hub.runs) == 3
+    with patch("server.main.enriched_recent_runs",
+               side_effect=AssertionError("must not re-walk Langfuse")):
+        runs = _desk_runs(src, hub, since_seconds=7 * 86400, limit=200)
+    assert len(runs) == 3
+    assert {r.trace_id for r in runs} == {"t1", "t2", "t3"}
+
+
 def test_generic_errors_are_json_with_detail():
     """V-18: non-Langfuse server errors must come back as JSON the SPA can
     display — the old default 500 was plain text and got discarded."""

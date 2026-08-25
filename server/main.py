@@ -156,9 +156,10 @@ def create_app(source: Optional[object] = None) -> FastAPI:
     def metrics(since: int = Query(86400 * 7, ge=0, le=86400 * 7)):
         # V-3: aggregate ENRICHED runs (full observations/scores), never light
         # ones — light runs have no generations, so cost/tokens/calls were
-        # permanently $0.00 / 0 tok / 0 calls. get_run() is cached, so this
-        # shares fetches with the poller instead of adding another N+1.
-        runs = enriched_recent_runs(src, since=_utcnow() - timedelta(seconds=since), limit=TRACE_LIMIT)
+        # permanently $0.00 / 0 tok / 0 calls.
+        # Prefer the poller's already-enriched window so this desk does not
+        # re-walk Langfuse (that hung the inspector for ~2 minutes).
+        runs = _desk_runs(src, hub, since_seconds=since, limit=TRACE_LIMIT)
         m = compute_metrics(runs, since=_utcnow() - timedelta(seconds=since))
         return {"source": _source_names(src), **m.model_dump()}
 
@@ -167,9 +168,8 @@ def create_app(source: Optional[object] = None) -> FastAPI:
         # V-24: group enriched runs by session in ONE list pass. The old
         # N+1 (per-session × per-trace get_run) fired up to ~1000 live
         # Langfuse calls and timed out against the real cloud.
-        runs = [r for r in enriched_recent_runs(
-            src, since=_utcnow() - timedelta(days=7), limit=500)
-            if r.session_id or r.matter_id]
+        runs = [r for r in _desk_runs(src, hub, since_seconds=7 * 86400, limit=TRACE_LIMIT)
+                if r.session_id or r.matter_id]
         grouped: dict[str, list[PipelineRun]] = {}
         for r in runs:
             grouped.setdefault(r.session_id or r.matter_id or "(no session)", []).append(r)
@@ -202,10 +202,10 @@ def create_app(source: Optional[object] = None) -> FastAPI:
 
     @app.get("/api/review-queue")
     def review_queue(since: int = Query(86400 * 7, ge=0, le=86400 * 7)):
-        # V-20: enriched runs (verdicts/tokens/cost on the cards, not zeros);
-        # the queue can legitimately exceed the floor's 100-run limit, so use
-        # the wider 500 cap.
-        runs = [r for r in enriched_recent_runs(src, since=_utcnow() - timedelta(seconds=since), limit=500)
+        # V-20: enriched runs (verdicts/tokens/cost on the cards, not zeros).
+        # Share the poller's TRACE_LIMIT window — a second 500-trace enrich
+        # starved inspector fetches against production Langfuse.
+        runs = [r for r in _desk_runs(src, hub, since_seconds=since, limit=TRACE_LIMIT)
                 if r.needs_human]
         return {"count": len(runs), "source": _source_names(src), "runs": [_serialize(r) for r in runs]}
 
@@ -375,6 +375,23 @@ def _version() -> str:
 def _recent(src: LangfuseSource, since: int, limit: int) -> list[PipelineRun]:
     since_dt = _utcnow() - timedelta(seconds=since)
     return list_recent_runs(src, since=since_dt, limit=limit)
+
+
+def _desk_runs(src, hub: PollHub, *, since_seconds: int, limit: int) -> list[PipelineRun]:
+    """Enriched runs for METRICS / SESSIONS / REVIEW.
+
+    The poller already called get_run() for the live window. Reusing that
+    list keeps those desks instant and leaves the inspector able to fetch
+    /api/traces/{id} instead of waiting behind a sequential Langfuse walk.
+    Fall back to enriched_recent_runs when the poller has not produced a
+    snapshot yet (tests, first second after boot).
+    """
+    cutoff = _utcnow() - timedelta(seconds=since_seconds)
+    cached = [r for r in (hub.runs or [])
+              if (r.updated_at or r.created_at or cutoff) >= cutoff]
+    if cached:
+        return cached[:limit]
+    return enriched_recent_runs(src, since=cutoff, limit=limit)
 
 
 def _session_runs(src: LangfuseSource, session_id: str, limit: int) -> list[PipelineRun]:

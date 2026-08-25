@@ -60,6 +60,7 @@ const SessionsView = (() => {
   }
 
   async function refresh() {
+    listEl.innerHTML = `<div class="hint mono">LOADING SESSIONS FROM LANGFUSE…</div>`;
     try {
       const data = await Mailroom.api.sessions(50);
       renderSessions(data.sessions || []);

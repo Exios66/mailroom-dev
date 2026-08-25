@@ -228,6 +228,7 @@ const MetricsView = (() => {
   // V-27: default window matches the floor's MAILROOM_RECENT_WINDOW (7d) —
   // the old 1h default showed zeros whenever no runs happened in the hour.
   async function refresh(since = 604800) {
+    gridEl.innerHTML = `<div class="hint mono">LOADING METRICS FROM LANGFUSE…</div>`;
     try {
       let data;
       let rawRuns = [];

@@ -6,6 +6,14 @@ All notable changes to The-Mailroom are documented here, following
 
 ## [Unreleased]
 
+### Fixed
+
+- Pixel SESSIONS / REVIEW / METRICS no longer re-walk hundreds of Langfuse
+  traces on every tab click. They reuse the poller's already-enriched window,
+  so the inspector overlay can load a trace instead of stalling behind a
+  ~2-minute sequential enrich. Those tabs also show a loading placeholder
+  instead of a blank panel while the request is in flight.
+
 ### Added
 
 - README screenshot gallery now covers the pixel console (FLOOR / REVIEW /

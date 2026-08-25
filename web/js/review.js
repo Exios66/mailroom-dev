@@ -57,6 +57,7 @@ const ReviewView = (() => {
   }
 
   async function refresh() {
+    listEl.innerHTML = `<div class="hint mono">LOADING REVIEW QUEUE FROM LANGFUSE…</div>`;
     try {
       const data = await Mailroom.api.reviewQueue();
       render(data.runs || []);

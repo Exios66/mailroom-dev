@@ -202,6 +202,7 @@ class TestPollerPartialFailure:
         hub = PollHub(src, interval=60, window=21600, limit=100)
         with patch("server.poller.list_recent_runs", return_value=[]):
             assert hub._fetch() == []
+            assert hub.runs == []
 
 
 class TestNoNPlusOneFetching:
