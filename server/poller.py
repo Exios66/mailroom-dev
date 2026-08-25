@@ -56,7 +56,7 @@ class PollHub:
         source: LangfuseSource,
         *,
         interval: float = 3.0,
-        window: float = 6 * 3600,
+        window: float = 7 * 86400,
         limit: int = 100,
         detail_ttl: float = 60.0,
     ) -> None:

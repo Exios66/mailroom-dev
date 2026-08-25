@@ -120,7 +120,7 @@ const HistoryView = (() => {
 
   async function refresh() {
     try {
-      const data = await Mailroom.api.traces(21600, 200);
+      const data = await Mailroom.api.traces(604800, 200);
       runsCache = data.runs || [];
       renderHistory(runsCache);
       return data;

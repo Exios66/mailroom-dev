@@ -239,7 +239,7 @@ const MetricsView = (() => {
         // Also fetch raw runs for the trend chart (optional — but V-18: a
         // failure must be visible, not silently swallowed)
         try {
-          const tdata = await Mailroom.api.traces(Math.max(since, 21600), 200);
+          const tdata = await Mailroom.api.traces(since, 200);
           rawRuns = tdata.runs || [];
         } catch (e) {
           console.warn("[mailroom] trend data unavailable:", e.message || e);

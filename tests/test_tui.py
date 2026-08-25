@@ -5,13 +5,19 @@ from collections import deque
 from rich.console import Console
 
 from tui.mailroom_console import (
+    LAST_ERRORS,
     STATION_BY_STAGE,
+    WINDOW_S,
     banner,
+    debug_panel,
+    fetch_floor_runs,
+    fetch_list,
     floor_table,
     inspect_panels,
     metrics_table,
     review_table,
     runs_to_banners,
+    sessions_table,
 )
 
 RUN = {
@@ -46,7 +52,7 @@ def test_runs_to_banners_arrival_and_advance():
 
     advanced = dict(RUN, stage="review", verdict="PARTIAL")
     runs_to_banners({RUN["trace_id"]: RUN}, [advanced], log)
-    assert any("Moving to station: Review siding" in line for line in log)
+    assert any("Moving to station: Review" in line for line in log)
     assert any("Judge verdict: PARTIAL" in line for line in log)
 
 
@@ -88,6 +94,57 @@ def test_inspect_panels_build():
 
 
 def test_station_map_covers_stages():
-    for stage in ("ingest", "classify", "extract", "boss", "review", "report",
-                  "catalog", "archive", "archived", "failed"):
+    for stage in ("ingest", "classify", "retry_classify", "review_classify",
+                  "extract", "judge_verify", "arbiter", "boss", "review",
+                  "report", "catalog", "archive", "archived", "failed"):
         assert stage in STATION_BY_STAGE
+
+
+def test_metrics_table_survives_null_cost():
+    table = metrics_table({"total_docs": 0, "total_cost_usd": None, "avg_latency_s": None})
+    text = render(table)
+    assert "total docs" in text
+    assert "None" not in text
+
+
+def test_inspect_panels_accept_score_list():
+    run = dict(
+        RUN,
+        scores=[{"name": "mailroom-pipeline-judge", "value": "CORRECT"}],
+    )
+    text = "\n".join(render(p) for p in inspect_panels(run))
+    assert "mailroom-pipeline-judge" in text
+
+
+def test_sessions_table_renders():
+    table = sessions_table({
+        "sessions": [{
+            "id": "MATTER-001",
+            "name": "MATTER-001",
+            "trace_count": 1,
+            "updated_at": "2026-08-25T01:00:00",
+            "runs": [RUN],
+        }],
+    })
+    assert "MATTER-001" in render(table)
+
+
+def test_fetch_floor_runs_none_means_closed(monkeypatch):
+    monkeypatch.setattr("tui.mailroom_console.fetch_snapshot", lambda: None)
+    monkeypatch.setattr("tui.mailroom_console.fetch_list", lambda path: None)
+    assert fetch_floor_runs() is None
+
+
+def test_fetch_list_empty_is_not_closed(monkeypatch):
+    monkeypatch.setattr("tui.mailroom_console.fetch", lambda path, timeout=15.0: {"runs": []})
+    assert fetch_list("/api/traces") == []
+
+
+def test_debug_panel_shows_ring():
+    LAST_ERRORS.clear()
+    LAST_ERRORS.append("GET /api/health: URLError: connection refused")
+    assert "connection refused" in render(debug_panel())
+
+
+def test_live_window_matches_web_clients():
+    assert WINDOW_S == 604800

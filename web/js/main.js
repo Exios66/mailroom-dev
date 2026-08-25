@@ -225,7 +225,7 @@ const Main = (() => {
   async function loadSnapshotFloor() {
     try {
       await loadMeta();
-      applySnapshot((await Mailroom.api.traces(1800, 200)).runs || []);
+      applySnapshot((await Mailroom.api.traces(604800, 200)).runs || []);
     } catch (e2) {
       Mailroom.showError(`snapshot load: ${e2.message || e2}`);
     }
@@ -289,7 +289,7 @@ const Main = (() => {
     fallbackTimer = setInterval(async () => {
       if (!langfuseOk || wsOk) return;
       try {
-        const data = await Mailroom.api.traces(1800, 200);
+        const data = await Mailroom.api.traces(604800, 200);
         applySnapshot(data.runs || []);
       } catch (err) {
         const msg = err.message || String(err);
@@ -372,9 +372,12 @@ const Main = (() => {
       checkHealth();
     });
 
-    // Demo mode toggle (D key)
+    // Demo envelopes are opt-in via ?demo=1 and only when Langfuse is down.
+    // The D key used to fabricate a live floor (and collided with Debug).
+    const demoRequested = new URLSearchParams(location.search).get("demo") === "1";
     document.addEventListener("keydown", (ev) => {
-      if (ev.key === "d" || ev.key === "D") {
+      if (ev.target && ["INPUT", "TEXTAREA", "SELECT"].includes(ev.target.tagName)) return;
+      if (demoRequested && (ev.key === "d" || ev.key === "D") && !langfuseOk) {
         demoMode = !demoMode;
         ConsoleView.log(`DEMO MODE ${demoMode ? "ON" : "OFF"}`, demoMode ? "c-ok" : "c-warn");
         applySource();

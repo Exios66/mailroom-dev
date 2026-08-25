@@ -7,10 +7,14 @@ Views:
 - FLOOR    — live per-run table with `*** Beginning station: ... ***`
             banners when runs arrive or advance
 - REVIEW   — runs waiting on a human, with escalation reasons
+- SESSIONS — Langfuse matters
 - METRICS  — aggregate dashboard
-- INSPECT  — drill into one trace: spans, generations, scores
+- INSPECT  — drill into one trace: spans, generations, scores (`[` / `]` cycle)
+- DEBUG    — last fetch/WS errors plus a pull of `/api/debug/bundle`
 
-Keys: f floor · r review · m metrics · i inspect <id> · c clear log · q quit
+Keys: f floor · r review · s sessions · m metrics · i inspect · [ ] cycle
+      d debug · c clear log · q quit
+`--once --view floor|review|metrics|sessions|inspect|debug` for scripting.
 """
 
 from __future__ import annotations
@@ -37,9 +41,12 @@ from rich.text import Text
 
 API_BASE = os.environ.get("MAILROOM_API_URL", "http://127.0.0.1:8001").rstrip("/")
 POLL_INTERVAL = float(os.environ.get("MAILROOM_TUI_POLL", "5"))
+# Same 7-day live window as the pixel console and Observatory HTTP clients.
+WINDOW_S = int(os.environ.get("MAILROOM_RECENT_WINDOW", "604800"))
+LAST_ERRORS: deque[str] = deque(maxlen=80)
 
 STAGE_ORDER = [
-    "inbox", "ingest", "classify", "retry_classify",
+    "inbox", "ingest", "classify", "retry_classify", "review_classify",
     "extract", "retry_extract", "judge_verify", "arbiter",
     "boss", "review", "report", "catalog", "archive", "archived", "failed",
 ]
@@ -55,53 +62,76 @@ STAGE_STYLE = {
 
 STATION_BY_STAGE = {
     "inbox": "INBOX", "ingest": "Sorter", "classify": "Sorter",
-    "retry_classify": "Sorter", "extract": "Specialist", "retry_extract": "Specialist",
+    "retry_classify": "Sorter", "review_classify": "Sorter",
+    "extract": "Specialist", "retry_extract": "Specialist",
     "judge_verify": "Judge", "arbiter": "Arbiter",
-    "boss": "Boss", "review": "Review siding", "report": "Reporter",
-    "catalog": "Archivist", "archive": "Archivist", "archived": "Archive",
-    "failed": "Failed bin", "unknown": "?",
+    "boss": "Boss", "review": "Review", "report": "Reporter",
+    "catalog": "Archive", "archive": "Archive", "archived": "Archive",
+    "failed": "Failed", "unknown": "?",
 }
 
 
+def _record_error(where: str, exc: BaseException) -> None:
+    LAST_ERRORS.append(f"{where}: {type(exc).__name__}: {exc}")
+
+
 def fetch(path: str, timeout: float = 15.0) -> Optional[dict]:
+    url = f"{API_BASE}{path}"
     try:
-        with urllib.request.urlopen(f"{API_BASE}{path}", timeout=timeout) as resp:
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             return json.loads(resp.read().decode())
-    except Exception:
+    except urllib.error.HTTPError as exc:
+        _record_error(f"GET {path}", exc)
+        try:
+            LAST_ERRORS.append(f"GET {path} body: {exc.read().decode()[:300]}")
+        except Exception:
+            pass
+        return None
+    except Exception as exc:
+        _record_error(f"GET {path}", exc)
         return None
 
 
-def fetch_list(path: str) -> list[dict]:
+def fetch_list(path: str) -> Optional[list[dict]]:
+    """None = request failed (closed). [] = source reachable but empty."""
     data = fetch(path)
     if data is None:
-        return []
+        return None
     return data.get("runs") or []
 
 
 def fetch_snapshot() -> Optional[list[dict]]:
     """Full floor payloads via the same WebSocket snapshots the web floor
-    uses (verdicts, cost, routing — everything). Falls back to the light
-    HTTP list when WS is unavailable."""
+    uses. None = WS failed (caller should try HTTP)."""
     try:
-        import asyncio
-
         from websockets.sync.client import connect
 
-        ws_url = API_BASE.replace("http://", "ws://").replace("https://", "wss://") + "/ws"
+        ws_url = API_BASE.replace("https://", "wss://").replace("http://", "ws://") + "/ws"
         with connect(ws_url, open_timeout=8) as ws:
             msg = json.loads(ws.recv(timeout=8))
         if isinstance(msg, dict) and msg.get("type") == "snapshot":
             return msg.get("runs") or []
+        LAST_ERRORS.append(f"WS {ws_url}: unexpected frame {type(msg).__name__}")
         return None
-    except Exception:
+    except Exception as exc:
+        _record_error("WS /ws", exc)
         return None
 
 
 def fetch_floor_runs() -> Optional[list[dict]]:
+    """None means the display API is unreachable — not an empty window."""
     snap = fetch_snapshot()
-    if snap:
+    if snap is not None:
         return snap
-    return fetch_list("/api/traces?since=21600")
+    return fetch_list(f"/api/traces?since={WINDOW_S}")
+
+
+def probe_health() -> bool:
+    h = fetch("/api/health")
+    if h is None:
+        return False
+    return bool(h.get("ok") if h.get("ok") is not None else h.get("langfuse"))
 
 
 def banner(station: str, action: str = "Beginning") -> str:
@@ -113,6 +143,15 @@ def _fmt(v, spec="{:.2f}") -> str:
         return "-"
     try:
         return spec.format(float(v))
+    except (TypeError, ValueError):
+        return str(v)
+
+
+def _money(v, spec="{:.4f}") -> str:
+    if v is None:
+        return "-"
+    try:
+        return "$" + spec.format(float(v))
     except (TypeError, ValueError):
         return str(v)
 
@@ -138,8 +177,8 @@ def runs_to_banners(prev: dict[str, dict], runs: list[dict], log: deque) -> None
 def floor_table(runs: list[dict]) -> Table:
     table = Table(title=None, box=None, pad_edge=False, expand=True)
     table.add_column("FILE", style="bold white", no_wrap=True, max_width=34)
-    table.add_column("STATION", style="grey70")
-    table.add_column("DOC TYPE", style="dim")
+    table.add_column("STATION", style="grey70", no_wrap=True, min_width=10)
+    table.add_column("DOC TYPE", style="dim", no_wrap=True, max_width=16)
     table.add_column("CLS", justify="right")
     table.add_column("EXT", justify="right")
     table.add_column("VERDICT", justify="center", no_wrap=True, min_width=7)
@@ -161,7 +200,7 @@ def floor_table(runs: list[dict]) -> Table:
             _fmt(r.get("extraction_confidence")),
             Text(verdict, style=style),
             _fmt(r.get("quality")),
-            "$" + _fmt(r.get("cost_usd"), "{:.4f}"),
+            _money(r.get("cost_usd"), "{:.4f}"),
             route,
         )
     return table
@@ -173,14 +212,19 @@ def review_table(runs: list[dict]) -> Table:
     table.add_column("DOC TYPE", style="dim")
     table.add_column("CLS", justify="right")
     table.add_column("EXT", justify="right")
-    table.add_column("WHY", style="yellow", max_width=60)
+    table.add_column("VERDICT", justify="center", no_wrap=True, min_width=7)
+    table.add_column("WHY", style="yellow", max_width=50)
     for r in runs:
+        verdict = r.get("verdict") or "-"
+        style = "bright_green" if verdict == "CORRECT" else (
+            "yellow" if verdict == "PARTIAL" else "bright_red" if verdict == "MISS" else "dim")
         table.add_row(
             (r.get("filename") or r["trace_id"])[:34],
             (r.get("doc_type") or "-").replace("_", " "),
             _fmt(r.get("classification_confidence")),
             _fmt(r.get("extraction_confidence")),
-            r.get("escalation_reason") or r.get("error_message") or "-",
+            Text(verdict, style=style),
+            r.get("escalation_reason") or r.get("review_decision") or r.get("error_message") or "-",
         )
     return table
 
@@ -196,15 +240,15 @@ def metrics_table(m: dict) -> Table:
         ("failed", m.get("failed")),
         ("in flight", m.get("in_flight")),
         ("llm calls", m.get("llm_calls")),
-        ("total cost", f"${m.get('total_cost_usd', 0):.2f}"),
+        ("total cost", _money(m.get("total_cost_usd"), "{:.2f}")),
         ("total tokens", m.get("total_tokens")),
-        ("avg cost/doc", f"${m.get('avg_cost_usd', 0):.4f}"),
-        ("avg latency", f"{m.get('avg_latency_s', 0):.1f}s"),
-        ("p95 gen latency", f"{m.get('p95_generation_latency_s', 0):.1f}s"),
+        ("avg cost/doc", _money(m.get("avg_cost_usd"), "{:.4f}")),
+        ("avg latency", "-" if m.get("avg_latency_s") is None else f"{m['avg_latency_s']:.1f}s"),
+        ("p95 gen latency", "-" if m.get("p95_generation_latency_s") is None else f"{m['p95_generation_latency_s']:.1f}s"),
         ("avg quality", "-" if m.get("avg_quality") is None else f"{m['avg_quality']:.2f}"),
     ]
     for name, value in rows:
-        table.add_row(name, str(value))
+        table.add_row(name, "-" if value is None else str(value))
     verdicts = m.get("verdict_counts") or {}
     if verdicts:
         table.add_section()
@@ -261,19 +305,55 @@ def inspect_panels(run: dict) -> list[Panel]:
         gt.add_row(g.get("name") or "-", g.get("model") or "-",
                    str(g.get("usage_input_tokens") or 0),
                    str(g.get("usage_output_tokens") or 0),
-                   f"${g.get('cost_usd') or 0:.4f}",
+                   _money(g.get("cost_usd"), "{:.4f}"),
                    _fmt(g.get("latency"), "{:.1f}s"))
     panels.append(Panel(gt, title=f"LLM GENERATIONS ({len(gens)})", border_style="blue"))
 
     scores = run.get("scores") or {}
-    if scores:
+    entries: list[tuple[str, Any]] = []
+    if isinstance(scores, list):
+        for s in scores:
+            if isinstance(s, dict) and s.get("name") is not None:
+                entries.append((str(s.get("name")), s.get("value")))
+    elif isinstance(scores, dict):
+        entries = sorted(scores.items())
+    if entries:
         sct = Table(box=None, pad_edge=False)
         sct.add_column("SCORE", style="bold")
         sct.add_column("VALUE")
-        for name, value in sorted(scores.items()):
+        for name, value in entries:
             sct.add_row(name, str(value))
         panels.append(Panel(sct, title="SCORES", border_style="blue"))
     return panels
+
+
+def sessions_table(payload: dict) -> Table:
+    table = Table(title="MATTERS / SESSIONS", box=None, pad_edge=False, expand=True)
+    table.add_column("SESSION", style="bold white", no_wrap=True, max_width=28)
+    table.add_column("TRACES", justify="right")
+    table.add_column("UPDATED", style="dim")
+    table.add_column("LATEST", max_width=50)
+    for s in payload.get("sessions") or []:
+        latest = ""
+        runs = s.get("runs") or []
+        if runs:
+            r = runs[0]
+            latest = f"{(r.get('filename') or r.get('trace_id') or '')[:28]} [{r.get('stage') or '-'}]"
+        table.add_row(
+            str(s.get("name") or s.get("id") or "matter")[:28],
+            str(s.get("trace_count") or len(runs)),
+            str(s.get("updated_at") or "-")[:19],
+            latest or "-",
+        )
+    return table
+
+
+def debug_panel() -> Panel:
+    lines = list(LAST_ERRORS)[-18:] or ["(no recorded fetch/WS errors)"]
+    body = Group(*[Text(line, style="bright_red" if "Error" in line or "error" in line else "grey70")
+                   for line in lines])
+    return Panel(body, title=f"TUI DEBUG RING ({len(LAST_ERRORS)}) — also GET /api/debug/bundle",
+                 border_style="red")
 
 
 def _key_reader(keys: "queue.Queue[str]") -> None:
@@ -325,30 +405,80 @@ def run() -> None:
     parser.add_argument("--poll", type=float, default=POLL_INTERVAL, help="refresh seconds")
     parser.add_argument("--once", action="store_true",
                         help="render a single frame and exit (scripting/CI)")
+    parser.add_argument("--view", default="floor",
+                        choices=["floor", "review", "metrics", "sessions", "inspect", "debug"],
+                        help="which desk --once (and the live start view) shows")
+    parser.add_argument("--inspect", default="",
+                        help="trace id to open on the inspect desk")
     args = parser.parse_args()
     API_BASE = args.api.rstrip("/")
     POLL_INTERVAL = args.poll
 
     console = Console()
+
+    def frame_for(view: str, runs: list[dict], log: deque, inspect_id: str = "") -> Any:
+        if view == "floor":
+            return render_floor(runs, log)
+        if view == "review":
+            rev = fetch_list(f"/api/review-queue?since={WINDOW_S}")
+            if rev is None:
+                return Panel(Text("review queue unavailable — see [d]ebug", style="bright_red"))
+            return review_table(rev)
+        if view == "metrics":
+            m = fetch(f"/api/metrics?since={WINDOW_S}")
+            if m is None:
+                return Panel(Text("metrics unavailable — see [d]ebug", style="bright_red"))
+            return metrics_table(m)
+        if view == "sessions":
+            payload = fetch("/api/sessions?limit=50")
+            if payload is None:
+                return Panel(Text("sessions unavailable — see [d]ebug", style="bright_red"))
+            return sessions_table(payload)
+        if view == "debug":
+            return debug_panel()
+        if view == "inspect":
+            tid = inspect_id
+            if not tid and runs:
+                tid = runs[0].get("trace_id") or ""
+            if not tid:
+                return Panel(Text("no trace to inspect", style="yellow"))
+            detail = fetch(f"/api/traces/{tid}")
+            if detail is None or detail.get("error"):
+                return Panel(Text(f"trace {tid} unavailable — see [d]ebug", style="bright_red"))
+            return Group(*inspect_panels(detail))
+        return render_floor(runs, log)
+
     if args.once:
         runs = fetch_floor_runs()
         log: deque[str] = deque()
+        if args.view == "debug":
+            bundle = fetch("/api/debug/bundle")
+            if bundle:
+                LAST_ERRORS.append(
+                    f"bundle health={bundle.get('health')} "
+                    f"logs={len(bundle.get('server_logs') or [])} "
+                    f"client_reports={len(bundle.get('client_reports') or [])}"
+                )
         if runs is not None:
             runs_to_banners({}, runs, log)
             console.print(status_header(True, len(runs)))
-            console.print(render_floor(runs, log))
+            console.print(frame_for(args.view, runs, log, args.inspect))
         else:
             console.print(status_header(False, 0))
             console.print(Panel(Text("no Langfuse connection", style="bright_red")))
+            if LAST_ERRORS:
+                console.print(debug_panel())
         return
     keys: "queue.Queue[str]" = queue.Queue()
     threading.Thread(target=_key_reader, args=(keys,), daemon=True).start()
 
-    view = "floor"
-    log: deque[str] = deque(maxlen=200)
+    view = args.view
+    log = deque(maxlen=200)
     prev: dict[str, dict] = {}
-    runs: list[dict] = []
+    runs = []
     closed = False
+    inspect_idx = 0
+    inspect_cache: Optional[dict] = None
 
     with Live(console=console, screen=False, refresh_per_second=4, auto_refresh=False) as live:
         last_poll = 0.0
@@ -359,6 +489,8 @@ def run() -> None:
                 fresh = fetch_floor_runs()
                 if fresh is None:
                     closed = True
+                    if not probe_health():
+                        closed = True
                 else:
                     closed = False
                     runs = fresh
@@ -378,32 +510,49 @@ def run() -> None:
                     view = "review"
                 elif ch in ("m", "M"):
                     view = "metrics"
+                elif ch in ("s", "S"):
+                    view = "sessions"
+                elif ch in ("d", "D"):
+                    view = "debug"
+                    bundle = fetch("/api/debug/bundle")
+                    if bundle:
+                        LAST_ERRORS.append(
+                            f"bundle health={bundle.get('health')} "
+                            f"logs={len(bundle.get('server_logs') or [])} "
+                            f"client_reports={len(bundle.get('client_reports') or [])}"
+                        )
                 elif ch in ("c", "C"):
                     log.clear()
                 elif ch in ("i", "I"):
                     view = "inspect"
+                    inspect_cache = None
+                elif ch == "[" and view == "inspect" and runs:
+                    inspect_idx = max(0, inspect_idx - 1)
+                    inspect_cache = None
+                elif ch == "]" and view == "inspect" and runs:
+                    inspect_idx = min(len(runs) - 1, inspect_idx + 1)
+                    inspect_cache = None
 
-            if view == "floor":
-                body = render_floor(runs, log)
-            elif view == "review":
-                body = review_table(fetch_list("/api/review-queue"))
-            elif view == "metrics":
-                m = fetch("/api/metrics?since=21600") or {}
-                body = metrics_table(m)
-            elif view == "inspect":
-                tid = console.input("trace id: ")
-                detail = fetch(f"/api/traces/{tid.strip()}")
-                if detail is None or detail.get("error"):
-                    body = Panel(Text(f"trace {tid} unavailable", style="bright_red"))
+            if view == "inspect":
+                if not runs:
+                    body = Panel(Text("no runs in the window to inspect", style="yellow"))
                 else:
-                    body = Group(*inspect_panels(detail))
-                view = "floor"
+                    inspect_idx = min(inspect_idx, len(runs) - 1)
+                    tid = runs[inspect_idx]["trace_id"]
+                    if inspect_cache is None or inspect_cache.get("trace_id") != tid:
+                        inspect_cache = fetch(f"/api/traces/{tid}")
+                    if inspect_cache is None or inspect_cache.get("error"):
+                        body = Panel(Text(f"trace {tid} unavailable — see [d]ebug", style="bright_red"))
+                    else:
+                        body = Group(*inspect_panels(inspect_cache))
+            else:
+                body = frame_for(view, runs, log, args.inspect)
 
             live.update(
                 Group(
                     status_header(not closed, len(runs)),
                     body,
-                    Text("  [f]loor  [r]eview  [m]etrics  [i]nspect  [c]lear  [q]uit",
+                    Text("  [f]loor  [r]eview  [s]essions  [m]etrics  [i]nspect  [[]/[]]  [d]ebug  [c]lear  [q]uit",
                          style="grey35"),
                 )
             )

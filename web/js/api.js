@@ -71,10 +71,32 @@ const Mailroom = (() => {
     capture("debug-export", {});
   }
 
+  async function pullServer() {
+    const r = await fetch(url("/api/debug/bundle"), { headers: { Accept: "application/json" } });
+    let body = null;
+    try { body = await r.json(); } catch (e) { body = { error: String(e) }; }
+    capture("server-bundle", { status: r.status, logs: ((body && body.server_logs) || []).length });
+    return body;
+  }
+  async function pushClient() {
+    const payload = JSON.parse(dumpDebug(false));
+    const r = await fetch(url("/api/debug/client"), {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify(payload),
+    });
+    let body = null;
+    try { body = await r.json(); } catch (e) { body = { error: String(e) }; }
+    capture("client-push", { status: r.status });
+    return body;
+  }
+
   window.__MAILROOM_DEBUG__ = {
     events: dbgEvents,
     dump: dumpDebug,
     export: exportDebug,
+    pullServer,
+    pushClient,
     clear: () => { dbgEvents.length = 0; },
     setVerbose: (v) => {
       debugVerbose = !!v;
@@ -153,9 +175,9 @@ const Mailroom = (() => {
   const remote = {
     health: () => get("/api/health"),
     meta: () => get("/api/meta"),
-    traces: (since = 1800, limit = 200) => get(`/api/traces?since=${since}&limit=${limit}`),
+    traces: (since = 604800, limit = 200) => get(`/api/traces?since=${since}&limit=${limit}`),
     run: (id) => get(`/api/traces/${encodeURIComponent(id)}`),
-    metrics: (since = 3600) => get(`/api/metrics?since=${since}`),
+    metrics: (since = 604800) => get(`/api/metrics?since=${since}`),
     sessions: (limit = 50) => get(`/api/sessions?limit=${limit}`),
     reviewQueue: (since = 604800) => get(`/api/review-queue?since=${since}`),
   };

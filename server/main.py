@@ -40,9 +40,9 @@ log = logging.getLogger("mailroom.server")
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 HOSTED_DIR = Path(__file__).resolve().parent.parent / "hosted"
-RECENT_WINDOW = float(os.environ.get("MAILROOM_RECENT_WINDOW", 6 * 3600))
+RECENT_WINDOW = float(os.environ.get("MAILROOM_RECENT_WINDOW", 7 * 86400))
 POLL_INTERVAL = float(os.environ.get("MAILROOM_POLL_INTERVAL", "3"))
-TRACE_LIMIT = int(os.environ.get("MAILROOM_TRACE_LIMIT", "100"))
+TRACE_LIMIT = int(os.environ.get("MAILROOM_TRACE_LIMIT", "200"))
 _NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate"}
 
 
@@ -127,7 +127,7 @@ def create_app(source: Optional[object] = None) -> FastAPI:
 
     @app.get("/api/traces")
     def traces(
-        since: int = Query(1800, ge=0, le=86400 * 7, description="window seconds"),
+        since: int = Query(86400 * 7, ge=0, le=86400 * 7, description="window seconds"),
         limit: int = Query(TRACE_LIMIT, ge=1, le=500),
         stage: Optional[str] = None,
         environment: Optional[str] = None,
@@ -153,7 +153,7 @@ def create_app(source: Optional[object] = None) -> FastAPI:
         return _serialize(run, full=True)
 
     @app.get("/api/metrics")
-    def metrics(since: int = Query(3600, ge=0, le=86400 * 7)):
+    def metrics(since: int = Query(86400 * 7, ge=0, le=86400 * 7)):
         # V-3: aggregate ENRICHED runs (full observations/scores), never light
         # ones — light runs have no generations, so cost/tokens/calls were
         # permanently $0.00 / 0 tok / 0 calls. get_run() is cached, so this

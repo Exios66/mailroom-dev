@@ -36,8 +36,10 @@ keys).
 ## Data flow
 
 1. `server/poller.py` `PollHub` polls `list_recent_runs()` every
-   `MAILROOM_POLL_INTERVAL` seconds. `list_recent_runs` uses **trace-list
-   responses only** ("light" runs) — cheap enough to poll continuously.
+   `MAILROOM_POLL_INTERVAL` seconds over a **7-day** window by default
+   (`MAILROOM_RECENT_WINDOW=604800`, matching `/api/traces` / `/api/metrics`
+   / the TUI). `list_recent_runs` uses **trace-list responses only**
+   ("light" runs) — cheap enough to poll continuously.
 2. Each light run is interpreted by `trace_interpreter.interpret_trace` and
    compacted by `poller.floor_payload` (stage, doc type, confidences, verdict,
    cost, …).

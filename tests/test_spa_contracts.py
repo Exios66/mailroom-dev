@@ -20,6 +20,10 @@ def test_review_queue_dispatch_uses_object_key():
     """REVIEW tab called dispatch('review-queue') but remote/snapshots
     are keyed reviewQueue — TypeError on every refresh, live and Pages."""
     assert 'reviewQueue: (...a) => dispatch("reviewQueue", ...a)' in API
+    assert "since = 604800" in API
+    assert 'get(`/api/traces?since=${since}&limit=${limit}`)' in API
+    assert "pullServer" in API and "pushClient" in API
+    assert 'url("/api/debug/bundle")' in API
     assert 'dispatch("review-queue"' not in API
 
 
@@ -50,6 +54,14 @@ def test_boot_does_not_fetch_meta_before_health():
     assert "Mailroom.api.meta()" not in MAIN.split("function boot()")[1]
     assert "async function loadMeta()" in MAIN
     assert "await loadMeta()" in MAIN
+
+
+def test_floor_uses_week_window_and_demo_is_opt_in():
+    assert "traces(604800, 200)" in MAIN
+    assert "since = 604800" in API
+    # Bare D must not fabricate envelopes on a live floor.
+    before = MAIN.split("Demo envelopes")[0]
+    assert 'if (ev.key === "d" || ev.key === "D")' not in before
 
 
 def test_floor_frame_does_not_self_schedule():

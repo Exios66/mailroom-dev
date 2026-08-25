@@ -20,10 +20,13 @@ is the LegalBench eval sibling. Full map:
 
 ## Surfaces
 
-- **Pixel console** (`mailroom-web`) — local CRT / conveyor
+- **Pixel console** (`mailroom-web`) — local CRT / conveyor (FLOOR · REVIEW ·
+  SESSIONS · HISTORY · METRICS · CONSOLE)
 - **Observatory** (`/live`, `mailroom-hosted`) — public modern accessible desk
-  (Debug suite at `#debug` / `GET /api/debug/bundle`)
-- **TUI** (`mailroom-tui`) — terminal
+  (Pipeline · Review · History · Matters · Metrics · Debug;
+  `GET /api/debug/bundle`)
+- **TUI** (`mailroom-tui`) — terminal (floor · review · sessions · metrics ·
+  inspect · debug)
 - **GitHub Pages** — static snapshot of the pixel SPA (not the Observatory)
 
 ## Pages

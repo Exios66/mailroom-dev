@@ -13,9 +13,18 @@ sole source of truth: every envelope, badge, verdict, and metric on screen is de
 from the pipeline's Langfuse project. Nothing is fabricated, nothing falls back to
 local data.
 
+Three live surfaces share one display API (`/api/*` + `/ws`):
+
+| Surface | Command | URL |
+|---|---|---|
+| Pixel-art console | `mailroom-web` | `http://127.0.0.1:8001/` |
+| Hosted Observatory | `mailroom-hosted` (also `/live` on the same server) | `http://127.0.0.1:8001/live` |
+| TUI | `mailroom-tui` | terminal (`MAILROOM_API_URL`) |
+
 ---
 
-## The governed constellation
+<details>
+<summary>The governed constellation</summary>
 
 The-Mailroom is one node of a governed family of repositories sharing one kanban
 board, one discussion log, and one trace contract:
@@ -45,7 +54,7 @@ board, one discussion log, and one trace contract:
 
 Full relationship map: [`llm-mailroom/docs/sister-repos.md`](https://github.com/Exios66/llm-mailroom/blob/main/docs/sister-repos.md).
 
----
+</details>
 
 ## Quick start
 
@@ -58,7 +67,10 @@ mailroom-hosted           # → public Observatory on 0.0.0.0 (container-ready)
 mailroom-tui              # AgentLab-style live console (same data, in a terminal)
 ```
 
-## What you see
+<details>
+<summary>What you see on each surface</summary>
+
+**Pixel console** (`mailroom-web`)
 
 - **FLOOR** — the mailroom: a conveyor belt carrying document envelopes
   through the pipeline's seven stations (SORTER · EXTRACT · JUDGE · BOSS ·
@@ -71,45 +83,99 @@ mailroom-tui              # AgentLab-style live console (same data, in a termina
 - **INSPECTOR** — drill-down into any trace: node-span timeline, LLM
   generations (model, tokens, latency, cost), confidence and judge scores.
 - **SESSIONS** — matter explorer grouped by Langfuse session.
+- **HISTORY** — recent runs with per-hour volume and **REPLAY** (animates
+  a stored trace through its real span sequence on the floor).
 - **METRICS** — docs processed, archived/review/failed, cost, tokens, p95
   generation latency, judge-verdict mix, per-doc-type counts.
 - **CONSOLE** — a live scrolling log of the pipeline, AgentLaboratory-style.
-- **OBSERVATORY** (`/live`, `mailroom-hosted`) — the **hosted** edition: a
-  modern, accessible public desk (semantic HTML, keyboard views `1`–`6`,
-  native inspect dialog, paced replay, Debug desk). Same live traces and replay as the
-  console; different surface, different URL. Not GitHub Pages.
-- **TUI** (`mailroom-tui`) — the same pipeline in a terminal: per-doc tables,
-  `*** Beginning station: ... ***` banners as runs arrive and advance, judge
-  verdict banners, review siding, metrics, and full trace inspection. It
-  subscribes to the same WebSocket floor snapshots as the web UI (`--once`
-  renders a single frame for scripting).
+
+**Observatory** (`/live`, `mailroom-hosted`) — the **hosted** edition: a
+modern, accessible public desk (semantic HTML, keyboard views `1`–`6`,
+native inspect dialog, paced replay, Debug desk). Same live traces as the
+console; different surface, different URL. Not GitHub Pages.
+
+**TUI** (`mailroom-tui`) — the same pipeline in a terminal: per-doc tables,
+`*** Beginning station: ... ***` banners as runs arrive and advance, judge
+verdict banners, review siding, sessions, metrics, inspect (`[` / `]` cycle
+runs), and a debug ring. It subscribes to the same WebSocket floor snapshots
+as the web UI (`--once --view floor|review|metrics|sessions|inspect|debug`
+renders a single frame for scripting).
+
+</details>
 
 ## Screenshots
 
-Official captures of **v0.2.0** — real UI/TUI pixels rendered from genuine
-pipeline traces (fixture-seeded exactly like the test suite; Langfuse remains
-the sole display source):
+Live captures of the three surfaces against the same display API. Values on
+screen are interpreted traces (fixture-shaped exactly like the test suite);
+Langfuse remains the sole display source. Open a section to expand.
+
+<details open>
+<summary>Pixel-art console (<code>mailroom-web</code>)</summary>
 
 | | |
 |---|---|
 | ![The Mailroom floor — conveyor, stations, envelopes](docs/screenshots/floor.png) |
-| **FLOOR** — the animated conveyor: seven stations, per-doc-type envelope tints, verdict stamps, review siding & failed bin. |
+| **FLOOR** — seven stations, per-doc-type envelope tints, review siding and failed bin. Click an envelope to inspect. |
+| ![Inspector overlay on the floor](docs/screenshots/inspector.png) |
+| **INSPECTOR** — node spans, LLM generations, classification / extraction / judge scores. |
 | ![REVIEW siding — human-review queue](docs/screenshots/review.png) |
 | **REVIEW** — runs waiting on a human, with escalation reasons and confidence. |
+| ![SESSIONS / matters](docs/screenshots/sessions.png) |
+| **SESSIONS** — Langfuse matters with their traces, stages, and verdicts. |
+| ![HISTORY with replay](docs/screenshots/history.png) |
+| **HISTORY** — recent runs, per-hour volume, REPLAY onto the floor. |
 | ![METRICS dashboard](docs/screenshots/metrics.png) |
 | **METRICS** — docs processed, archived/review/failed split, cost, tokens, judge-verdict mix, per-doc-type counts. |
-| ![TUI console](docs/screenshots/tui-console.png) |
-| **TUI** (`mailroom-tui --once`) — the same pipeline in a terminal: per-doc table, verdicts, station banners, live log. |
+| ![LIVE CONSOLE log](docs/screenshots/console.png) |
+| **CONSOLE** — AgentLab-style live log plus the DEBUG capture toggle. |
+
+</details>
+
+<details open>
+<summary>Hosted Observatory (<code>/live</code>, <code>mailroom-hosted</code>)</summary>
+
+| | |
+|---|---|
+| ![Observatory pipeline trays](docs/screenshots/observatory-pipeline.png) |
+| **Pipeline** — live trays for Sorter · Extract · Judge · Boss · Report · Archive · Review · Completed. |
+| ![Observatory review queue](docs/screenshots/observatory-review.png) |
+| **Review** — human-review queue with why / extract / verdict. |
+| ![Observatory run history](docs/screenshots/observatory-history.png) |
+| **History** — recent runs with paced Replay of stored span sequences. |
+| ![Observatory matters](docs/screenshots/observatory-matters.png) |
+| **Matters** — Langfuse sessions grouped as matters. |
+| ![Observatory metrics](docs/screenshots/observatory-metrics.png) |
+| **Metrics** — the same window aggregates as the pixel desk. |
+| ![Observatory debug desk](docs/screenshots/observatory-debug.png) |
+| **Debug** — client ring, `GET /api/debug/bundle`, `POST /api/debug/client`. |
+
+</details>
+
+<details open>
+<summary>TUI (<code>mailroom-tui</code>)</summary>
+
+| | |
+|---|---|
+| ![TUI floor table and live log](docs/screenshots/tui-console.png) |
+| **Floor** (`mailroom-tui --once`) — per-doc table, verdicts, station banners, live log. |
+| ![TUI review siding](docs/screenshots/tui-review.png) |
+| **Review** (`--view review`) — waiting-on-a-human queue with escalation reasons. |
+| ![TUI sessions](docs/screenshots/tui-sessions.png) |
+| **Sessions** (`--view sessions`) — Langfuse matters. |
+| ![TUI metrics](docs/screenshots/tui-metrics.png) |
+| **Metrics** (`--view metrics`) — the same aggregates as `/api/metrics`. |
+
+Keys: `[f]loor` `[r]eview` `[s]essions` `[m]etrics` `[i]nspect` `[` `]` `[d]ebug` `[q]uit`.
+
+</details>
 
 ---
 
-## Demo data (play-testing without a live run)
+<details>
+<summary>Demo data (play-testing without a live run)</summary>
 
 Demo runs are seeded **into** Langfuse (env `demo`) — the visualizer still
 reads Langfuse only, so nothing on screen is ever canned data:
-
-<details>
-<summary>Demo seeding commands (click to expand)</summary>
 
 ```bash
 python scripts/seed_demo.py                       # seed 13 demo runs (incl.
@@ -123,9 +189,13 @@ python scripts/seed_demo.py --check-logs <dir>    # verify against run logs save
                                                   # scripts/sync_langfuse_logs.py
 ```
 
+The pixel `D` key does **not** fabricate envelopes on a live floor. Demo
+envelopes are opt-in (`?demo=1`) and only when the trace source is down.
+
 </details>
 
-## Requirements
+<details>
+<summary>Requirements</summary>
 
 - Python 3.11+
 - A Langfuse project (the `llm-mailroom` project on US cloud by default)
@@ -134,7 +204,10 @@ python scripts/seed_demo.py --check-logs <dir>    # verify against run logs save
   the `MAILROOM_TAXONOMY` live-config override; see `AGENTS.md`)
 - `arize-phoenix-client` (optional — only for the Phoenix trace source)
 
-## Hosted Observatory (public URL — not GitHub Pages)
+</details>
+
+<details>
+<summary>Hosted Observatory (public URL — not GitHub Pages)</summary>
 
 The Observatory is a **separate live site** meant to be deployed to a real
 host (Hugging Face Spaces, Fly, Render, Cloud Run, a VPS). It is not the
@@ -149,7 +222,10 @@ docker run --rm -p 7860:7860 --env-file .env mailroom-observatory
 Full deploy notes (Spaces secrets, keyboard map, how it differs from the
 other surfaces): [`hosted/README.md`](hosted/README.md).
 
-## GitHub Pages edition (static site + local Phoenix)
+</details>
+
+<details>
+<summary>GitHub Pages edition (static site + local Phoenix)</summary>
 
 The Mailroom also runs as a **static site on GitHub Pages** with three data
 modes:
@@ -185,9 +261,10 @@ root is left untouched). Re-run any time to refresh the snapshot.
    site ships empty and shows its honest CLOSED state.
 2. **Live mode** — point the static page at any reachable Mailroom API:
    append `?api=http://localhost:8001` once (persisted to `localStorage`).
-   Run the server locally with CORS enabled (`MAILROOM_CORS_ORIGINS`) and
-   the Pages UI goes fully live, WS included. Note: Chrome/Firefox allow
-   HTTPS→`http://localhost` calls; Safari may block them.
+   `?api=` (empty) **clears** a stale persisted base. Run the server locally
+   with CORS enabled (`MAILROOM_CORS_ORIGINS`) and the Pages UI goes fully
+   live, WS included. Note: Chrome/Firefox allow HTTPS→`http://localhost`
+   calls; Safari may block them.
 3. **Phoenix mode** — traces from a *locally running* Arize Phoenix
    (default `http://localhost:6006`) can drive the console:
 
@@ -203,31 +280,46 @@ root is left untouched). Re-run any time to refresh the snapshot.
    generations (model/tokens/cost), annotations become scores. Unmapped
    spans degrade to unknown staging — same visible-by-design breakage map.
 
-**Debug console for agents:** every fetch, WS frame, error, and console line
-lands in a client-side ring buffer at `window.__MAILROOM_DEBUG__`
-(`dump()`, clipboard copy, `export()` → `mailroom-debug.json`); `?debug=1`
-or the CONSOLE tab's DEBUG toggle enables verbose capture. The hosted
-Observatory has a parallel suite: `window.__OBSERVATORY_DEBUG__`, Debug desk
-`#debug` (`?debug=1`), `GET /api/debug/bundle` (health + source + server
-ring + last client dumps), and `POST /api/debug/client`. Server side,
-`GET /api/debug/logs?limit=` serves an always-on request ring buffer,
-`GET /api/debug/source` reports configured sources/knobs, `MAILROOM_DEBUG=1`
-turns on verbose stdout logging, and `/api/meta` carries a machine-readable
-endpoint index plus active sources and version. Snapshot builds add
-`debug/build-info.json` (git SHA, counts, generation time).
-
-## Configuration
+</details>
 
 <details>
-<summary>Configuration reference (click to expand)</summary>
+<summary>Debug console for agents</summary>
+
+Every fetch, WS frame, error, and console line lands in a client-side ring
+buffer at `window.__MAILROOM_DEBUG__` (`dump()`, clipboard copy,
+`pullServer()`, `pushClient()`, `export()` → `mailroom-debug.json`);
+`?debug=1` or the CONSOLE tab's DEBUG toggle enables verbose capture.
+
+The hosted Observatory has a parallel suite: `window.__OBSERVATORY_DEBUG__`,
+Debug desk `#debug` (`?debug=1`). The TUI records urllib/WS failures in
+`LAST_ERRORS` (`[d]ebug`, `--view debug`) and can pull the same bundle.
+
+Server side:
+
+- `GET /api/debug/bundle` — one-pull: health + source + server ring + last
+  client dumps
+- `POST /api/debug/client` — store a browser dump for the next agent pull
+- `GET /api/debug/logs?limit=` — always-on request ring buffer
+- `GET /api/debug/source` — configured sources / knobs
+- `GET /api/meta` — machine-readable endpoint index plus active sources and
+  version
+- `MAILROOM_DEBUG=1` — verbose stdout logging
+
+Snapshot builds add `debug/build-info.json` (git SHA, counts, generation time).
+
+</details>
+
+<details>
+<summary>Configuration reference</summary>
 
 All knobs live in `.env` (see `.env.example`): Langfuse keys/host
 (`LANGFUSE_HOST`, default `https://us.cloud.langfuse.com`), poll cadence
-(`MAILROOM_POLL_INTERVAL`), recent window, trace limit, optional tag/env
-filters, `MAILROOM_PORT` (default `8001`), and `MAILROOM_TAXONOMY`. The GH
-Pages edition adds `MAILROOM_SOURCE` (`langfuse|phoenix|both`),
-`PHOENIX_ENDPOINT` / `PHOENIX_API_KEY` / `MAILROOM_PHOENIX_PROJECT`,
-`MAILROOM_CORS_ORIGINS`, and `MAILROOM_DEBUG`.
+(`MAILROOM_POLL_INTERVAL`), recent window (default **7 days**,
+`MAILROOM_RECENT_WINDOW=604800`), trace limit (`MAILROOM_TRACE_LIMIT=200`),
+optional tag/env filters, `MAILROOM_PORT` (default `8001`), and
+`MAILROOM_TAXONOMY`. The GH Pages edition adds `MAILROOM_SOURCE`
+(`langfuse|phoenix|both`), `PHOENIX_ENDPOINT` / `PHOENIX_API_KEY` /
+`MAILROOM_PHOENIX_PROJECT`, `MAILROOM_CORS_ORIGINS`, and `MAILROOM_DEBUG`.
 
 > [!IMPORTANT]
 > `pipeline_schema.py` is cached at process level — editing `taxonomy.yaml`
@@ -236,9 +328,8 @@ Pages edition adds `MAILROOM_SOURCE` (`langfuse|phoenix|both`),
 
 </details>
 
----
-
-## The trace contract & the mirror duty
+<details>
+<summary>The trace contract &amp; the mirror duty</summary>
 
 The-Mailroom does not own the trace contract it renders — it **mirrors** it
 from the upstream pipeline. This is the repo's #1 maintenance duty: when
@@ -255,42 +346,50 @@ score names, metadata/tags, and the complete breakage map — lives in
 [`AGENTS.md`](AGENTS.md) ("Sister repo" section), which is authoritative for
 pipeline internals alongside the pipeline's own `AGENTS.md`.
 
----
-
-## Project layout
+</details>
 
 <details>
-<summary>Directory map</summary>
+<summary>Project layout</summary>
 
 ```
 mailroom_ui/   data core — Langfuse + Phoenix adapters, trace interpreter,
                topology mirror, models, metrics (reads trace sources only)
 server/        FastAPI, read-only: /api/* + debug endpoints + WebSocket + serves web/
 web/           pixel-art SPA (vanilla HTML/CSS/JS, no build step)
+hosted/        Observatory — public modern accessible desk
 tui/           rich console — the pipeline in a terminal (mailroom-tui)
 scripts/       seed_demo (demo runs INTO Langfuse) · export_snapshot (Pages
                data) · publish_pages (gh-pages push, no Actions) · release
+               · render_tui_shots (README TUI SVGs)
 docs/ + wiki/  mirrored documentation (wiki/sync-wiki.sh publishes the wiki)
 tests/         pytest suite against fake clients — never the real APIs
 ```
 
 </details>
 
-## Tests
+<details>
+<summary>Tests</summary>
 
 ```bash
 python -m pytest tests/ -q
 ```
 
 Tests never hit real Langfuse — `tests/fake_langfuse.py` provides v2/v3
-snake_case and v4 camelCase fixtures mirroring the trace contract.
+snake_case and v4 camelCase fixtures mirroring the trace contract. The
+suite covers the TUI, every `/api/meta` endpoint, and SPA source contracts
+(no JS test harness).
 
-## Releases
+</details>
+
+<details>
+<summary>Releases</summary>
 
 Semantic versioning with a Keep-a-Changelog `CHANGELOG.md`, README/wiki
 updates on major changes, and annotated `vX.Y.Z` tags matching the changelog.
 `python scripts/release.py --help` drives the mechanical steps. See
 `AGENTS.md` → "Release process" for the full procedure.
+
+</details>
 
 ---
 

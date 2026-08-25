@@ -6,8 +6,35 @@ All notable changes to The-Mailroom are documented here, following
 
 ## [Unreleased]
 
+### Added
+
+- README screenshot gallery now covers the pixel console (FLOOR / REVIEW /
+  SESSIONS / METRICS / CONSOLE), the hosted Observatory (pipeline / review /
+  metrics / debug), and TUI desks, with collapsible `<details>` sections for
+  the rest of the documentation.
+
 ### Fixed
 
+- **TUI treated a dead API as an empty live floor** — `fetch_list` coerced
+  HTTP failures to `[]`, so `mailroom-tui --once` printed
+  `MAILROOM LIVE` with zero runs instead of `MAILROOM CLOSED`. Failures now
+  propagate as `None`; the debug ring (`[d]ebug`, `--view debug`) records
+  the urllib/WS error. `review_classify` maps to the Sorter station.
+  Inspect no longer calls `input()` inside Rich Live (broken the display);
+  `[` / `]` cycle runs. Metrics nulls render as `-`, not `None` / `$None`.
+  Scores accept a dict or `{name,value}` list (same contract as the web
+  inspector). Sessions desk (`s`) and `--view` / `--inspect` flags added.
+- Pixel console `window.__MAILROOM_DEBUG__` can `pullServer()` /
+  `pushClient()` against `/api/debug/bundle` and `/api/debug/client`,
+  matching the Observatory and TUI debug pull. The `D` key no longer
+  fabricates demo envelopes on a live floor (opt-in `?demo=1` only, and
+  only when the source is down).
+- **7-day live window mismatch** — the Observatory asked for `since=604800`
+  while the TUI HTTP fallback used 6 hours, `/api/traces` defaulted to 30
+  minutes, `/api/metrics` to 1 hour, and the WebSocket poller defaulted to
+  6 hours. All four now default to 7 days (`MAILROOM_RECENT_WINDOW`,
+  `MAILROOM_TRACE_LIMIT` 200) so FLOOR / HISTORY / TUI / Observatory show
+  the same runs.
 - **SPA: REVIEW tab TypeError (live + GH Pages)** — `Mailroom.api.reviewQueue`
   dispatched the string `"review-queue"` but both the live and snapshot
   clients are keyed `reviewQueue`, so every REVIEW refresh threw
@@ -59,6 +86,9 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- API surface test (`tests/test_api_surface.py`) hits every `/api/meta`
+  endpoint plus trace 404, session detail, review queue, and the debug
+  bundle so a silent 404 cannot blank the TUI, pixel console, or Observatory.
 - **Mailroom Observatory debug suite** — hosted UI gained a Debug desk
   (`#debug`, `?debug=1`, keyboard `6`), a client ring at
   `window.__OBSERVATORY_DEBUG__` (`dump` / `export` / `pullServer` /
