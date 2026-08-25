@@ -18,6 +18,13 @@ corpus classes; **[atticus-investigation](https://github.com/Exios66/atticus-inv
 is the LegalBench eval sibling. Full map:
 [`llm-mailroom/docs/sister-repos.md`](https://github.com/Exios66/llm-mailroom/blob/main/docs/sister-repos.md).
 
+## Surfaces
+
+- **Pixel console** (`mailroom-web`) — local CRT / conveyor
+- **Observatory** (`/live`, `mailroom-hosted`) — public modern accessible desk
+- **TUI** (`mailroom-tui`) — terminal
+- **GitHub Pages** — static snapshot of the pixel SPA (not the Observatory)
+
 ## Pages
 
 - [Home](Home) — overview, quick start, sister-repo pointer

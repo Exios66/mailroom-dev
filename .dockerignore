@@ -1,0 +1,17 @@
+.git
+.github
+.pytest_cache
+**/__pycache__
+*.egg-info
+.env
+.env.*
+site
+data
+docs
+wiki
+tests
+hooks
+scripts
+*.md
+!README.md
+.DS_Store

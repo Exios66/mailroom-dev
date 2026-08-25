@@ -52,7 +52,9 @@ Full relationship map: [`llm-mailroom/docs/sister-repos.md`](https://github.com/
 ```bash
 pip install -e ".[dev]"
 cp .env.example .env      # add LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY
-mailroom-web              # → http://127.0.0.1:8001
+mailroom-web              # → http://127.0.0.1:8001  (pixel-art console)
+                          #    Observatory is also at /live on the same server
+mailroom-hosted           # → public Observatory on 0.0.0.0 (container-ready)
 mailroom-tui              # AgentLab-style live console (same data, in a terminal)
 ```
 
@@ -72,6 +74,10 @@ mailroom-tui              # AgentLab-style live console (same data, in a termina
 - **METRICS** — docs processed, archived/review/failed, cost, tokens, p95
   generation latency, judge-verdict mix, per-doc-type counts.
 - **CONSOLE** — a live scrolling log of the pipeline, AgentLaboratory-style.
+- **OBSERVATORY** (`/live`, `mailroom-hosted`) — the **hosted** edition: a
+  modern, accessible public desk (semantic HTML, keyboard views `1`–`5`,
+  native inspect dialog, paced replay). Same live traces and replay as the
+  console; different surface, different URL. Not GitHub Pages.
 - **TUI** (`mailroom-tui`) — the same pipeline in a terminal: per-doc tables,
   `*** Beginning station: ... ***` banners as runs arrive and advance, judge
   verdict banners, review siding, metrics, and full trace inspection. It
@@ -127,6 +133,21 @@ python scripts/seed_demo.py --check-logs <dir>    # verify against run logs save
 - The sister pipeline repo `../llm-mailroom` (optional — only needed to use
   the `MAILROOM_TAXONOMY` live-config override; see `AGENTS.md`)
 - `arize-phoenix-client` (optional — only for the Phoenix trace source)
+
+## Hosted Observatory (public URL — not GitHub Pages)
+
+The Observatory is a **separate live site** meant to be deployed to a real
+host (Hugging Face Spaces, Fly, Render, Cloud Run, a VPS). It is not the
+Pages snapshot and not the pixel-art console.
+
+```bash
+mailroom-hosted                          # 0.0.0.0:8001  →  / and /live
+docker build -t mailroom-observatory .
+docker run --rm -p 7860:7860 --env-file .env mailroom-observatory
+```
+
+Full deploy notes (Spaces secrets, keyboard map, how it differs from the
+other surfaces): [`hosted/README.md`](hosted/README.md).
 
 ## GitHub Pages edition (static site + local Phoenix)
 

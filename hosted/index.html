@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Mailroom Observatory: a live, accessible view of the llm-mailroom legal-document pipeline. Watch runs in real time or replay a stored Langfuse trace.">
+<title>Mailroom Observatory</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%236b2d32'/%3E%3Crect x='7' y='8' width='18' height='16' fill='%23f6f1e8'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/live/static/css/app.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="site-header">
+  <div class="brand-block">
+    <p class="eyebrow">llm-mailroom · hosted edition</p>
+    <h1>Mailroom Observatory</h1>
+    <p class="lede">A public operations desk for the pipeline — live Langfuse traces, or a paced replay of any past run. This is not the local pixel console, the terminal TUI, or the GitHub Pages snapshot.</p>
+  </div>
+  <div class="status-block">
+    <p id="source-status" class="source-status" role="status" aria-live="polite">Connecting to the trace source…</p>
+    <p id="clock" class="clock" aria-hidden="true"></p>
+    <p id="run-count" class="run-count">No runs loaded</p>
+  </div>
+</header>
+
+<nav class="view-nav" aria-label="Observatory views">
+  <a href="#pipeline" data-view="pipeline" aria-current="page">Pipeline</a>
+  <a href="#review" data-view="review">Review</a>
+  <a href="#history" data-view="history">History</a>
+  <a href="#matters" data-view="matters">Matters</a>
+  <a href="#metrics" data-view="metrics">Metrics</a>
+</nav>
+
+<div id="alert-region" class="alert" hidden role="alert"></div>
+
+<main id="main" tabindex="-1">
+  <section id="view-pipeline" class="view" aria-labelledby="pipeline-heading">
+    <div class="view-head">
+      <h2 id="pipeline-heading">Live pipeline</h2>
+      <p>Each tray is a station. Documents arrive from Langfuse and sit in the tray that matches their current stage. Activate a card to inspect the full trace, or start a replay from History.</p>
+      <fieldset class="filters">
+        <legend class="sr-only">Filter pipeline cards</legend>
+        <label><input type="radio" name="pipe-filter" value="all" checked> All</label>
+        <label><input type="radio" name="pipe-filter" value="inflight"> In flight</label>
+        <label><input type="radio" name="pipe-filter" value="review"> Review</label>
+        <label><input type="radio" name="pipe-filter" value="done"> Completed</label>
+      </fieldset>
+    </div>
+    <div id="pipeline-board" class="board" aria-live="off"></div>
+  </section>
+
+  <section id="view-review" class="view" hidden aria-labelledby="review-heading">
+    <div class="view-head">
+      <h2 id="review-heading">Human review queue</h2>
+      <p>Runs waiting on a person. Same data as <code>/api/review-queue</code>.</p>
+    </div>
+    <div id="review-list"></div>
+  </section>
+
+  <section id="view-history" class="view" hidden aria-labelledby="history-heading">
+    <div class="view-head">
+      <h2 id="history-heading">Run history</h2>
+      <p>Replay walks a stored trace through its real span sequence. Playback respects <code>prefers-reduced-motion</code> — it will step without animation when that is set.</p>
+      <div class="toolbar" role="group" aria-label="Replay controls">
+        <button type="button" id="replay-play" class="btn" disabled>Play replay</button>
+        <button type="button" id="replay-step" class="btn" disabled>Step</button>
+        <button type="button" id="replay-stop" class="btn btn-quiet" disabled>Stop</button>
+        <p id="replay-status" role="status" aria-live="polite">No replay loaded</p>
+      </div>
+    </div>
+    <div id="history-list"></div>
+  </section>
+
+  <section id="view-matters" class="view" hidden aria-labelledby="matters-heading">
+    <div class="view-head">
+      <h2 id="matters-heading">Matters</h2>
+      <p>Langfuse sessions grouped as matters. Open a run to inspect it.</p>
+    </div>
+    <div id="matters-list"></div>
+  </section>
+
+  <section id="view-metrics" class="view" hidden aria-labelledby="metrics-heading">
+    <div class="view-head">
+      <h2 id="metrics-heading">Window metrics</h2>
+      <p>Aggregates from the live source — never estimated locally.</p>
+    </div>
+    <div id="metrics-grid" class="metrics"></div>
+  </section>
+</main>
+
+<p id="announce" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+
+<dialog id="inspect-dialog" aria-labelledby="inspect-title">
+  <form method="dialog" class="dialog-bar">
+    <h2 id="inspect-title">Trace</h2>
+    <button type="submit" class="btn" value="close">Close</button>
+  </form>
+  <div id="inspect-body" class="dialog-body"></div>
+</dialog>
+
+<footer class="site-footer">
+  <p>Hosted Observatory · same Langfuse project as the local pixel console and <code>mailroom-tui</code> · nothing on this page is fabricated.</p>
+  <p><a href="/">Local pixel console</a> (this host) · GitHub Pages is a separate static snapshot and is not this site.</p>
+</footer>
+
+<script src="/live/static/js/client.js"></script>
+<script src="/live/static/js/app.js"></script>
+</body>
+</html>

@@ -38,9 +38,15 @@ from server.poller import PollHub, floor_payload
 log = logging.getLogger("mailroom.server")
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
+HOSTED_DIR = Path(__file__).resolve().parent.parent / "hosted"
 RECENT_WINDOW = float(os.environ.get("MAILROOM_RECENT_WINDOW", 6 * 3600))
 POLL_INTERVAL = float(os.environ.get("MAILROOM_POLL_INTERVAL", "3"))
 TRACE_LIMIT = int(os.environ.get("MAILROOM_TRACE_LIMIT", "100"))
+_NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate"}
+
+
+def _edition() -> str:
+    return os.environ.get("MAILROOM_EDITION", "console").strip().lower()
 
 API_ENDPOINTS = [
     {"method": "GET", "path": "/api/health", "desc": "source reachability"},
@@ -53,6 +59,7 @@ API_ENDPOINTS = [
     {"method": "GET", "path": "/api/debug/logs", "desc": "request ring buffer for agents; ?limit="},
     {"method": "GET", "path": "/api/debug/source", "desc": "configured sources + knobs"},
     {"method": "WS", "path": "/ws", "desc": "floor snapshots (live mode only)"},
+    {"method": "GET", "path": "/live", "desc": "hosted Observatory UI (modern, accessible, public)"},
 ]
 
 
@@ -213,7 +220,13 @@ def create_app(source: Optional[object] = None) -> FastAPI:
             "doc_classes": classes,
             "source": _source_names(src),
             "mode": "api",
+            "edition": _edition(),
             "version": _version(),
+            "ui": {
+                "console": "/",
+                "hosted": "/live",
+                "default": "/live" if _edition() in ("hosted", "live", "observatory") else "/",
+            },
             "endpoints": API_ENDPOINTS,
         }
 
@@ -247,16 +260,27 @@ def create_app(source: Optional[object] = None) -> FastAPI:
         except Exception:
             hub.disconnect(ws)
 
+    def _page(path: Path) -> FileResponse:
+        return FileResponse(path, headers=_NO_CACHE)
+
+    if HOSTED_DIR.exists():
+        @app.get("/live", include_in_schema=False)
+        @app.get("/live/", include_in_schema=False)
+        def hosted_page():
+            return _page(HOSTED_DIR / "index.html")
+
+        app.mount("/live/static", StaticFiles(directory=HOSTED_DIR), name="hosted")
+
     if WEB_DIR.exists():
         app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
         @app.get("/")
         def index():
-            # V-22: no-cache on index.html so a deployed SPA is never stale.
-            return FileResponse(
-                WEB_DIR / "index.html",
-                headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
-            )
+            # Hosted edition puts the public Observatory on `/`; the pixel
+            # console remains at /static + this same index when edition=console.
+            if _edition() in ("hosted", "live", "observatory") and HOSTED_DIR.exists():
+                return _page(HOSTED_DIR / "index.html")
+            return _page(WEB_DIR / "index.html")
 
     return app
 
@@ -347,7 +371,8 @@ def run() -> None:
     logging.basicConfig(level=logging.INFO)
     load_dotenv()
     port = int(os.environ.get("MAILROOM_PORT", "8001"))
-    uvicorn.run(create_app(), host="127.0.0.1", port=port, log_level="info")
+    host = os.environ.get("MAILROOM_HOST", "127.0.0.1")
+    uvicorn.run(create_app(), host=host, port=port, log_level="info")
 
 
 if __name__ == "__main__":

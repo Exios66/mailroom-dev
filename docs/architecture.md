@@ -7,8 +7,9 @@
 
 ## Overview
 
-The-Mailroom is a pixel-art console that renders every run of the
-`llm-mailroom` multi-agent legal-document pipeline from its Langfuse traces.
+The-Mailroom renders every run of the `llm-mailroom` multi-agent
+legal-document pipeline from its Langfuse traces (pixel-art console, hosted
+Observatory, and TUI).
 **Langfuse is the sole source of truth**: no display value is ever fabricated
 or served from local canned data. The repo is read-only against Langfuse
 (project-scoped API keys, backend proxies everything — the browser never holds
@@ -24,9 +25,10 @@ keys).
 │               trace_interpreter.py ← sessions via SDK)                    │
 │               pipeline_schema.py ← topology mirror (taxonomy.yaml)        │
 │               metrics.py · models.py                                       │
-│ server/  FastAPI :8001 → /api/* + /ws → serves web/                        │
+│ server/  FastAPI → /api/* + /ws → serves web/ (console) and hosted/ (/live)│
 │ web/     pixel-art SPA: Floor (conveyor, 7 stations incl. JUDGE) ·        │
 │          Inspector · Sessions · History · Metrics · Review · Console      │
+│ hosted/  Observatory — public modern accessible desk (live + replay)      │
 │ tui/     rich-based console (mailroom-tui)                                 │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -92,6 +94,15 @@ canvas-rendered conveyor (pixel-art envelopes tinted per doc class, stations,
 rollers, review/failed sidings) — see `web/js/floor.js`. The station roster
 and doc-class colors must stay aligned with `pipeline_schema.py` and the
 pipeline's `taxonomy.yaml`.
+
+## Hosted Observatory (`hosted/`)
+
+A **separate** public UI at `/live` (`mailroom-hosted`, or `/` when
+`MAILROOM_EDITION=hosted`). Editorial layout, semantic HTML, skip link,
+keyboard view switching, native `<dialog>` inspector, and paced replay of
+stored traces. Same `/api/*` + `/ws` as the pixel console. Deploy with the
+root `Dockerfile` (binds `0.0.0.0:7860`) — this is not GitHub Pages. See
+`hosted/README.md`.
 
 ## GH Pages edition (static site, no Actions)
 

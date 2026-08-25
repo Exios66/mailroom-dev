@@ -54,6 +54,16 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- **TUI verdict truncation** — Rich 15 squeezed the floor table so
+  `CORRECT` rendered as `COR…`. Verdict and cost columns are now no-wrap.
+- **Mailroom Observatory (hosted edition)** — a public, modern, accessible
+  site at `/live` (`mailroom-hosted`, `MAILROOM_EDITION=hosted`), distinct
+  from the local pixel console, the TUI, and the GitHub Pages snapshot.
+  Same Langfuse-backed `/api/*` + `/ws` contract: live pipeline trays,
+  review queue, matters, metrics, inspect dialog, and paced trace replay
+  (respects `prefers-reduced-motion`). Container image (`Dockerfile`) binds
+  `0.0.0.0:7860` for Hugging Face Spaces / any Docker host. Docs:
+  `hosted/README.md`.
 - **main ↔ gh-pages sync discipline (still no Actions):** committed
   `hooks/pre-push` republishes `gh-pages:/docs` automatically on every push
   of `main` once `git config core.hooksPath hooks` is set per clone; failures
