@@ -58,8 +58,11 @@ const Floor = (() => {
     if (st === "boss") {
       return { x: STATIONS[3].x, y: ENV_Y };
     }
-    if (st === "report" || st === "catalog" || st === "archive") {
+    if (st === "report") {
       return { x: STATIONS[4].x, y: ENV_Y };
+    }
+    if (st === "catalog" || st === "archive") {
+      return { x: STATIONS[5].x, y: ENV_Y };
     }
     return { x: STATIONS[0].x, y: ENV_Y };
   }
@@ -71,6 +74,9 @@ const Floor = (() => {
       corporate_record: "#659099",
       correspondence: "#e8b478",
       insurance_claim: "#b18ec2",
+      court_opinion: "#c47a7a",
+      due_diligence: "#9aa87a",
+      compliance_filing: "#7a8fb0",
     };
     return colors[run.doc_type] || "#a09f9f";
   }
@@ -232,6 +238,28 @@ const Floor = (() => {
     if (callbacks.hover) callbacks.hover(null);
   });
 
+  function assignLanes() {
+    // Several runs park at the same station x; without a lane offset they
+    // stack on one pixel and only the top envelope is clickable.
+    const groups = new Map();
+    for (const e of envs.values()) {
+      if (e.dying || e.remove || e.alpha <= 0) continue;
+      const key = Math.round((e.tx ?? 0) / 5);
+      let list = groups.get(key);
+      if (!list) { list = []; groups.set(key, list); }
+      list.push(e);
+    }
+    for (const list of groups.values()) {
+      list.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+      list.forEach((e, i) => {
+        const col = i % 3;
+        const row = Math.floor(i / 3);
+        e.laneDx = (col - 1) * 16;
+        e.laneDy = row * 16;
+      });
+    }
+  }
+
   function drawEnvelopes(t) {
     for (const e of envs.values()) {
       if (e.alpha <= 0) continue;
@@ -269,10 +297,13 @@ const Floor = (() => {
   }
 
   function frame(t) {
+    assignLanes();
     for (const e of [...envs.values()]) {
       if (!e.dying) {
-        e.x += (e.tx - e.x) * 0.08;
-        e.y += (e.ty - e.y) * 0.08;
+        const tx = (e.tx ?? 0) + (e.remove ? 0 : (e.laneDx || 0));
+        const ty = (e.ty ?? 0) + (e.remove ? 0 : (e.laneDy || 0));
+        e.x += (tx - e.x) * 0.08;
+        e.y += (ty - e.y) * 0.08;
         // Remove archived/failed items that reach offscreen
         if (e.remove && Math.abs(e.x - e.tx) < 5) {
           e.dying = true;
@@ -291,7 +322,6 @@ const Floor = (() => {
       }
     }
     draw(t);
-    requestAnimationFrame(frame);
   }
 
   // V-17: the 60 fps full-canvas redraw ran unconditionally forever, even
@@ -302,9 +332,9 @@ const Floor = (() => {
   let lastFrame = null;
   let idleTimer = null;
   function loop(t) {
+    rafId = null;
     idleTimer = null;
     if (document.hidden) {
-      rafId = null;
       return;
     }
     frame(t);
@@ -319,7 +349,11 @@ const Floor = (() => {
     }
   }
   function kickLoop() {
-    if (rafId === null && idleTimer === null) {
+    if (idleTimer !== null) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
+    }
+    if (rafId === null) {
       rafId = requestAnimationFrame(loop);
     }
   }
@@ -413,7 +447,8 @@ const Floor = (() => {
       extract: 1, retry_extract: 1,
       judge_verify: 2, arbiter: 2,
       boss: 3,
-      report: 4, catalog: 4, archive: 4, archived: 4,
+      report: 4,
+      catalog: 5, archive: 5, archived: 5,
       review: 6, failed: 6,
     };
     const stationIdx = (st) => {
@@ -452,6 +487,8 @@ const Floor = (() => {
     e.tint = tintFor(baseRun);
     e.tx = STATIONS[0].x;
     e.ty = ENV_Y;
+    e.remove = false;
+    kickLoop();
 
     // Animate through each stage in sequence
     let cumulativeDelay = 600; // initial pause so user sees the envelope appear

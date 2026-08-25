@@ -8,6 +8,37 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Fixed
 
+- **SPA: REVIEW tab TypeError (live + GH Pages)** — `Mailroom.api.reviewQueue`
+  dispatched the string `"review-queue"` but both the live and snapshot
+  clients are keyed `reviewQueue`, so every REVIEW refresh threw
+  `… is not a function`, painted the error banner, and left the siding
+  empty even when `/api/review-queue` / `data/review-queue.json` were fine.
+- **GH Pages boot error flash** — `main.js` fetched `/api/meta` before the
+  health probe, so every Pages visit showed `ERROR — HTTP 404 /api/meta`
+  (and a red console line) even after snapshot mode engaged. Meta now loads
+  only after a live health OK or a successful snapshot fallback; the
+  expected missing live API is a dim console line, not a banner.
+- **Snapshot fallback ignored a dead `?api=` / localStorage base** — bundled
+  `data/*.json` was prefixed with the live API origin (`http://host:8001data/…`
+  when the slash was missing). A stale localhost base blanked Pages.
+  Snapshots are always same-origin; `?api=` (empty) now clears the persisted
+  base.
+- **Floor animation leak + dead ARCHIVE station** — `frame()` still called
+  `requestAnimationFrame(frame)`, defeating the V-17 idle/visibility pause
+  and running a second 60fps chain. `catalog`/`archive` stages parked on
+  REPORT so the ARCHIVE desk never received an envelope. Same-station
+  envelopes stacked on one pixel (only the top one was clickable).
+- **TUI verdict truncation** — Rich 15 squeezed the floor table so
+  `CORRECT` rendered as `COR…`. Verdict and cost columns are now no-wrap.
+  error banner sat inside `.screen { overflow: hidden }`; verdict bars
+  ignored per-entry colors (PARTIAL/MISS rendered green); `tile.wide`
+  `span 2` overflowed single-column layouts; GitHub Pages 404'd `favicon.ico`
+  into the debug log. Inspector scores now accept dict or `{name,value}`
+  lists instead of `[object Object]`.
+- `export_snapshot.py`: `sessions.json` top-level `count` was hardcoded to
+  `0` regardless of content — now the real session count (matches
+  `/api/sessions` shape; agents reading the static snapshot get honest
+  numbers).
 - **SECURITY: leaked `.env` purged from gh-pages history** — a Desktop
   branch-switch mishap had committed `.env` (Langfuse keys) plus stray dirs
   (`mailroom_ui/`, `server/`, `site/`, `.DS_Store`) to the branch root.
@@ -20,10 +51,6 @@ All notable changes to The-Mailroom are documented here, following
   or `sk-lf-`/`pk-lf-` key material appear anywhere in the staged tree;
   `hooks/pre-push` rejects direct `gh-pages` pushes whose tree contains any
   `.env`-like file.
-- `export_snapshot.py`: `sessions.json` top-level `count` was hardcoded to
-  `0` regardless of content — now the real session count (matches
-  `/api/sessions` shape; agents reading the static snapshot get honest
-  numbers).
 
 ### Added
 

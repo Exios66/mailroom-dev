@@ -17,13 +17,25 @@ const Mailroom = (() => {
 
   // ---- API base resolution ---------------------------------------------
   // ?api= wins and persists so a Pages visitor only configures once.
-  let BASE = (qs.get("api") || localStorage.getItem("mailroom.api") || "")
-    .trim()
-    .replace(/\/+$/, "");
-  if (qs.get("api")) {
+  // ?api= (empty) CLEARS a stale persisted base — previously qs.get("api")
+  // was falsy for "" so localStorage could never be unset, and a dead
+  // localhost base blanked the GH Pages snapshot fallback.
+  let BASE = "";
+  if (qs.has("api")) {
+    BASE = (qs.get("api") || "").trim().replace(/\/+$/, "");
     try { localStorage.setItem("mailroom.api", BASE); } catch (e) { /* private mode */ }
+  } else {
+    BASE = (localStorage.getItem("mailroom.api") || "").trim().replace(/\/+$/, "");
   }
-  const url = (path) => `${BASE}${path}`;
+  const url = (path) => {
+    if (!BASE) return path;
+    const p = path.startsWith("/") ? path : `/${path}`;
+    return `${BASE}${p}`;
+  };
+  // Bundled snapshots always live next to the SPA (GH Pages docs/ or a local
+  // export). Never prefix them with the live API BASE.
+  const snapUrl = (path) => String(path).replace(/^\/+/, "");
+  const safeId = (id) => String(id).replace(/[^A-Za-z0-9._-]/g, "_");
 
   // ---- debug capture -----------------------------------------------------
   const MAX_DEBUG_EVENTS = 500;
@@ -79,9 +91,9 @@ const Mailroom = (() => {
   async function enableStaticMode() {
     if (staticMode) return true;
     try {
-      const res = await fetch(url("data/meta.json"), { cache: "no-store" });
+      const res = await fetch(snapUrl("data/meta.json"), { cache: "no-store" });
       if (!res.ok) return false;
-      snapCache.set("meta", await res.json());
+      snapCache.set("meta", { data: await res.json(), fetched: Date.now() });
       staticMode = true;
       capture("static-mode", { enabled: true });
       return true;
@@ -99,16 +111,19 @@ const Mailroom = (() => {
       if (Date.now() - hit.fetched < 30000) return hit.data;
     }
     const t0 = performance.now();
-    const res = await fetch(url(`data/${name}.json`), { cache: "no-store" });
+    const path = snapUrl(`data/${name}.json`);
+    const res = await fetch(path, { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status} data/${name}.json`);
     const data = await res.json();
     snapCache.set(name, { data, fetched: Date.now() });
-    capture("fetch", { url: `data/${name}.json`, status: res.status, ms: Math.round(performance.now() - t0), mode: "static" });
+    capture("fetch", { url: path, status: res.status, ms: Math.round(performance.now() - t0), mode: "static" });
     return data;
   }
 
   async function snapRun(id) {
-    return snap(`runs/${encodeURIComponent(id)}`);
+    // Must match scripts/export_snapshot.py _safe_id, NOT encodeURIComponent
+    // (a slug with ':' would 404 the sanitized filename on Pages).
+    return snap(`runs/${safeId(id)}`);
   }
 
   // ---- remote API calls ---------------------------------------------------
@@ -169,7 +184,7 @@ const Mailroom = (() => {
     run: (...a) => dispatch("run", ...a),
     metrics: (...a) => dispatch("metrics", ...a),
     sessions: (...a) => dispatch("sessions", ...a),
-    reviewQueue: (...a) => dispatch("review-queue", ...a),
+    reviewQueue: (...a) => dispatch("reviewQueue", ...a),
   };
 
   const fmt = {
@@ -239,7 +254,11 @@ const Mailroom = (() => {
   }
 
   window.addEventListener("error", (ev) => {
-    showError(ev.message || "unhandled script error");
+    const msg = ev.message || "unhandled script error";
+    // Browser-noise that used to paint the error banner on an otherwise
+    // healthy floor (ResizeObserver loop, cross-origin "Script error.").
+    if (/ResizeObserver|Script error\.?$/i.test(msg)) return;
+    showError(msg);
   });
   window.addEventListener("unhandledrejection", (ev) => {
     if (ev && ev.reason) showError(ev.reason);

@@ -16,7 +16,7 @@ const MetricsView = (() => {
     const rows = entries
       .map((e) => `<div class="bar-row">
         <span class="bar-label">${Mailroom.esc(e.label)}</span>
-        <span class="bar-track"><span class="bar-fill" style="width:${Math.round((e.value / max) * 100)}%;background:${color}"></span></span>
+        <span class="bar-track"><span class="bar-fill" style="width:${Math.round((e.value / max) * 100)}%;background:${e.color || color}"></span></span>
         <span class="bar-num">${e.value}</span>
       </div>`)
       .join("");
@@ -27,8 +27,19 @@ const MetricsView = (() => {
   }
 
   function scoreValue(run, name) {
-    const hit = (run.scores || []).find((s) => s.name === name && s.value != null);
-    return hit ? Number(hit.value) : null;
+    const scores = run.scores;
+    if (!scores) return null;
+    if (Array.isArray(scores)) {
+      const hit = scores.find((s) => s && s.name === name && s.value != null);
+      return hit ? Number(hit.value) : null;
+    }
+    if (typeof scores === "object" && scores[name] != null) {
+      const v = scores[name];
+      if (typeof v === "object" && v !== null && "value" in v) return Number(v.value);
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
   }
 
   function computeLocalMetrics(runs) {

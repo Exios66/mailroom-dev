@@ -114,6 +114,7 @@ const HistoryView = (() => {
       if (tab) tab.click();
     } catch (err) {
       ConsoleView.log(`replay failed: ${err.message || err}`, "c-bad");
+      Mailroom.showError(`replay: ${err.message || err}`);
     }
   }
 
@@ -132,7 +133,10 @@ const HistoryView = (() => {
   if (refreshBtn) {
     refreshBtn.addEventListener("click", () => {
       ConsoleView.log("refreshing history…", "c-dim");
-      refresh();
+      refresh().catch((e) => {
+        Mailroom.showError(`history: ${e.message || e}`);
+        ConsoleView.log(`history refresh failed: ${e.message || e}`, "c-bad");
+      });
     });
   }
 

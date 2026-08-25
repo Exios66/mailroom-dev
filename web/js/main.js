@@ -56,6 +56,7 @@ const Main = (() => {
     if (!langfuseOk && !demoMode) {
       setLamp("red");
       sourceLabelEl.textContent = "SOURCE: OFFLINE";
+      sourceLabelEl.className = "st-bad mono";
       statusLeftEl.textContent = "MAILROOM CLOSED — NO LANGFUSE CONNECTION";
       statusLeftEl.className = "st-bad mono";
       closedEl.hidden = false;
@@ -64,6 +65,7 @@ const Main = (() => {
     } else if (demoMode && !langfuseOk) {
       setLamp("gold");
       sourceLabelEl.textContent = "SOURCE: DEMO MODE";
+      sourceLabelEl.className = "st-warn mono";
       statusLeftEl.textContent = "MAILROOM DEMO — SIMULATED PIPELINE RUNNING";
       statusLeftEl.className = "st-warn mono";
       closedEl.hidden = true;
@@ -72,6 +74,7 @@ const Main = (() => {
     } else if (demoMode && langfuseOk) {
       setLamp("gold");
       sourceLabelEl.textContent = "SOURCE: DEMO MODE (LANGFUSE UP)";
+      sourceLabelEl.className = "st-warn mono";
       statusLeftEl.textContent = "MAILROOM DEMO — SIMULATED PIPELINE (LANGFUSE AVAILABLE)";
       statusLeftEl.className = "st-warn mono";
       closedEl.hidden = true;
@@ -80,6 +83,7 @@ const Main = (() => {
     } else {
       setLamp(wsOk ? "green" : "gold");
       sourceLabelEl.textContent = "SOURCE: LANGFUSE";
+      sourceLabelEl.className = wsOk ? "st-good mono" : "st-warn mono";
       statusLeftEl.textContent = "MAILROOM LIVE — WATCHING LANGFUSE";
       statusLeftEl.className = "st-good mono";
       closedEl.hidden = true;
@@ -210,29 +214,44 @@ const Main = (() => {
     statusRightEl.textContent = `RUNS: ${lastSnapshot.length}${envTxt}`;
   }
 
+  async function loadMeta() {
+    try {
+      Mailroom.meta = await Mailroom.api.meta();
+    } catch (e) {
+      Mailroom.showError(`meta: ${e.message || e}`);
+    }
+  }
+
+  async function loadSnapshotFloor() {
+    try {
+      await loadMeta();
+      applySnapshot((await Mailroom.api.traces(1800, 200)).runs || []);
+    } catch (e2) {
+      Mailroom.showError(`snapshot load: ${e2.message || e2}`);
+    }
+  }
+
   async function checkHealth() {
     if (Mailroom.staticMode) { applySource(); return true; }
     try {
       const h = await Mailroom.api.health();
       // Source-agnostic "ok" (multi/phoenix sources) with langfuse fallback.
       langfuseOk = !!(h.ok ?? h.langfuse);
+      if (langfuseOk && !Mailroom.meta) await loadMeta();
     } catch (err) {
-      ConsoleView.log(`health check failed: ${err.message || err}`, "c-bad");
-      // GH Pages: no live API reachable — fall back to bundled snapshots.
+      // GH Pages / no live API: fall back to bundled snapshots. A missing
+      // /api/health is expected here — do NOT paint it as an error banner
+      // or red console line; that was the Pages boot flash.
       const enabled = await Mailroom.enableStaticMode();
       if (enabled) {
         langfuseOk = true;
+        ConsoleView.log(`no live API (${err.message || err}) — serving bundled snapshot`, "c-dim");
         ConsoleView.banner("SNAPSHOT MODE — SERVING BUNDLED DATA");
-        try {
-          const m = await Mailroom.api.meta();
-          Mailroom.meta = m;
-          applySnapshot((await Mailroom.api.traces(1800, 200)).runs || []);
-        } catch (e2) {
-          Mailroom.showError(`snapshot load: ${e2.message || e2}`);
-        }
+        await loadSnapshotFloor();
         applySource();
         return true;
       }
+      ConsoleView.log(`health check failed: ${err.message || err}`, "c-bad");
       langfuseOk = false;
     }
     applySource();
@@ -311,10 +330,6 @@ const Main = (() => {
     setInterval(tick, 1000);
 
     ConsoleView.banner("THE MAILROOM — LLM-MAILROOM VISUAL ENGINE");
-
-    Mailroom.api.meta()
-      .then((m) => { Mailroom.meta = m; })
-      .catch((e) => { Mailroom.showError(`meta: ${e.message || e}`); });
 
     // Deep-linkable tab state: ?view=review|sessions|history|metrics|console
     const requestedView = new URLSearchParams(location.search).get("view");

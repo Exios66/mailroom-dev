@@ -109,7 +109,7 @@ class PollHub:
                     "type": "snapshot",
                     "runs": self.snapshot,
                     "stale": runs is None,
-                    "fetched_at": datetime.now().isoformat(),
+                    "fetched_at": datetime.now(timezone.utc).isoformat(),
                 }
                 dead: list[WebSocket] = []
                 for ws in list(self.clients):

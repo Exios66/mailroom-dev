@@ -39,6 +39,27 @@ const Inspector = (() => {
     return `<span class="dot ${cls}"></span>`;
   }
 
+  function fmtScore(v) {
+    if (v == null) return "—";
+    if (typeof v === "object") {
+      try { return JSON.stringify(v); } catch (e) { return String(v); }
+    }
+    return String(v);
+  }
+
+  function scoreEntries(scores) {
+    if (!scores) return [];
+    if (Array.isArray(scores)) {
+      return scores
+        .filter((s) => s && s.name != null && s.value != null)
+        .map((s) => [s.name, s.value]);
+    }
+    if (typeof scores === "object") {
+      return Object.entries(scores).filter(([, v]) => v != null);
+    }
+    return [];
+  }
+
   function render(run) {
     const title = run.filename || run.trace_id;
     titleEl.textContent = `${Mailroom.fmt.short(title, 60)} — ${run.stage || "unknown"}`;
@@ -115,12 +136,11 @@ const Inspector = (() => {
         </div>`).join("")
       : `<div style="color:var(--gray-dim)">no generations on this trace</div>`;
 
-    const scores = run.scores && typeof run.scores === "object" ? run.scores : {};
-    const scoreKeys = Object.keys(scores).filter((k) => scores[k] != null);
-    const scoresHtml = scoreKeys.length
-      ? scoreKeys.map((k) => `<div class="score-row">
+    const scores = scoreEntries(run.scores);
+    const scoresHtml = scores.length
+      ? scores.map(([k, v]) => `<div class="score-row">
           <span class="score-name">${Mailroom.esc(k)}</span>
-          <span class="score-val">${Mailroom.esc(String(scores[k]))}</span>
+          <span class="score-val">${Mailroom.esc(fmtScore(v))}</span>
         </div>`).join("")
       : `<div style="color:var(--gray-dim)">no scores attached to this trace</div>`;
 
