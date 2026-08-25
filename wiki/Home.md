@@ -22,6 +22,7 @@ is the LegalBench eval sibling. Full map:
 
 - **Pixel console** (`mailroom-web`) — local CRT / conveyor
 - **Observatory** (`/live`, `mailroom-hosted`) — public modern accessible desk
+  (Debug suite at `#debug` / `GET /api/debug/bundle`)
 - **TUI** (`mailroom-tui`) — terminal
 - **GitHub Pages** — static snapshot of the pixel SPA (not the Observatory)
 

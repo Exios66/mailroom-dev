@@ -225,6 +225,32 @@ main { padding-bottom: 3rem; }
   cursor: pointer;
 }
 
+.replay-bar {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  background: var(--paper);
+  border: 2px solid var(--accent);
+  box-shadow: var(--shadow);
+  padding: 0.7rem 1rem 0.85rem;
+  margin: 0 0 1.2rem;
+}
+
+.replay-bar[hidden] { display: none !important; }
+
+.replay-bar.is-on { display: block; }
+
+.replay-bar-label {
+  margin: 0 0 0.3rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.replay-bar .toolbar { margin-top: 0; }
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -263,8 +289,12 @@ main { padding-bottom: 3rem; }
 
 .board {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.7rem;
+}
+
+@media (min-width: 900px) {
+  .board { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 .tray {
@@ -309,6 +339,11 @@ main { padding-bottom: 3rem; }
 
 .card.is-replay {
   box-shadow: 0 0 0 2px var(--accent);
+}
+
+.card-title,
+.card-meta {
+  display: block;
 }
 
 .card-title {
@@ -395,6 +430,8 @@ table.data tbody tr:hover { background: var(--bg-2); }
   margin-bottom: 0.8rem;
 }
 
+#metrics-grid { display: grid; gap: 0.7rem; }
+
 .metrics {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -441,6 +478,47 @@ table.data tbody tr:hover { background: var(--bg-2); }
   display: block;
   height: 100%;
   background: var(--accent);
+}
+
+.bar-fill-ok { background: var(--ok); }
+.bar-fill-warn { background: var(--warn); }
+.bar-fill-bad { background: var(--bad); }
+.bar-fill-info { background: var(--info); }
+
+.debug-pre {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 0.8rem 1rem;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 22rem;
+}
+
+.debug-events {
+  padding-left: 1.2rem;
+}
+
+.debug-events li { margin: 0.45rem 0; }
+
+.debug-events li.is-err {
+  background: var(--bad-bg);
+  color: var(--bad);
+  padding: 0.35rem 0.5rem;
+}
+
+.debug-events code {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.dbg-verbose {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
 }
 
 .site-footer {

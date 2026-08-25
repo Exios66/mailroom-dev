@@ -61,8 +61,25 @@ expose the pixel console paths — assets stay under `/live/static`).
 - **Metrics** — window aggregates from the live source.
 - **Inspect** — native `<dialog>` with spans, generations, scores.
 
-Keyboard: `1`–`5` switch views. Tab order follows the page. Skip link jumps
+Keyboard: `1`–`6` switch views (`6` = Debug). Tab order follows the page. Skip link jumps
 to main content. Status is announced in an `aria-live` region.
+
+## Debug suite (agents and humans)
+
+Silent UI failures (a blank tray, a swallowed health error, a bad
+WebSocket frame) are recorded in a ring buffer. Pull them without a
+browser console:
+
+| Who | How |
+|---|---|
+| Browser | Open **Debug** (`#debug` or `?debug=1`) — Refresh / Pull / Push / Export / Copy |
+| Console | `window.__OBSERVATORY_DEBUG__.dump()` · `.export()` · `.explain(event)` · `.setVerbose(true)` |
+| curl / next agent | `GET /api/debug/bundle` — health + source knobs + server request log + last posted client dumps |
+| Leave a dump for the next agent | Debug desk **Push client dump**, or `POST /api/debug/client` with the dump JSON |
+
+`GET /api/debug/logs` and `GET /api/debug/source` still exist; the bundle
+is the one-pull wrapper. Event kinds have a glossary in `hosted/js/debug.js`
+(`KINDS`) so a raw `window-error` or `review-error` row is readable.
 
 ## Accessibility notes
 

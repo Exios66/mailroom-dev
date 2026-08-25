@@ -99,10 +99,12 @@ pipeline's `taxonomy.yaml`.
 
 A **separate** public UI at `/live` (`mailroom-hosted`, or `/` when
 `MAILROOM_EDITION=hosted`). Editorial layout, semantic HTML, skip link,
-keyboard view switching, native `<dialog>` inspector, and paced replay of
-stored traces. Same `/api/*` + `/ws` as the pixel console. Deploy with the
-root `Dockerfile` (binds `0.0.0.0:7860`) — this is not GitHub Pages. See
-`hosted/README.md`.
+keyboard view switching (`1`–`6`, including Debug), native `<dialog>`
+inspector, paced replay of stored traces (controls stay pinned in a
+sticky bar), and a Debug desk that records fetches, WebSocket frames, and
+uncaught errors. Same `/api/*` + `/ws` as the pixel console. Deploy with
+the root `Dockerfile` (binds `0.0.0.0:7860`) — this is not GitHub Pages.
+See `hosted/README.md`.
 
 ## GH Pages edition (static site, no Actions)
 
@@ -130,9 +132,12 @@ Langfuse-shaped dicts `interpret_trace` consumes; unmapped spans degrade to
 unknown staging per the breakage map), and `MultiSource` (fan-out reads,
 per-trace isolation, aggregated health).
 
-Debug surfaces for agents: client ring buffer at
+Debug surfaces for agents: pixel-console ring at
 `window.__MAILROOM_DEBUG__` (`dump()` / `export()`, enabled verbosely by
-`?debug=1` or the CONSOLE tab's DEBUG toggle); server request ring buffer
-at `/api/debug/logs?limit=`, source introspection at `/api/debug/source`,
-verbose stdout via `MAILROOM_DEBUG=1`, and a machine-readable endpoint index
-in `/api/meta`. Snapshot builds add `debug/build-info.json`.
+`?debug=1` or the CONSOLE tab's DEBUG toggle); Observatory ring at
+`window.__OBSERVATORY_DEBUG__` (Debug desk `#debug`, same `?debug=1`);
+server request ring at `/api/debug/logs?limit=`, source introspection at
+`/api/debug/source`, combined pull at `/api/debug/bundle`, last browser
+dumps at `GET|POST /api/debug/client`, verbose stdout via
+`MAILROOM_DEBUG=1`, and a machine-readable endpoint index in `/api/meta`.
+Snapshot builds add `debug/build-info.json`.

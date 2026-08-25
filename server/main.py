@@ -7,7 +7,8 @@ import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Optional
+from collections import deque
+from typing import Any, Optional
 
 import uvicorn
 from dotenv import load_dotenv
@@ -58,6 +59,9 @@ API_ENDPOINTS = [
     {"method": "GET", "path": "/api/meta", "desc": "doc classes, active sources, this endpoint index"},
     {"method": "GET", "path": "/api/debug/logs", "desc": "request ring buffer for agents; ?limit="},
     {"method": "GET", "path": "/api/debug/source", "desc": "configured sources + knobs"},
+    {"method": "GET", "path": "/api/debug/bundle", "desc": "one-pull: health + source + server logs + last client dumps"},
+    {"method": "GET", "path": "/api/debug/client", "desc": "last browser dumps posted by Observatory / pixel clients"},
+    {"method": "POST", "path": "/api/debug/client", "desc": "store a browser debug dump for the next agent pull"},
     {"method": "WS", "path": "/ws", "desc": "floor snapshots (live mode only)"},
     {"method": "GET", "path": "/live", "desc": "hosted Observatory UI (modern, accessible, public)"},
 ]
@@ -95,7 +99,7 @@ def create_app(source: Optional[object] = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins or ["*"],
-        allow_methods=["GET", "OPTIONS"],
+        allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
     )
     app.add_middleware(DebugLogMiddleware, recorder=debug_log)
@@ -234,8 +238,9 @@ def create_app(source: Optional[object] = None) -> FastAPI:
     def debug_logs(limit: int = Query(200, ge=1, le=500)):
         return {"count_limit": limit, "events": debug_log.snapshot(limit)}
 
-    @app.get("/api/debug/source")
-    def debug_source():
+    client_reports: deque[dict[str, Any]] = deque(maxlen=20)
+
+    def _debug_source_payload() -> dict:
         info: dict = {
             "selector": os.environ.get("MAILROOM_SOURCE", "langfuse"),
             "sources": _source_names(src).split("+"),
@@ -243,11 +248,63 @@ def create_app(source: Optional[object] = None) -> FastAPI:
             "poll_interval_s": POLL_INTERVAL,
             "recent_window_s": RECENT_WINDOW,
             "trace_limit": TRACE_LIMIT,
+            "edition": _edition(),
         }
         for attr in ("project",):
             if hasattr(src, attr):
                 info["phoenix_project"] = getattr(src, attr)
         return info
+
+    @app.get("/api/debug/source")
+    def debug_source():
+        return _debug_source_payload()
+
+    @app.get("/api/debug/bundle")
+    def debug_bundle(limit: int = Query(200, ge=1, le=500)):
+        """One pull for agents: health, source knobs, server ring, last client dumps."""
+        try:
+            health = src.health()
+        except Exception as exc:
+            health = {"ok": False, "error": str(exc)[:300]}
+        return {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "health": health,
+            "source": _debug_source_payload(),
+            "server_logs": debug_log.snapshot(limit),
+            "client_reports": list(client_reports),
+            "how_to": {
+                "browser_dump": "window.__OBSERVATORY_DEBUG__.dump()",
+                "browser_export": "window.__OBSERVATORY_DEBUG__.export()",
+                "curl_bundle": "curl -sS $HOST/api/debug/bundle",
+                "curl_logs": "curl -sS $HOST/api/debug/logs?limit=200",
+                "curl_source": "curl -sS $HOST/api/debug/source",
+                "view": "/live#debug or ?debug=1",
+            },
+        }
+
+    @app.post("/api/debug/client")
+    def debug_client_post(body: dict):
+        if not isinstance(body, dict):
+            return JSONResponse(status_code=400, content={"error": "expected JSON object"})
+        events = body.get("events") or []
+        entry = {
+            "received_at": datetime.now(timezone.utc).isoformat(),
+            "href": body.get("href"),
+            "event_count": body.get("eventCount") if body.get("eventCount") is not None else len(events),
+            "last_error": body.get("lastError"),
+            "report": body,
+        }
+        client_reports.append(entry)
+        debug_log.record(
+            "client-report",
+            href=entry["href"],
+            events=entry["event_count"],
+        )
+        return {"ok": True, "stored": len(client_reports)}
+
+    @app.get("/api/debug/client")
+    def debug_client_list():
+        return {"count": len(client_reports), "reports": list(client_reports)}
 
     @app.websocket("/ws")
     async def ws_endpoint(ws: WebSocket):

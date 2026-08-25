@@ -1,4 +1,4 @@
-/* Mailroom Observatory app shell: views, live board, replay, inspector. */
+/* Mailroom Observatory app shell: views, live board, replay, inspector, debug. */
 const App = (() => {
   const STATIONS = [
     { key: "sorter", label: "Sorter", stages: ["inbox", "ingest", "classify", "retry_classify", "review_classify", "unknown"] },
@@ -24,16 +24,34 @@ const App = (() => {
     "archive-document": "archive",
   };
 
-  const views = ["pipeline", "review", "history", "matters", "metrics"];
+  const views = ["pipeline", "review", "history", "matters", "metrics", "debug"];
   let runs = [];
   let meta = null;
   let filter = "all";
   let replay = null;
   let replayTimers = [];
   let lastFocus = null;
+  let socketLive = false;
 
   const $ = (id) => document.getElementById(id);
-  const announce = (msg) => { $("announce").textContent = msg; };
+
+  function dbg(kind, payload) {
+    try {
+      if (window.ObservatoryDebug) window.ObservatoryDebug.record(kind, payload);
+    } catch (_e) { /* debug module optional */ }
+  }
+
+  function need(id) {
+    const el = $(id);
+    if (!el) dbg("visual", { where: "need", message: "missing #" + id });
+    return el;
+  }
+
+  function announce(msg) {
+    const el = $("announce");
+    if (el) el.textContent = msg;
+    dbg("announce", { message: msg });
+  }
 
   function stationFor(run) {
     const st = run && run.stage;
@@ -52,16 +70,29 @@ const App = (() => {
   }
 
   function setSource(kind, text) {
-    const el = $("source-status");
+    const el = need("source-status");
+    if (!el) return;
     el.className = `source-status is-${kind}`;
     el.textContent = text;
   }
 
   function showAlert(msg) {
-    const el = $("alert-region");
+    const el = need("alert-region");
+    if (!el) return;
     if (!msg) { el.hidden = true; el.textContent = ""; return; }
     el.hidden = false;
     el.textContent = msg;
+    dbg("visual", { where: "alert", message: msg });
+  }
+
+  function applyEditionNote() {
+    const el = $("edition-note");
+    if (!el || !meta || !meta.ui) return;
+    if (meta.edition === "hosted" || meta.edition === "live" || meta.edition === "observatory") {
+      el.innerHTML = `This process is the Observatory (<code>${Obs.esc(meta.ui.default || "/")}</code>). The pixel console is not on <code>/</code> here — start <code>mailroom-web</code> for that surface. GitHub Pages is a separate static snapshot.`;
+    } else {
+      el.innerHTML = `<a href="${Obs.esc(meta.ui.console || "/")}">Local pixel console</a> (this host) · GitHub Pages is a separate static snapshot and is not this site.`;
+    }
   }
 
   function switchView(name) {
@@ -78,10 +109,12 @@ const App = (() => {
     if (location.hash.replace("#", "") !== name) {
       history.replaceState(null, "", `#${name}`);
     }
+    dbg("view", { name });
     if (name === "review") refreshReview();
     if (name === "history") refreshHistory();
     if (name === "matters") refreshMatters();
     if (name === "metrics") refreshMetrics();
+    if (name === "debug") renderDebug();
   }
 
   function cardHTML(run, { replayId } = {}) {
@@ -92,11 +125,11 @@ const App = (() => {
       : "";
     const stage = `<span class="badge badge-info">${Obs.esc((run.stage || "unknown").replaceAll("_", " "))}</span>`;
     return `<button type="button" class="card${replayCls}" data-trace="${Obs.esc(run.trace_id)}">
-      <p class="card-title">${title}</p>
-      <p class="card-meta">${Obs.esc((run.doc_type || "untyped").replaceAll("_", " "))}
+      <span class="card-title">${title}</span>
+      <span class="card-meta">${Obs.esc((run.doc_type || "untyped").replaceAll("_", " "))}
         · ${Obs.fmt.conf(run.classification_confidence)} cls
-        · ${Obs.fmt.conf(run.extraction_confidence)} ext</p>
-      <p class="card-meta">${stage} ${verdict}</p>
+        · ${Obs.fmt.conf(run.extraction_confidence)} ext</span>
+      <span class="card-meta">${stage} ${verdict}</span>
     </button>`;
   }
 
@@ -110,11 +143,13 @@ const App = (() => {
   }
 
   function renderBoard() {
+    const board = need("pipeline-board");
+    if (!board) return;
     const replayId = replay && replay.id;
     const shown = runs.filter(matchesFilter);
     const groups = Object.fromEntries(STATIONS.map((s) => [s.key, []]));
     for (const r of shown) groups[stationFor(r)].push(r);
-    $("pipeline-board").innerHTML = STATIONS.map((s) => {
+    board.innerHTML = STATIONS.map((s) => {
       const items = groups[s.key] || [];
       const body = items.length
         ? items.map((r) => cardHTML(r, { replayId })).join("")
@@ -124,8 +159,9 @@ const App = (() => {
         ${body}
       </section>`;
     }).join("");
-    bindCards($("pipeline-board"));
-    $("run-count").textContent = `${runs.length} run${runs.length === 1 ? "" : "s"} in the live window`;
+    bindCards(board);
+    const count = need("run-count");
+    if (count) count.textContent = `${runs.length} run${runs.length === 1 ? "" : "s"} in the live window`;
   }
 
   function bindCards(root) {
@@ -134,8 +170,22 @@ const App = (() => {
     }
   }
 
+  function overlayReplay(list) {
+    if (!replay || !replay.stage) return list;
+    const next = list.slice();
+    const idx = next.findIndex((r) => r.trace_id === replay.id);
+    const overlay = {
+      ...(idx >= 0 ? next[idx] : { trace_id: replay.id, filename: replay.filename, doc_type: replay.doc_type }),
+      stage: replay.stage,
+      needs_human: replay.stage === "review",
+    };
+    if (idx >= 0) next[idx] = overlay;
+    else next.unshift(overlay);
+    return next;
+  }
+
   function applyRuns(next) {
-    runs = Array.isArray(next) ? next : [];
+    runs = overlayReplay(Array.isArray(next) ? next : []);
     renderBoard();
   }
 
@@ -149,7 +199,8 @@ const App = (() => {
   }
 
   async function refreshReview() {
-    const el = $("review-list");
+    const el = need("review-list");
+    if (!el) return;
     el.innerHTML = `<p class="empty">Loading review queue…</p>`;
     try {
       const data = await Obs.api.reviewQueue();
@@ -162,13 +213,16 @@ const App = (() => {
       </tr>`);
       el.innerHTML = table("Runs waiting on a human", ["Document", "Type", "Why", "Extract", "Verdict"], rows);
       bindCards(el);
+      dbg("traces", { where: "review", count: (data.runs || []).length });
     } catch (err) {
+      dbg("review-error", { message: err.message });
       el.innerHTML = `<p class="empty" role="alert">Review queue unavailable — ${Obs.esc(err.message)}</p>`;
     }
   }
 
   async function refreshHistory() {
-    const el = $("history-list");
+    const el = need("history-list");
+    if (!el) return;
     el.innerHTML = `<p class="empty">Loading history…</p>`;
     try {
       const data = await Obs.api.traces(604800, 200);
@@ -185,13 +239,16 @@ const App = (() => {
       for (const btn of el.querySelectorAll("[data-replay]")) {
         btn.addEventListener("click", () => startReplay(btn.dataset.replay));
       }
+      dbg("traces", { where: "history", count: (data.runs || []).length });
     } catch (err) {
+      dbg("history-error", { message: err.message });
       el.innerHTML = `<p class="empty" role="alert">History unavailable — ${Obs.esc(err.message)}</p>`;
     }
   }
 
   async function refreshMatters() {
-    const el = $("matters-list");
+    const el = need("matters-list");
+    if (!el) return;
     el.innerHTML = `<p class="empty">Loading matters…</p>`;
     try {
       const data = await Obs.api.sessions(50);
@@ -208,7 +265,9 @@ const App = (() => {
         </article>`;
       }).join("");
       bindCards(el);
+      dbg("traces", { where: "matters", count: sessions.length });
     } catch (err) {
+      dbg("matters-error", { message: err.message });
       el.innerHTML = `<p class="empty" role="alert">Matters unavailable — ${Obs.esc(err.message)}</p>`;
     }
   }
@@ -218,7 +277,8 @@ const App = (() => {
   }
 
   async function refreshMetrics() {
-    const el = $("metrics-grid");
+    const el = need("metrics-grid");
+    if (!el) return;
     el.innerHTML = `<p class="empty">Loading metrics…</p>`;
     try {
       const m = await Obs.api.metrics(604800);
@@ -226,17 +286,20 @@ const App = (() => {
       const docs = Object.entries(m.per_doc_type || {});
       const maxV = Math.max(1, ...verdicts.map(([, v]) => v));
       const maxD = Math.max(1, ...docs.map(([, v]) => v));
-      const bars = (title, entries, max) => {
+      const palette = { CORRECT: "var(--ok)", PARTIAL: "var(--warn)", MISS: "var(--bad)" };
+      const bars = (title, entries, max, useVerdictColors) => {
         if (!entries.length) return "";
         return `<div class="bar-list"><h3>${Obs.esc(title)}</h3>${entries.map(([k, v]) => {
           const label = (meta && meta.doc_classes && meta.doc_classes[k]) || k;
           const pct = Math.round((v / max) * 100);
+          const fill = useVerdictColors ? (palette[k] || "var(--info)") : "var(--info)";
           return `<div class="bar"><span>${Obs.esc(label)}</span>
-            <span class="bar-track"><span class="bar-fill" style="width:${pct}%"></span></span>
+            <span class="bar-track"><span class="bar-fill" style="width:${pct}%;background:${fill}"></span></span>
             <span>${v}</span></div>`;
         }).join("")}</div>`;
       };
-      el.innerHTML = metricTile("Documents", m.total_docs ?? "—")
+      el.innerHTML = `<dl class="metrics">${
+        metricTile("Documents", m.total_docs ?? "—")
         + metricTile("Archived", m.archived ?? "—")
         + metricTile("Review", m.review ?? "—")
         + metricTile("Failed", m.failed ?? "—")
@@ -245,9 +308,10 @@ const App = (() => {
         + metricTile("Tokens", Obs.fmt.tokens(m.total_tokens))
         + metricTile("LLM calls", Obs.fmt.tokens(m.llm_calls))
         + metricTile("Avg quality", m.avg_quality == null ? "—" : Number(m.avg_quality).toFixed(2))
-        + bars("Judge verdicts", verdicts, maxV)
-        + bars("Document types", docs, maxD);
+      }</dl>${bars("Judge verdicts", verdicts, maxV, true)}${bars("Document types", docs, maxD, false)}`;
+      dbg("traces", { where: "metrics", docs: m.total_docs });
     } catch (err) {
+      dbg("metrics-error", { message: err.message });
       el.innerHTML = `<p class="empty" role="alert">Metrics unavailable — ${Obs.esc(err.message)}</p>`;
     }
   }
@@ -271,14 +335,17 @@ const App = (() => {
 
   async function openInspect(traceId) {
     lastFocus = document.activeElement;
-    const dlg = $("inspect-dialog");
-    $("inspect-title").textContent = "Loading trace…";
-    $("inspect-body").innerHTML = `<p>Fetching ${Obs.esc(traceId)} from the live source…</p>`;
+    const dlg = need("inspect-dialog");
+    const title = need("inspect-title");
+    const body = need("inspect-body");
+    if (!dlg || !title || !body) return;
+    title.textContent = "Loading trace…";
+    body.innerHTML = `<p>Fetching ${Obs.esc(traceId)} from the live source…</p>`;
     dlg.showModal();
     try {
       const run = await Obs.api.run(traceId);
       if (run && run.error) throw new Error(run.error);
-      $("inspect-title").textContent = run.filename || run.trace_id;
+      title.textContent = run.filename || run.trace_id;
       const rows = [
         ["Trace", run.trace_id],
         ["Stage", run.stage],
@@ -309,14 +376,16 @@ const App = (() => {
       const scores = scoreEntries(run.scores).map(([k, v]) =>
         `<div class="span"><strong>${Obs.esc(k)}</strong> · ${Obs.esc(fmtScore(v))}</div>`).join("")
         || `<p class="empty">No scores attached</p>`;
-      $("inspect-body").innerHTML = `
+      body.innerHTML = `
         <dl class="kv">${rows.map(([k, v]) => `<dt>${Obs.esc(k)}</dt><dd>${Obs.esc(v == null ? "—" : v)}</dd>`).join("")}</dl>
         <h3>Node spans</h3><div class="stack">${spans}</div>
         <h3>LLM generations</h3><div class="stack">${gens}</div>
         <h3>Scores</h3><div class="stack">${scores}</div>`;
+      dbg("traces", { where: "inspect", id: traceId, spans: (run.spans || []).length });
     } catch (err) {
-      $("inspect-title").textContent = "Trace unavailable";
-      $("inspect-body").innerHTML = `<p role="alert">${Obs.esc(err.message)}</p>`;
+      dbg("detail-error", { id: traceId, message: err.message });
+      title.textContent = "Trace unavailable";
+      body.innerHTML = `<p role="alert">${Obs.esc(err.message)}</p>`;
     }
   }
 
@@ -329,10 +398,34 @@ const App = (() => {
     replayTimers = [];
   }
 
+  function setReplayBar(visible) {
+    const bar = need("replay-bar");
+    if (!bar) return;
+    bar.hidden = !visible;
+    bar.classList.toggle("is-on", !!visible);
+    if (visible) bar.removeAttribute("hidden");
+    else bar.setAttribute("hidden", "");
+  }
+
   function setReplayButtons(on) {
-    $("replay-play").disabled = !on;
-    $("replay-step").disabled = !on;
-    $("replay-stop").disabled = !on;
+    const play = need("replay-play");
+    const step = need("replay-step");
+    const stop = need("replay-stop");
+    if (play) play.disabled = !on;
+    if (step) step.disabled = !on;
+    if (stop) stop.disabled = !on;
+  }
+
+  function setReplayStatus(text) {
+    const el = need("replay-status");
+    if (el) el.textContent = text;
+  }
+
+  function terminalStage(run) {
+    if (!run) return "archived";
+    if (run.needs_human && run.stage !== "failed") return "review";
+    if (run.stage) return run.stage;
+    return "archived";
   }
 
   function sequenceFrom(run) {
@@ -376,8 +469,9 @@ const App = (() => {
     if (idx >= 0) runs[idx] = overlay;
     else runs = [overlay, ...runs];
     renderBoard();
-    $("replay-status").textContent = `Replay · ${replay.filename} · ${stage.replaceAll("_", " ")}`;
+    setReplayStatus(`Replay · ${replay.filename} · ${stage.replaceAll("_", " ")}`);
     announce(`Replay moved to ${stage.replaceAll("_", " ")}`);
+    dbg("replay", { id: replay.id, stage, index: replay.index });
   }
 
   function reducedMotion() {
@@ -386,7 +480,8 @@ const App = (() => {
 
   async function startReplay(traceId) {
     clearReplayTimers();
-    $("replay-status").textContent = "Loading replay…";
+    setReplayBar(true);
+    setReplayStatus("Loading replay…");
     try {
       const run = await Obs.api.run(traceId);
       if (run && run.error) throw new Error(run.error);
@@ -397,13 +492,16 @@ const App = (() => {
         steps: sequenceFrom(run),
         index: 0,
         playing: false,
+        terminal: terminalStage(run),
       };
       setReplayButtons(true);
       switchView("pipeline");
+      setReplayBar(true);
       applyReplayStage(replay.steps[0] ? replay.steps[0].stage : "classify");
       if (!reducedMotion()) playReplay();
     } catch (err) {
-      $("replay-status").textContent = `Replay failed — ${err.message}`;
+      dbg("detail-error", { where: "replay", id: traceId, message: err.message });
+      setReplayStatus(`Replay failed — ${err.message}`);
       showAlert(`Replay failed — ${err.message}`);
     }
   }
@@ -411,7 +509,8 @@ const App = (() => {
   function playReplay() {
     if (!replay || !replay.steps.length) return;
     replay.playing = true;
-    $("replay-play").textContent = "Pause replay";
+    const play = $("replay-play");
+    if (play) play.textContent = "Pause replay";
     scheduleReplay();
   }
 
@@ -419,7 +518,8 @@ const App = (() => {
     if (!replay) return;
     replay.playing = false;
     clearReplayTimers();
-    $("replay-play").textContent = "Play replay";
+    const play = $("replay-play");
+    if (play) play.textContent = "Play replay";
   }
 
   function scheduleReplay() {
@@ -449,21 +549,24 @@ const App = (() => {
 
   function finishReplay() {
     pauseReplay();
-    if (replay) applyReplayStage("archived");
-    $("replay-status").textContent = replay
-      ? `Replay complete — ${replay.filename}`
-      : "Replay complete";
+    const end = replay && replay.terminal ? replay.terminal : "archived";
+    if (replay) applyReplayStage(end);
+    setReplayStatus(replay ? `Replay complete — ${replay.filename}` : "Replay complete");
     announce("Replay complete");
     setReplayButtons(true);
-    $("replay-play").textContent = "Play replay";
+    const play = $("replay-play");
+    if (play) play.textContent = "Play replay";
+    dbg("replay", { phase: "complete", terminal: end });
   }
 
   function stopReplay() {
     pauseReplay();
     replay = null;
     setReplayButtons(false);
-    $("replay-play").textContent = "Play replay";
-    $("replay-status").textContent = "No replay loaded";
+    setReplayBar(false);
+    const play = $("replay-play");
+    if (play) play.textContent = "Play replay";
+    setReplayStatus("No replay loaded");
     refreshTraces();
   }
 
@@ -472,7 +575,9 @@ const App = (() => {
       const data = await Obs.api.traces(604800, 200);
       applyRuns(data.runs || []);
       showAlert("");
+      dbg("traces", { where: "floor", count: (data.runs || []).length });
     } catch (err) {
+      dbg("traces-error", { message: err.message });
       showAlert(`Could not load traces — ${err.message}`);
     }
   }
@@ -481,41 +586,163 @@ const App = (() => {
     try {
       const h = await Obs.api.health();
       const ok = !!(h.ok ?? h.langfuse);
+      dbg("health", { ok, source: h.source, raw: h });
       if (ok) {
-        setSource("live", `Live · source ${h.source || "langfuse"}`);
+        showAlert("");
+        if (!socketLive) setSource("live", `Live · source ${h.source || "langfuse"}`);
         if (!meta) {
-          try { meta = await Obs.api.meta(); } catch (e) { /* non-fatal */ }
+          try {
+            meta = await Obs.api.meta();
+            dbg("meta", { edition: meta.edition, version: meta.version });
+            applyEditionNote();
+          } catch (e) {
+            dbg("error", { where: "meta", message: e && e.message ? e.message : String(e) });
+          }
         }
         return true;
       }
+      socketLive = false;
       setSource("down", "Trace source reported offline");
       return false;
     } catch (err) {
+      socketLive = false;
+      dbg("error", { where: "health", message: err.message });
       setSource("down", `No live connection — ${err.message}`);
-      showAlert("The Observatory needs the Mailroom API (Langfuse-backed) on this host. This is not the GitHub Pages snapshot.");
+      if (!runs.length) {
+        showAlert("The Observatory needs the Mailroom API (Langfuse-backed) on this host. This is not the GitHub Pages snapshot.");
+      }
       return false;
     }
   }
 
   function onMessage(msg) {
     if (msg.type === "status") {
+      socketLive = !!msg.connected;
       if (msg.connected) setSource("live", "Live · WebSocket connected");
       else setSource("stale", "Socket disconnected — reconnecting");
     } else if (msg.type === "snapshot") {
-      if (replay && replay.playing) return;
       applyRuns(msg.runs || []);
       if (msg.stale) setSource("stale", "Live · last snapshot is stale");
     }
   }
 
   function tick() {
-    const d = new Date();
-    $("clock").textContent = d.toLocaleTimeString(undefined, { hour12: false });
+    const el = $("clock");
+    if (!el) return;
+    el.textContent = new Date().toLocaleTimeString(undefined, { hour12: false });
+  }
+
+  function renderDebug() {
+    const D = window.__OBSERVATORY_DEBUG__;
+    const summary = $("dbg-summary");
+    const list = $("dbg-events");
+    const note = $("dbg-note");
+    if (!summary || !list) return;
+    if (!D) {
+      summary.textContent = "Debug module failed to load (hosted/js/debug.js).";
+      list.innerHTML = "";
+      return;
+    }
+    const dump = D.dump();
+    const errors = dump.events.filter((e) => /error|unhandled/i.test(e.kind));
+    const lines = [
+      `generated_at: ${dump.generated_at}`,
+      `href: ${dump.href}`,
+      `viewport: ${dump.viewport.w}×${dump.viewport.h} @${dump.viewport.dpr}`,
+      `reducedMotion: ${dump.reducedMotion}  colorScheme: ${dump.colorScheme}`,
+      `events: ${dump.eventCount}  errors: ${errors.length}`,
+      dump.lastError ? `lastError: ${JSON.stringify(dump.lastError)}` : "lastError: none",
+      dump.lastWs ? `lastWs: ${JSON.stringify(dump.lastWs)}` : "lastWs: none",
+      "",
+      "Pull this from another session:",
+      "  GET  /api/debug/bundle",
+      "  POST /api/debug/client   (this page's Export / Push)",
+      "  window.__OBSERVATORY_DEBUG__.export()",
+    ];
+    summary.textContent = lines.join("\n");
+    const newest = dump.events.slice().reverse();
+    list.innerHTML = newest.map((ev) => {
+      const cls = /error|unhandled/i.test(ev.kind) ? "is-err" : "";
+      const gloss = D.explain(ev);
+      return `<li class="${cls}"><code>${Obs.esc(ev.t)}</code> <strong>${Obs.esc(ev.kind)}</strong>
+        <span>${Obs.esc(gloss)}</span></li>`;
+    }).join("") || "<li>Ring is empty.</li>";
+    if (note) {
+      note.textContent = errors.length
+        ? `${errors.length} error-class event${errors.length === 1 ? "" : "s"} in the ring — read the red rows.`
+        : "No error-class events in the ring.";
+    }
+  }
+
+  function bindDebug() {
+    const D = () => window.__OBSERVATORY_DEBUG__;
+    const note = (msg) => { const el = $("dbg-note"); if (el) el.textContent = msg; };
+    const on = (id, fn) => { const el = $(id); if (el) el.addEventListener("click", fn); };
+    on("dbg-refresh", () => renderDebug());
+    on("dbg-pull", async () => {
+      if (!D()) return;
+      try {
+        const b = await D().pullServer();
+        note(`Pulled server bundle — ${((b && b.server_logs) || []).length} server events, ${((b && b.client_reports) || []).length} client reports.`);
+        renderDebug();
+      } catch (e) { note("Pull failed — " + (e.message || e)); }
+    });
+    on("dbg-push", async () => {
+      if (!D()) return;
+      try {
+        const r = await D().pushClient();
+        note(r && r.ok ? `Pushed client dump. Stored reports: ${r.stored}.` : "Push returned " + JSON.stringify(r));
+        renderDebug();
+      } catch (e) { note("Push failed — " + (e.message || e)); }
+    });
+    on("dbg-export", async () => {
+      if (!D()) return;
+      try {
+        await D().export();
+        note("Exported: server bundle pulled and client dump posted. Copy dump if you need the JSON locally.");
+        renderDebug();
+      } catch (e) { note("Export failed — " + (e.message || e)); }
+    });
+    on("dbg-copy", async () => {
+      if (!D()) return;
+      const text = JSON.stringify(D().dump(), null, 2);
+      try {
+        await navigator.clipboard.writeText(text);
+        note("Copied client dump to clipboard.");
+      } catch (_e) {
+        const sum = $("dbg-summary");
+        if (sum) {
+          sum.textContent = text;
+          sum.focus();
+          document.execCommand("selectAll");
+        }
+        note("Clipboard blocked — dump is in the summary box; copy manually.");
+      }
+    });
+    on("dbg-clear", () => { if (D()) { D().clear(); renderDebug(); } });
+    const verbose = $("dbg-verbose");
+    if (verbose) {
+      verbose.addEventListener("change", () => {
+        if (D()) D().setVerbose(verbose.checked);
+      });
+    }
+    window.addEventListener("obs-debug", () => {
+      if (!$("view-debug") || $("view-debug").hidden) return;
+      renderDebug();
+    });
   }
 
   function boot() {
     tick();
     setInterval(tick, 1000);
+    bindDebug();
+
+    const params = new URLSearchParams(location.search);
+    if (params.get("debug") === "1" && window.__OBSERVATORY_DEBUG__) {
+      window.__OBSERVATORY_DEBUG__.setVerbose(true);
+      const box = $("dbg-verbose");
+      if (box) box.checked = true;
+    }
 
     for (const a of document.querySelectorAll(".view-nav a")) {
       a.addEventListener("click", (ev) => {
@@ -528,14 +755,20 @@ const App = (() => {
         if (radio.checked) { filter = radio.value; renderBoard(); }
       });
     }
-    $("replay-play").addEventListener("click", () => {
-      if (!replay) return;
-      if (replay.playing) pauseReplay();
-      else playReplay();
-    });
-    $("replay-step").addEventListener("click", stepReplay);
-    $("replay-stop").addEventListener("click", stopReplay);
-    $("inspect-dialog").addEventListener("close", closeInspect);
+    const play = $("replay-play");
+    if (play) {
+      play.addEventListener("click", () => {
+        if (!replay) return;
+        if (replay.playing) pauseReplay();
+        else playReplay();
+      });
+    }
+    const step = $("replay-step");
+    if (step) step.addEventListener("click", stepReplay);
+    const stop = $("replay-stop");
+    if (stop) stop.addEventListener("click", stopReplay);
+    const dlg = $("inspect-dialog");
+    if (dlg) dlg.addEventListener("close", closeInspect);
 
     window.addEventListener("hashchange", () => {
       switchView(location.hash.replace("#", "") || "pipeline");
@@ -543,11 +776,14 @@ const App = (() => {
 
     document.addEventListener("keydown", (ev) => {
       if (ev.target && ["INPUT", "TEXTAREA", "SELECT"].includes(ev.target.tagName)) return;
-      const map = { "1": "pipeline", "2": "review", "3": "history", "4": "matters", "5": "metrics" };
+      const map = { "1": "pipeline", "2": "review", "3": "history", "4": "matters", "5": "metrics", "6": "debug" };
       if (map[ev.key]) switchView(map[ev.key]);
     });
 
-    switchView(location.hash.replace("#", "") || "pipeline");
+    const initial = params.get("debug") === "1"
+      ? "debug"
+      : (location.hash.replace("#", "") || "pipeline");
+    switchView(initial);
 
     checkHealth().then((ok) => {
       if (!ok) return;

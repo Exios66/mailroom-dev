@@ -75,8 +75,8 @@ mailroom-tui              # AgentLab-style live console (same data, in a termina
   generation latency, judge-verdict mix, per-doc-type counts.
 - **CONSOLE** — a live scrolling log of the pipeline, AgentLaboratory-style.
 - **OBSERVATORY** (`/live`, `mailroom-hosted`) — the **hosted** edition: a
-  modern, accessible public desk (semantic HTML, keyboard views `1`–`5`,
-  native inspect dialog, paced replay). Same live traces and replay as the
+  modern, accessible public desk (semantic HTML, keyboard views `1`–`6`,
+  native inspect dialog, paced replay, Debug desk). Same live traces and replay as the
   console; different surface, different URL. Not GitHub Pages.
 - **TUI** (`mailroom-tui`) — the same pipeline in a terminal: per-doc tables,
   `*** Beginning station: ... ***` banners as runs arrive and advance, judge
@@ -206,7 +206,10 @@ root is left untouched). Re-run any time to refresh the snapshot.
 **Debug console for agents:** every fetch, WS frame, error, and console line
 lands in a client-side ring buffer at `window.__MAILROOM_DEBUG__`
 (`dump()`, clipboard copy, `export()` → `mailroom-debug.json`); `?debug=1`
-or the CONSOLE tab's DEBUG toggle enables verbose capture. Server side,
+or the CONSOLE tab's DEBUG toggle enables verbose capture. The hosted
+Observatory has a parallel suite: `window.__OBSERVATORY_DEBUG__`, Debug desk
+`#debug` (`?debug=1`), `GET /api/debug/bundle` (health + source + server
+ring + last client dumps), and `POST /api/debug/client`. Server side,
 `GET /api/debug/logs?limit=` serves an always-on request ring buffer,
 `GET /api/debug/source` reports configured sources/knobs, `MAILROOM_DEBUG=1`
 turns on verbose stdout logging, and `/api/meta` carries a machine-readable

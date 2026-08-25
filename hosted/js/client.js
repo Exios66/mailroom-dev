@@ -1,6 +1,12 @@
 /* Mailroom Observatory client — same-origin API + WebSocket.
  * Langfuse (or the configured source) remains the only display source. */
 const Obs = (() => {
+  function dbg(kind, payload) {
+    try {
+      if (window.ObservatoryDebug) window.ObservatoryDebug.record(kind, payload);
+    } catch (_e) { /* debug module optional */ }
+  }
+
   async function get(path) {
     const res = await fetch(path, { headers: { Accept: "application/json" } });
     if (!res.ok) {
@@ -8,8 +14,10 @@ const Obs = (() => {
       try {
         const body = await res.json();
         detail = body && body.detail ? ` — ${body.detail}` : "";
-      } catch (e) { /* non-JSON */ }
-      throw new Error(`HTTP ${res.status} ${path}${detail}`);
+      } catch (e) { /* non-JSON error body */ }
+      const err = new Error(`HTTP ${res.status} ${path}${detail}`);
+      dbg("fetch-error", { url: path, status: res.status, message: err.message, where: "Obs.get" });
+      throw err;
     }
     return res.json();
   }
@@ -66,6 +74,17 @@ const Obs = (() => {
     return `${proto}://${location.host}/ws`;
   }
 
+  let lastWs = null;
+
+  function wsState() {
+    if (!lastWs) return "closed";
+    const s = lastWs.readyState;
+    if (s === 0) return "connecting";
+    if (s === 1) return "open";
+    if (s === 2) return "closing";
+    return "closed";
+  }
+
   function connectWS(onMessage) {
     let ws = null;
     let retry = 0;
@@ -74,24 +93,40 @@ const Obs = (() => {
       clearTimeout(timer);
       try { if (ws) ws.close(); } catch (e) { /* noop */ }
       ws = new WebSocket(wsURL());
+      lastWs = ws;
+      dbg("ws", { phase: "connecting", url: wsURL() });
       ws.onopen = () => {
         retry = 0;
+        dbg("ws", { phase: "open" });
         onMessage({ type: "status", connected: true });
       };
       ws.onmessage = (ev) => {
-        try { onMessage(JSON.parse(ev.data)); }
-        catch (e) { console.error("non-JSON WS frame"); }
+        try {
+          const msg = JSON.parse(ev.data);
+          const n = msg && msg.runs ? msg.runs.length : undefined;
+          dbg("ws", { phase: "message", type: msg && msg.type, runs: n, stale: !!(msg && msg.stale) });
+          onMessage(msg);
+        } catch (e) {
+          dbg("ws-error", { phase: "bad-json", message: e && e.message ? e.message : String(e) });
+        }
       };
-      ws.onclose = () => {
+      ws.onclose = (ev) => {
+        dbg("ws-error", { phase: "close", code: ev.code, reason: ev.reason || "", wasClean: ev.wasClean });
         onMessage({ type: "status", connected: false });
         const delay = Math.min(30000, 1000 * 2 ** retry++);
         timer = setTimeout(open, delay);
       };
-      ws.onerror = () => { try { ws.close(); } catch (e) { /* noop */ } };
+      ws.onerror = () => {
+        dbg("ws-error", { phase: "error", readyState: ws && ws.readyState });
+        try { ws.close(); } catch (e) { /* noop */ }
+      };
     }
     open();
-    return { close: () => { clearTimeout(timer); try { ws && ws.close(); } catch (e) { /* noop */ } } };
+    return {
+      close: () => { clearTimeout(timer); try { ws && ws.close(); } catch (e) { /* noop */ } },
+      state: wsState,
+    };
   }
 
-  return { api, fmt, esc, connectWS };
+  return { api, fmt, esc, connectWS, wsState };
 })();
