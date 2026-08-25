@@ -7,7 +7,7 @@ The-Mailroom is the **visual engine** for the `llm-mailroom` multi-agent legal-d
 - **Expected location**: a sibling of this repo, i.e. `../llm-mailroom` from this checkout (e.g. `/Users/luciusjmorningstar/Downloads/llm-mailroom`). It is **not currently present on this machine** — clone it before relying on `MAILROOM_TAXONOMY`.
 - It is the **upstream**: The-Mailroom reads *its* Langfuse project (US cloud, project `llm-mailroom`). Its `AGENTS.md` is authoritative for pipeline internals; consult it whenever the pipeline's tracing contract is in doubt.
 - **What we mirror from it, and must keep in sync (the #1 maintenance duty)** — when the pipeline changes, update all of these in one change:
-  - `mailroom_ui/pipeline_schema.py` — mirrors `src/graph/routing.py` + `src/config/taxonomy.yaml`: node/span names (`SPAN_STAGE_MAP`), stage→phase map, node order, agent roster (15 agents incl. `sorter_reviewer`, `arbiter`, `judge`, `insurance_claims_specialist`), `DOC_CLASSES` (7 classes incl. `court_opinion`, `insurance_claim`), `SPECIALIST_BY_DOC_CLASS`, confidence thresholds (+ `judge_band_high`).
+  - `mailroom_ui/pipeline_schema.py` — mirrors `src/graph/routing.py` + `src/config/taxonomy.yaml`: node/span names (`SPAN_STAGE_MAP` incl. `normalize-intake`), stage→phase map, node order, agent roster (16 agents incl. `intake`, `sorter_reviewer`, `arbiter`, `judge`, `insurance_claims_specialist`), `DOC_CLASSES` (7 classes incl. `court_opinion`, `insurance_claim`), `SPECIALIST_BY_DOC_CLASS`, confidence thresholds (+ `judge_band_high`).
   - `mailroom_ui/trace_interpreter.py` — maps its span names, trace metadata/input/output fields, and score names (`JUDGE_VERDICT_SCORES` = `mailroom-pipeline-judge`, `JUDGE_QUALITY_SCORES` = `mailroom-pipeline-quality`).
   - Tests — `tests/fake_langfuse.py` fixtures mirror the trace contract.
   - CHANGELOG entry for the sync (see Release process).
@@ -23,6 +23,9 @@ python -m server.main          # FastAPI web server on :8001 (also: mailroom-web
 mailroom-hosted                # Observatory on 0.0.0.0 (public /live UI)
 mailroom-tui                   # TUI console (planned, M4)
 python scripts/seed_demo.py    # seed demo traces INTO Langfuse (planned, M5)
+python scripts/run_production_pilot.py --check   # HF subset + eval scorer (needs sibling llm-mailroom)
+python scripts/run_production_pilot.py --real    # live Qwen 3.7-Flash pilot → Langfuse, then eval
+python scripts/eval_pipeline.py --session pilot-hf-...   # score existing traces vs docclass-merged GT
 python scripts/release.py --help     # semver release workflow (see below)
 scripts/publish_pages.sh       # build site/ + push gh-pages:/docs (NO Actions;
                                # one-time UI toggle: Pages → gh-pages → /docs)

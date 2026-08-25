@@ -16,6 +16,7 @@ from .models import Phase, Stage
 
 SPAN_STAGE_MAP: dict[str, Stage] = {
     "ingest-document": Stage.INGEST,
+    "normalize-intake": Stage.INGEST,
     "transcribe-pdf": Stage.INGEST,
     "extract-image-text": Stage.INGEST,
     "classify-document": Stage.CLASSIFY,
@@ -71,6 +72,7 @@ NODE_ORDER: list[Stage] = [
 # their doc classes no longer exist in the pilot universe (docclass-pilot).
 AGENTS: dict[str, dict[str, str]] = {
     "sorter": {"label": "Sorter", "role": "classify"},
+    "intake": {"label": "Intake", "role": "prepare"},
     "sorter_reviewer": {"label": "Sorter Reviewer", "role": "review-classify"},
     "contracts_specialist": {"label": "Contracts", "role": "extract"},
     "corporate_records_specialist": {"label": "Corporate", "role": "extract"},

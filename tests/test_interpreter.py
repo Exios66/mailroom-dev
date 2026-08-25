@@ -392,8 +392,10 @@ def test_schema_mirror_covers_upstream_contract():
     for span in ("judge-verify", "arbitrate-verdict"):
         assert span in ps.SPAN_STAGE_MAP
     for agent in ("sorter_reviewer", "arbiter", "insurance_claims_specialist",
-                  "image_extractor"):
+                  "image_extractor", "intake"):
         assert agent in ps.AGENTS
+    assert "normalize-intake" in ps.SPAN_STAGE_MAP
+    assert ps.SPAN_STAGE_MAP["normalize-intake"] == Stage.INGEST
     assert "image-extractor" not in ps.AGENTS
     assert ps.DOC_CLASSES["insurance_claim"] == "Insurance Claim"
     assert ps.SPECIALIST_BY_DOC_CLASS["insurance_claim"] == "insurance_claims_specialist"

@@ -19,6 +19,15 @@ All notable changes to The-Mailroom are documented here, following
 - **Pilot-run floor video** — `docs/demos/pilot-run-documents-through-pipeline.mp4`
   (~25s) shows five envelopes sliding the conveyor (REVIEW siding + a failed
   corporate record). Re-record with `scripts/demo_pilot_run.py`.
+- **Production HF pipeline eval** — `scripts/eval_pipeline.py` scores Langfuse
+  `document-pipeline` traces against `Lucius-Morningstar/docclass-merged`
+  ground truth (exact + aligned accuracy; merger_agreement≡contract).
+  `scripts/run_production_pilot.py` drives a Qwen 3.7-Flash subset through
+  sibling `llm-mailroom` (`src/scripts/run_hf_pilot.py`). Intake clerk span
+  `normalize-intake` maps to INGEST; agent `intake` added to the roster.
+  Live Qwen 3.7-Flash subset of `docclass-merged` scored exact 0.80 /
+  aligned 1.00; insurance claims with `adjuster: null` were the production
+  schema miss that parked CMS-style rows in REVIEW.
 
 ### Fixed
 

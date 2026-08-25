@@ -78,8 +78,9 @@ trace, showing the latest run.
 ## Pipeline topology mirror
 
 `pipeline_schema.py` bundles a mirror of the pipeline's graph
-(`src/graph/routing.py` + `src/config/taxonomy.yaml`): node/span names,
-stage→phase mapping, node order, agent roster (15 agents), doc classes
+(`src/graph/routing.py` + `src/config/taxonomy.yaml`): node/span names
+(including `normalize-intake` → INGEST), stage→phase mapping, node order,
+agent roster (16 agents incl. `intake`), doc classes
 (7, incl. `court_opinion` and `insurance_claim`), specialist dispatch, and
 confidence thresholds (incl. `judge_band_high`). The `MAILROOM_TAXONOMY` env
 var can point at the live
