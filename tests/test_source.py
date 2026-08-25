@@ -7,7 +7,7 @@ import pytest
 
 from mailroom_ui.langfuse_source import LangfuseSource, LangfuseUnavailable, list_recent_runs
 from mailroom_ui.models import PipelineRun
-from tests.fake_langfuse import FakeClient, make_trace
+from tests.fake_langfuse import FakeClient, Obj, make_trace
 
 
 def _source(traces, cache_ttl=0, poll_cache_ttl=0):
@@ -49,6 +49,22 @@ def test_sessions():
     assert len(sessions) == 2
     traces = src.get_session_traces("M-1")
     assert len(traces) == 1
+
+
+def test_v4_session_get_uses_traces_and_no_limit_argument():
+    trace = make_trace("t-v4-session", matter_id="M-V4")
+    client = FakeClient([trace])
+
+    class V4Sessions:
+        def get(self, session_id):
+            assert session_id == "M-V4"
+            return Obj(id=session_id, traces=[trace])
+
+    client.api.sessions = V4Sessions()
+    src = LangfuseSource(client=client, cache_ttl=0, poll_cache_ttl=0)
+
+    traces = src.get_session_traces("M-V4")
+    assert [t["id"] for t in traces] == ["t-v4-session"]
 
 
 def test_list_traces_name_filter_passed_to_client():

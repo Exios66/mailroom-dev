@@ -52,6 +52,7 @@ def main() -> int:
     parser.add_argument("--per-class", type=int, default=1)
     parser.add_argument("--split", default="train")
     parser.add_argument("--max-chars", type=int, default=25000)
+    parser.add_argument("--target-chars", type=int, default=6000)
     args = parser.parse_args()
     if not args.real and not args.check:
         parser.error("choose --check or --real")
@@ -91,7 +92,8 @@ def main() -> int:
     else:
         cmd.append("--real")
     cmd += ["--per-class", str(args.per_class), "--split", args.split,
-            "--max-chars", str(args.max_chars)]
+            "--max-chars", str(args.max_chars),
+            "--target-chars", str(args.target_chars)]
     print(f"pipeline {pipe}")
     print(" ".join(cmd))
     proc = subprocess.run(cmd, cwd=str(pipe), env={**env, "PYTHONPATH": str(pipe / "src")})

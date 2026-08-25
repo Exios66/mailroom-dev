@@ -133,6 +133,18 @@ def _as_dict(value):
     return {}
 
 
+def _score_map(scores: list[dict]) -> dict:
+    """Latest value per score name (Langfuse returns newest-first)."""
+    out = {}
+    for score in scores or []:
+        if not isinstance(score, dict):
+            continue
+        name = score.get("name")
+        if name and name not in out:
+            out[name] = score.get("value")
+    return out
+
+
 def traces_to_rows(traces: list[dict]) -> list[dict]:
     rows = []
     for t in traces:
@@ -140,7 +152,7 @@ def traces_to_rows(traces: list[dict]) -> list[dict]:
         out = t.get("output") if isinstance(t.get("output"), dict) else {}
         meta = t.get("metadata") if isinstance(t.get("metadata"), dict) else {}
         filename = inp.get("filename") or meta.get("filename")
-        scores = {s.get("name"): s.get("value") for s in (t.get("scores") or []) if isinstance(s, dict)}
+        scores = _score_map(t.get("scores") or [])
         predicted = out.get("doc_type")
         expected = (
             (out.get("ground_truth") or {}).get("expected_hf_class")
@@ -175,7 +187,10 @@ def traces_to_rows(traces: list[dict]) -> list[dict]:
             "session": t.get("sessionId") or t.get("session_id"),
             "environment": t.get("environment"),
             "tags": t.get("tags"),
-            "seconds": seconds,
+            # Trace.updatedAt also moves when asynchronous evaluators attach
+            # scores, so it is not pipeline latency. Prefer the explicit
+            # end-to-end score emitted before the trace closes.
+            "seconds": scores.get("run_duration_seconds") or seconds,
             "intake_changed": False,
             "intake_messy": False,
         }
@@ -240,11 +255,17 @@ def enrich_intake(rows: list[dict]) -> list[dict]:
             row["error"] = out.get("error_message") or out.get("error")
         if row.get("extracted_data") is None:
             row["extracted_data"] = out.get("extracted_data")
-        scores = {s.get("name"): s.get("value") for s in (detail.get("scores") or []) if isinstance(s, dict)}
-        row["cost_usd"] = row.get("cost_usd") or scores.get("estimated_cost_usd")
-        row["total_tokens"] = row.get("total_tokens") or scores.get("total_tokens")
-        row["verdict"] = row.get("verdict") or scores.get("mailroom-pipeline-judge")
-        row["quality"] = row.get("quality") or scores.get("mailroom-pipeline-quality")
+        scores = _score_map(detail.get("scores") or [])
+        if scores.get("estimated_cost_usd") is not None:
+            row["cost_usd"] = scores["estimated_cost_usd"]
+        if scores.get("total_tokens") is not None:
+            row["total_tokens"] = scores["total_tokens"]
+        if scores.get("run_duration_seconds") is not None:
+            row["seconds"] = scores["run_duration_seconds"]
+        if scores.get("mailroom-pipeline-judge") is not None:
+            row["verdict"] = scores["mailroom-pipeline-judge"]
+        if scores.get("mailroom-pipeline-quality") is not None:
+            row["quality"] = scores["mailroom-pipeline-quality"]
     return rows
 
 

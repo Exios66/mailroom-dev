@@ -70,6 +70,67 @@ def test_archived_run_full():
     assert run.needs_human is False
 
 
+def test_pipeline_duration_score_overrides_reused_trace_latency():
+    trace = make_trace("t-reused-latency")
+    trace["latency"] = 1600.0
+    trace["scores"].append(
+        {"name": "run_duration_seconds", "value": 26.4, "data_type": "NUMERIC"}
+    )
+
+    run = _run(trace)
+
+    assert run.latency == 26.4
+
+
+def test_reused_trace_uses_newest_run_metric_scores():
+    trace = make_trace("t-reused-scores")
+    trace["scores"].extend([
+        {
+            "name": "run_duration_seconds",
+            "value": 12.7,
+            "data_type": "NUMERIC",
+            "timestamp": "2026-08-25T04:42:36Z",
+        },
+        {
+            "name": "total_tokens",
+            "value": 10722,
+            "data_type": "NUMERIC",
+            "timestamp": "2026-08-25T04:42:36Z",
+        },
+        {
+            "name": "estimated_cost_usd",
+            "value": 0.0005,
+            "data_type": "NUMERIC",
+            "timestamp": "2026-08-25T04:42:36Z",
+        },
+        {
+            "name": "llm_call_count",
+            "value": 3,
+            "data_type": "NUMERIC",
+            "timestamp": "2026-08-25T04:42:36Z",
+        },
+        {
+            "name": "run_duration_seconds",
+            "value": 24.6,
+            "data_type": "NUMERIC",
+            "timestamp": "2026-08-25T04:38:26Z",
+        },
+        {
+            "name": "total_tokens",
+            "value": 7748,
+            "data_type": "NUMERIC",
+            "timestamp": "2026-08-25T04:38:26Z",
+        },
+    ])
+
+    run = _run(trace)
+
+    assert run.latency == 12.7
+    assert run.total_tokens == 10722
+    assert run.cost_usd == 0.0005
+    assert run.llm_call_count == 3
+
+
 def test_review_stage():
     trace = make_trace(
         "t-review",

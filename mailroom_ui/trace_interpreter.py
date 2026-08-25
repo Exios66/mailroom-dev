@@ -405,12 +405,14 @@ def interpret_trace(
     generations = _latest_cluster(generations, get_start=lambda g: g.start_time)
 
     score_map: dict[str, Any] = {}
+    score_stamps: dict[str, datetime | None] = {}
     score_objects: list[Score] = []
     for raw in scores:
         s = _as_dict(raw)
         name = _clean(s.get("name"))
         if not name:
             continue
+        stamp = parse_dt(_pick(s, "timestamp", "created_at", "createdAt"))
         value = s.get("value")
         data_type = _clean(_both(s, "data_type", "dataType"))
         score_objects.append(
@@ -430,7 +432,21 @@ def interpret_trace(
                 if float(cat.get("value")) == float(value):
                     value = cat.get("label")
                     break
+        if name in score_map:
+            previous = score_stamps.get(name)
+            # Langfuse returns scores newest-first. Timestamps make this
+            # explicit; timestamp-less duplicate fixtures retain first-wins.
+            if stamp is None or (previous is not None and stamp <= previous):
+                continue
         score_map[name] = value
+        score_stamps[name] = stamp
+
+    scored_duration = _float(score_map.get("run_duration_seconds"))
+    if scored_duration is not None:
+        # Deterministic trace IDs are reused across pilot runs. The trace-level
+        # latency can therefore span multiple attempts and later evaluator
+        # updates; this score is the end-to-end duration of the latest run.
+        latency = scored_duration
 
     stage = derive_stage(t_output, spans, schema=schema)
     routing_path = build_routing_path(spans)
@@ -463,8 +479,29 @@ def interpret_trace(
                 quality = None
             break
 
-    total_tokens = sum(g.usage_total_tokens or 0 for g in generations)
-    cost = sum(g.cost_usd or 0 for g in generations)
+    scored_tokens = _int(score_map.get("total_tokens"))
+    generated_tokens = sum(g.usage_total_tokens or 0 for g in generations)
+    total_tokens = (
+        scored_tokens
+        if scored_tokens is not None
+        and (score_stamps.get("total_tokens") is not None or generated_tokens == 0)
+        else generated_tokens
+    )
+    scored_cost = _float(score_map.get("estimated_cost_usd"))
+    generated_cost = sum(g.cost_usd or 0 for g in generations)
+    cost = (
+        scored_cost
+        if scored_cost is not None
+        and (score_stamps.get("estimated_cost_usd") is not None or generated_cost == 0)
+        else generated_cost
+    )
+    scored_calls = _int(score_map.get("llm_call_count"))
+    llm_call_count = (
+        scored_calls
+        if scored_calls is not None
+        and (score_stamps.get("llm_call_count") is not None or not generations)
+        else len(generations)
+    )
 
     run = PipelineRun(
         trace_id=str(trace.get("id") or ""),
@@ -497,7 +534,7 @@ def interpret_trace(
         routing_path=routing_path,
         verdict=verdict,
         quality=quality,
-        llm_call_count=len(generations),
+        llm_call_count=llm_call_count,
         total_tokens=total_tokens,
         cost_usd=cost,
     )

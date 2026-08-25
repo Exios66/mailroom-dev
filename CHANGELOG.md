@@ -27,7 +27,17 @@ All notable changes to The-Mailroom are documented here, following
   `normalize-intake` maps to INGEST; agent `intake` added to the roster.
   Live Qwen 3.7-Flash subset of `docclass-merged` scored exact 0.80 /
   aligned 1.00; insurance claims with `adjuster: null` were the production
-  schema miss that parked CMS-style rows in REVIEW.
+  schema miss that parked CMS-style rows in REVIEW. Evaluator latency now
+  reads the explicit `run_duration_seconds` score instead of trace
+  `updatedAt`, which can move when asynchronous evaluators attach scores.
+- **Fully patched production rerun** — Langfuse session
+  `pilot-hf-20260825T044207Z` ran five representative
+  `docclass-merged` documents through Qwen 3.7-Flash: all five archived,
+  exact accuracy 0.80 / aligned accuracy 1.00, 113,059 tokens, $0.0045,
+  and 22.94s mean pipeline latency. The Langfuse v4 session-detail adapter
+  and reused-trace newest-score selection were fixed during viewer
+  verification; tracked report:
+  `docs/reports/evaluations/hf-pilot-20260825T044407Z.{md,json}`.
 
 ### Fixed
 

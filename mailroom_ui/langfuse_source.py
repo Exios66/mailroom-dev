@@ -414,11 +414,29 @@ class LangfuseSource:
         if cached is not None:
             return cached
         try:
-            resp = self._guarded("sessions.get",
-                                 lambda: self._api("sessions").get(session_id, limit=limit))
+            sessions_api = self._api("sessions")
+            try:
+                # v2/v3 paginated surface.
+                resp = self._guarded(
+                    "sessions.get",
+                    lambda: sessions_api.get(session_id, limit=limit),
+                )
+            except LangfuseUnavailable as exc:
+                # v4 SessionsClient.get(id) removed `limit` and returns a
+                # SessionWithTraces whose list lives on `.traces`, not `.data`.
+                if not isinstance(exc.__cause__, TypeError):
+                    raise
+                resp = self._guarded(
+                    "sessions.get",
+                    lambda: sessions_api.get(session_id),
+                )
         except LangfuseUnavailable:
             return []
-        out = [_to_dict(t) for t in _page_data(resp)]
+        traces = getattr(resp, "traces", None)
+        if traces is None and isinstance(resp, dict):
+            traces = resp.get("traces")
+        raw = traces if isinstance(traces, list) else _page_data(resp)
+        out = [_to_dict(t) for t in raw[:limit]]
         self.cache.set(key, out, self.cache_ttl)
         return out
 

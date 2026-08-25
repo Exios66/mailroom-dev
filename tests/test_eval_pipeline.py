@@ -60,3 +60,33 @@ def test_attach_manifest_joins_trace_id_and_local_filename():
     assert out[0]["aligned_ok"] is True
     assert out[0]["exact_ok"] is False
     assert out[1]["expected"] is None
+
+
+def test_trace_latency_prefers_pipeline_duration_score():
+    from scripts.eval_pipeline import traces_to_rows
+
+    rows = traces_to_rows([
+        {
+            "id": "trace-1",
+            "timestamp": "2026-08-25T04:00:00Z",
+            "updatedAt": "2026-08-25T04:20:00Z",
+            "input": {"filename": "doc.txt"},
+            "output": {"stage": "archived", "doc_type": "contract"},
+            "scores": [
+                {"name": "run_duration_seconds", "value": 12.5},
+            ],
+        }
+    ])
+
+    assert rows[0]["seconds"] == 12.5
+
+
+def test_eval_score_map_keeps_newest_duplicate():
+    from scripts.eval_pipeline import _score_map
+
+    scores = [
+        {"name": "total_tokens", "value": 10722},
+        {"name": "total_tokens", "value": 7748},
+    ]
+
+    assert _score_map(scores)["total_tokens"] == 10722
