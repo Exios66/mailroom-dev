@@ -287,7 +287,9 @@ class FakeSessionsApi:
 
 class FakeClient:
     def __init__(self, traces: list[dict] | None = None):
-        self.traces = traces or []
+        # `traces or []` would replace a caller-owned EMPTY list (falsy) with
+        # a new one, so a later append never showed up on the API.
+        self.traces = traces if traces is not None else []
         self.api = Obj(
             trace=FakeTraceApi(self.traces),
             observations=FakeObservationsApi(self.traces),

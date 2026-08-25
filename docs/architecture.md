@@ -143,3 +143,12 @@ server request ring at `/api/debug/logs?limit=`, source introspection at
 dumps at `GET|POST /api/debug/client`, verbose stdout via
 `MAILROOM_DEBUG=1`, and a machine-readable endpoint index in `/api/meta`.
 Snapshot builds add `debug/build-info.json`.
+
+## Demos & screenshots
+
+Stills of every pixel / Observatory / TUI desk live in `docs/screenshots/`.
+The PR desk walkthrough (`docs/demos/tui-server-observatory-desk-walkthrough.mp4`)
+and the gallery notebook (`docs/demos/The-Mailroom-Demos.ipynb`) live next
+to them. Index: `docs/demos.md` / wiki `Demos`. These are
+documentation of the live surfaces — not a canned UI fallback.
+

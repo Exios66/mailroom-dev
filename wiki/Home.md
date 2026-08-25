@@ -33,4 +33,5 @@ is the LegalBench eval sibling. Full map:
 
 - [Home](Home) — overview, quick start, sister-repo pointer
 - [Architecture](Architecture) — how traces become pixels
+- [Demos](Demos) — stills of every desk + the PR walkthrough video
 - [Releases](Releases) — semantic versioning, changelog, tagging process

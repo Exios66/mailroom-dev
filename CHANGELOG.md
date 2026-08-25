@@ -12,6 +12,13 @@ All notable changes to The-Mailroom are documented here, following
   SESSIONS / METRICS / CONSOLE), the hosted Observatory (pipeline / review /
   metrics / debug), and TUI desks, with collapsible `<details>` sections for
   the rest of the documentation.
+- **Demos notebook + PR walkthrough video** — `docs/demos/The-Mailroom-Demos.ipynb`
+  galleries every still; `docs/demos/tui-server-observatory-desk-walkthrough.mp4`
+  is the ~56s desk recording (pixel then Observatory). Index:
+  `docs/demos.md` / wiki `Demos`.
+- **Pilot-run floor video** — `docs/demos/pilot-run-documents-through-pipeline.mp4`
+  (~25s) shows five envelopes sliding the conveyor (REVIEW siding + a failed
+  corporate record). Re-record with `scripts/demo_pilot_run.py`.
 
 ### Fixed
 
@@ -35,6 +42,9 @@ All notable changes to The-Mailroom are documented here, following
   6 hours. All four now default to 7 days (`MAILROOM_RECENT_WINDOW`,
   `MAILROOM_TRACE_LIMIT` 200) so FLOOR / HISTORY / TUI / Observatory show
   the same runs.
+- **FakeClient discarded an empty traces list** — `traces or []` replaced a
+  caller-owned `[]` with a new list, so `scripts/demo_pilot_run.py` appended
+  envelopes the API never saw.
 - **SPA: REVIEW tab TypeError (live + GH Pages)** — `Mailroom.api.reviewQueue`
   dispatched the string `"review-queue"` but both the live and snapshot
   clients are keyed `reviewQueue`, so every REVIEW refresh threw
