@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Graph Report — llm-mailroom</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='14'%3E%F0%9F%A6%89%3C/text%3E%3C/svg%3E">
 <style>
 :root{--bg:#0b1220;--panel:#0f172a;--panel2:#111c33;--line:rgba(148,163,184,.15);
 --txt:#e2e8f0;--mut:#94a3b8;--dim:#64748b;--acc:#34d399;--acc2:#38bdf8;
@@ -94,12 +95,13 @@ border:1px solid rgba(52,211,153,.4);color:var(--acc);text-decoration:none;font-
 border-radius:10px;padding:.6rem 1.1rem;transition:all .15s}
 .graphbtn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(52,211,153,.15)}
 </style>
-</head>
+
 <body>
 <div id="progress"></div>
 <header class="top"><div class="topin">
 <span class="brand">🦉 llm-mailroom · graph report</span>
 <nav>
+<a href="./">map</a><a href="./tree.html">tree</a>
 <a href="#stats">stats</a><a href="#hubs">hubs</a><a href="#gods">god nodes</a>
 <a href="#conns">connections</a><a href="#communities">communities</a>
 <a href="#gaps">gaps</a><a href="#questions">questions</a>
@@ -107,707 +109,510 @@ border-radius:10px;padding:.6rem 1.1rem;transition:all .15s}
 <div class="searchwrap"><input id="search" type="search" placeholder="filter communities… ( / )" aria-label="Filter communities"></div>
 </div></header>
 <main>
-
 <section class="hero" id="stats">
 <h1>Knowledge Graph Report — <em>llm-mailroom</em></h1>
 <div class="meta">
-<span class="pill">built <b>2026-08-21</b></span>
-<span class="pill">commit <b>df7dea6a</b></span>
-<span class="pill green badge">EXTRACTED 97%</span>
-<span class="pill amber badge">INFERRED 3%</span>
-<span class="pill">token cost <b>0 in / 0 out</b> — fully local build</span>
+<span class="pill">built <b>2026-08-26</b></span>
+<span class="pill">commit <b>30ff6874</b></span>
+<span class="pill green badge">code-only AST</span>
+<span class="pill">production <b>src/</b> · tests/notebooks/.opencode excluded</span>
+<span class="pill">graphify <b>0.9.50</b></span>
 </div>
 <div class="tiles">
-<div class="tile"><div class="tile-v"><span class="num" data-count="2022">0</span></div><div class="tile-l">nodes</div></div>
-<div class="tile"><div class="tile-v"><span class="num" data-count="4318">0</span></div><div class="tile-l">edges</div></div>
-<div class="tile"><div class="tile-v"><span class="num" data-count="115">0</span></div><div class="tile-l">communities</div><div class="tile-s">103 shown · 12 thin omitted</div></div>
-<div class="tile"><div class="tile-v"><span class="num" data-count="134">0</span></div><div class="tile-l">inferred edges</div><div class="tile-s">avg confidence 0.91</div></div>
+<div class="tile"><div class="tile-v"><span class="num" data-count="1422">0</span></div><div class="tile-l">nodes</div></div>
+<div class="tile"><div class="tile-v"><span class="num" data-count="3346">0</span></div><div class="tile-l">edges</div></div>
+<div class="tile"><div class="tile-v"><span class="num" data-count="92">0</span></div><div class="tile-l">communities</div><div class="tile-s">68 shown · 24 thin omitted</div></div>
+<div class="tile"><div class="tile-v"><span class="num" data-count="108">0</span></div><div class="tile-l">source files</div><div class="tile-s">production Python only</div></div>
 </div>
-<p style="margin-top:1.4rem"><a class="graphbtn" href="./">↗ Open the interactive graph</a></p>
+<p style="margin-top:1.4rem"><a class="graphbtn" href="./">↗ Open the architecture map</a>
+<a class="graphbtn" href="./tree.html" style="margin-left:.5rem">🌳 Module tree</a></p>
 </section>
 
 <section id="fresh">
-<h2>Freshness</h2>
+<h2>What changed</h2>
 <div class="panel note">
-Built from commit <code>df7dea6a</code>. After code changes rebuild with
-<code>graphify update .</code> in the repo root — incremental, still zero API cost.
-Compare against <code>git rev-parse HEAD</code> to check staleness.
+<p>Rebuilt from <a href="https://github.com/Exios66/llm-mailroom/commit/30ff68741cdc7973e15a1292d539cfe8a94e8665"><code>30ff6874</code></a> (was <code>df7dea6a</code>, 32 commits behind).
+The previous graph mixed tests, notebooks, and vendored OpenRouter skill scripts into 2,022 unlabeled nodes —
+communities were named after <code>conftest.py</code> and <code>resolve-model.ts</code>, which made the map a hairball.</p>
+<p style="margin-top:.7rem">This build indexes <b>production <code>src/</code> only</b> (108 files) so the map follows the live architecture:
+insurance-claim specialist, intake clerk, HF docclass pilot, API <code>/v1</code>, unknown-type routing, Hub CUAD/MAUD inventories,
+and Langfuse batching/env/release alignment. Tests, notebooks, and <code>.opencode/skills</code> are excluded on purpose.</p>
+<p style="margin-top:.7rem">Navigate the <a href="./">architecture map</a> as <b>layers → modules → symbols</b>.
+The 13-node conveyor strip at the top jumps to <code>ingest_node</code>, <code>classify_node</code>, Lane A/B, Boss, catalog, and archive.
+Comments (rationale nodes) are hidden until you uncheck them. Double-click a symbol to isolate its neighborhood.</p>
 </div>
 </section>
 
 <section id="hubs">
 <h2>Community Hubs <span class="note" style="font-weight:400;font-size:.85rem">(click to filter)</span></h2>
-<div class="chips"><button class="chip hub-chip" data-hub="conftest.py">conftest.py</button><button class="chip hub-chip" data-hub="test_conveyor_stages.py">test_conveyor_stages.py</button><button class="chip hub-chip" data-hub="resolve-model.ts">resolve-model.ts</button><button class="chip hub-chip" data-hub="test_run_limits.py">test_run_limits.py</button><button class="chip hub-chip" data-hub="build_graph.py">build_graph.py</button><button class="chip hub-chip" data-hub="toolkit.py">toolkit.py</button><button class="chip hub-chip" data-hub="specialist_agents.py">specialist_agents.py</button><button class="chip hub-chip" data-hub="ensure_schema">ensure_schema</button><button class="chip hub-chip" data-hub="main.py">main.py</button><button class="chip hub-chip" data-hub="guard_classification">guard_classification</button><button class="chip hub-chip" data-hub="client.py">client.py</button><button class="chip hub-chip" data-hub="base.py">base.py</button><button class="chip hub-chip" data-hub="fetch_full_cuad.py">fetch_full_cuad.py</button><button class="chip hub-chip" data-hub="bins.py">bins.py</button><button class="chip hub-chip" data-hub="build_graph">build_graph</button><button class="chip hub-chip" data-hub="BaseAgent">BaseAgent</button><button class="chip hub-chip" data-hub="inbox_dir">inbox_dir</button><button class="chip hub-chip" data-hub="query-analytics.ts">query-analytics.ts</button><button class="chip hub-chip" data-hub="test_lanes_062_063.py">test_lanes_062_063.py</button><button class="chip hub-chip" data-hub="routing.py">routing.py</button><button class="chip hub-chip" data-hub="run_pilot.py">run_pilot.py</button><button class="chip hub-chip" data-hub="ops_monitor.py">ops_monitor.py</button><button class="chip hub-chip" data-hub="watcher.py">watcher.py</button><button class="chip hub-chip" data-hub="test_specialists.py">test_specialists.py</button><button class="chip hub-chip" data-hub="sync_dashboards.py">sync_dashboards.py</button><button class="chip hub-chip" data-hub="get_confidence_thresholds">get_confidence_thresholds</button><button class="chip hub-chip" data-hub="get_managed_prompt">get_managed_prompt</button><button class="chip hub-chip" data-hub="datetime">datetime</button><button class="chip hub-chip" data-hub="base_agent.py">base_agent.py</button><button class="chip hub-chip" data-hub=".classify_document">.classify_document</button><button class="chip hub-chip" data-hub="CompletenessJudge">CompletenessJudge</button><button class="chip hub-chip" data-hub="test_vision.py">test_vision.py</button><button class="chip hub-chip" data-hub="tracing.py">tracing.py</button><button class="chip hub-chip" data-hub="sync_evaluators.py">sync_evaluators.py</button><button class="chip hub-chip" data-hub="TestVllmProviderSeam">TestVllmProviderSeam</button><button class="chip hub-chip" data-hub="experiment_log.py">experiment_log.py</button><button class="chip hub-chip" data-hub="load_config">load_config</button><button class="chip hub-chip" data-hub="sorter_agent.py">sorter_agent.py</button><button class="chip hub-chip" data-hub="test_observability.py">test_observability.py</button><button class="chip hub-chip" data-hub="env.py">env.py</button><button class="chip hub-chip" data-hub="TestAuth">TestAuth</button><button class="chip hub-chip" data-hub="runner.py">runner.py</button><button class="chip hub-chip" data-hub="run_quality_judges.py">run_quality_judges.py</button><button class="chip hub-chip" data-hub="PipelineStage">PipelineStage</button><button class="chip hub-chip" data-hub="resume_from_review">resume_from_review</button><button class="chip hub-chip" data-hub="get-generation.ts">get-generation.ts</button><button class="chip hub-chip" data-hub="DocumentManifest">DocumentManifest</button><button class="chip hub-chip" data-hub="test_legalbench.py">test_legalbench.py</button><button class="chip hub-chip" data-hub="SorterAgent">SorterAgent</button><button class="chip hub-chip" data-hub="langfuse_tracing.py">langfuse_tracing.py</button><button class="chip hub-chip" data-hub="get_field_types">get_field_types</button><button class="chip hub-chip" data-hub="_NoopLangfuse">_NoopLangfuse</button><button class="chip hub-chip" data-hub="calibrate_field_scoring.py">calibrate_field_scoring.py</button><button class="chip hub-chip" data-hub="FakeEmbedding">FakeEmbedding</button><button class="chip hub-chip" data-hub="prompt_templates">prompt_templates</button><button class="chip hub-chip" data-hub="setup_logging">setup_logging</button><button class="chip hub-chip" data-hub="BaseAgent">BaseAgent</button><button class="chip hub-chip" data-hub="scoring.py">scoring.py</button><button class="chip hub-chip" data-hub="build_structured_schema">build_structured_schema</button><button class="chip hub-chip" data-hub="MockLegalBenchModel">MockLegalBenchModel</button><button class="chip hub-chip" data-hub="field_is_ambiguous">field_is_ambiguous</button><button class="chip hub-chip" data-hub="scores.py">scores.py</button><button class="chip hub-chip" data-hub="get_extraction_schema">get_extraction_schema</button><button class="chip hub-chip" data-hub="test_field_scoring.py">test_field_scoring.py</button><button class="chip hub-chip" data-hub="modal_vllm.py">modal_vllm.py</button><button class="chip hub-chip" data-hub="CorporateRecordsSpecialist">CorporateRecordsSpecialist</button><button class="chip hub-chip" data-hub="after_judge">after_judge</button><button class="chip hub-chip" data-hub="metrics.py">metrics.py</button><button class="chip hub-chip" data-hub="test_real_sample_gate.py">test_real_sample_gate.py</button><button class="chip hub-chip" data-hub="tasks.py">tasks.py</button><button class="chip hub-chip" data-hub="bootstrap.py">bootstrap.py</button><button class="chip hub-chip" data-hub="fetch_external_samples.py">fetch_external_samples.py</button><button class="chip hub-chip" data-hub="prepare_samples">prepare_samples</button><button class="chip hub-chip" data-hub="Path">Path</button><button class="chip hub-chip" data-hub="PDFTranscriber">PDFTranscriber</button><button class="chip hub-chip" data-hub="braintrust_setup.py">braintrust_setup.py</button><button class="chip hub-chip" data-hub="cutover.py">cutover.py</button><button class="chip hub-chip" data-hub="test_samples_manifest.py">test_samples_manifest.py</button><button class="chip hub-chip" data-hub="ensure_score_configs">ensure_score_configs</button><button class="chip hub-chip" data-hub="ContractsSpecialist">ContractsSpecialist</button><button class="chip hub-chip" data-hub="CourtOpinionsSpecialist">CourtOpinionsSpecialist</button><button class="chip hub-chip" data-hub="load_env">load_env</button><button class="chip hub-chip" data-hub="sync_models.py">sync_models.py</button><button class="chip hub-chip" data-hub="test_graphify_skill.py">test_graphify_skill.py</button><button class="chip hub-chip" data-hub="traced_node">traced_node</button><button class="chip hub-chip" data-hub="sync_dataset.py">sync_dataset.py</button><button class="chip hub-chip" data-hub="TestEntityList">TestEntityList</button><button class="chip hub-chip" data-hub="openrouter-analytics/scripts/package.json">openrouter-analytics/scripts/package.json</button><button class="chip hub-chip" data-hub="suggest-queries.ts">suggest-queries.ts</button><button class="chip hub-chip" data-hub="openrouter-generations/scripts/package.json">openrouter-generations/scripts/package.json</button><button class="chip hub-chip" data-hub="openrouter-models/scripts/package.json">openrouter-models/scripts/package.json</button><button class="chip hub-chip" data-hub="config.py">config.py</button><button class="chip hub-chip" data-hub="_record_langchain_response">_record_langchain_response</button><button class="chip hub-chip" data-hub="TestDateField">TestDateField</button><button class="chip hub-chip" data-hub="ArbiterAgent">ArbiterAgent</button><button class="chip hub-chip" data-hub="build_record">build_record</button><button class="chip hub-chip" data-hub="TestVendoredRetryContract">TestVendoredRetryContract</button><button class="chip hub-chip" data-hub="TestJudgeGating">TestJudgeGating</button><button class="chip hub-chip" data-hub="sync_prompts.py">sync_prompts.py</button><button class="chip hub-chip" data-hub="_ParseErrorLangChainLLM">_ParseErrorLangChainLLM</button><button class="chip hub-chip" data-hub="TestMoneyField">TestMoneyField</button><button class="chip hub-chip" data-hub="TestScoring">TestScoring</button><button class="chip hub-chip" data-hub="TestPauseTTL">TestPauseTTL</button><button class="chip hub-chip" data-hub="TestNormalize">TestNormalize</button><button class="chip hub-chip" data-hub="sync-wiki.sh">sync-wiki.sh</button><button class="chip hub-chip" data-hub="langchain_agents/__init__.py">langchain_agents/__init__.py</button><button class="chip hub-chip" data-hub="mailroom">mailroom</button><button class="chip hub-chip" data-hub="_SpecialistBase">_SpecialistBase</button></div>
+<div class="chips"><button class="chip hub-chip" data-hub="Managed prompts &amp; judges">Managed prompts &amp; judges</button><button class="chip hub-chip" data-hub="Eval mocks &amp; validation">Eval mocks &amp; validation</button><button class="chip hub-chip" data-hub="Hugging Face pilot">Hugging Face pilot</button><button class="chip hub-chip" data-hub="Inbox bins">Inbox bins</button><button class="chip hub-chip" data-hub="Langfuse tracing">Langfuse tracing</button><button class="chip hub-chip" data-hub="Field scoring &amp; metrics">Field scoring &amp; metrics</button><button class="chip hub-chip" data-hub="LangChain specialists">LangChain specialists</button><button class="chip hub-chip" data-hub="Pipeline execution">Pipeline execution</button><button class="chip hub-chip" data-hub="Catalog &amp; audit trail">Catalog &amp; audit trail</button><button class="chip hub-chip" data-hub="Quality scores">Quality scores</button><button class="chip hub-chip" data-hub="PDF &amp; image transcription">PDF &amp; image transcription</button><button class="chip hub-chip" data-hub="Run limits &amp; budgets">Run limits &amp; budgets</button><button class="chip hub-chip" data-hub="Agent toolkit &amp; memory">Agent toolkit &amp; memory</button><button class="chip hub-chip" data-hub="FastAPI intake">FastAPI intake</button><button class="chip hub-chip" data-hub="LegalBench runner">LegalBench runner</button><button class="chip hub-chip" data-hub="Graph nodes &amp; state">Graph nodes &amp; state</button><button class="chip hub-chip" data-hub="LangChain BaseAgent">LangChain BaseAgent</button><button class="chip hub-chip" data-hub="Watcher ingest">Watcher ingest</button><button class="chip hub-chip" data-hub="Confidence routing">Confidence routing</button><button class="chip hub-chip" data-hub="Hub subclass inventories">Hub subclass inventories</button><button class="chip hub-chip" data-hub="Sorter classification">Sorter classification</button><button class="chip hub-chip" data-hub="Vision classifier">Vision classifier</button><button class="chip hub-chip" data-hub="Vision rendering">Vision rendering</button><button class="chip hub-chip" data-hub="Extraction schemas">Extraction schemas</button><button class="chip hub-chip" data-hub="Langfuse evaluator sync">Langfuse evaluator sync</button><button class="chip hub-chip" data-hub="Experiment log">Experiment log</button><button class="chip hub-chip" data-hub="CUAD corpus loaders">CUAD corpus loaders</button><button class="chip hub-chip" data-hub="run pilot">run pilot</button><button class="chip hub-chip" data-hub="cuad maud">cuad maud</button><button class="chip hub-chip" data-hub="providers">providers</button><button class="chip hub-chip" data-hub="audit">audit</button><button class="chip hub-chip" data-hub="agent">agent</button><button class="chip hub-chip" data-hub="data">data</button><button class="chip hub-chip" data-hub="db">db</button><button class="chip hub-chip" data-hub="prompts docclass">prompts docclass</button><button class="chip hub-chip" data-hub="ops monitor">ops monitor</button><button class="chip hub-chip" data-hub="langfuse setup">langfuse setup</button><button class="chip hub-chip" data-hub="logging">logging</button><button class="chip hub-chip" data-hub="retry">retry</button><button class="chip hub-chip" data-hub="guards">guards</button></div>
 </section>
-
 <section id="gods">
 <h2>God Nodes — most connected core abstractions</h2>
-<div class="panel"><div class="godrow"><div class="godname"><code>BaseAgent</code></div><div class="godbarwrap"><div class="godbar" data-w="100.0"></div><span class="godval">41</span></div></div><div class="godrow"><div class="godname"><code>build_graph()</code></div><div class="godbarwrap"><div class="godbar" data-w="100.0"></div><span class="godval">41</span></div></div><div class="godrow"><div class="godname"><code>load_config()</code></div><div class="godbarwrap"><div class="godbar" data-w="90.2"></div><span class="godval">37</span></div></div><div class="godrow"><div class="godname"><code>BaseAgent</code></div><div class="godbarwrap"><div class="godbar" data-w="87.8"></div><span class="godval">36</span></div></div><div class="godrow"><div class="godname"><code>inbox_dir()</code></div><div class="godbarwrap"><div class="godbar" data-w="78.0"></div><span class="godval">32</span></div></div><div class="godrow"><div class="godname"><code>get_managed_prompt()</code></div><div class="godbarwrap"><div class="godbar" data-w="78.0"></div><span class="godval">32</span></div></div><div class="godrow"><div class="godname"><code>get_langfuse_client()</code></div><div class="godbarwrap"><div class="godbar" data-w="75.6"></div><span class="godval">31</span></div></div><div class="godrow"><div class="godname"><code>setup_logging()</code></div><div class="godbarwrap"><div class="godbar" data-w="63.4"></div><span class="godval">26</span></div></div><div class="godrow"><div class="godname"><code>DocumentState</code></div><div class="godbarwrap"><div class="godbar" data-w="61.0"></div><span class="godval">25</span></div></div><div class="godrow"><div class="godname"><code>run_pipeline()</code></div><div class="godbarwrap"><div class="godbar" data-w="61.0"></div><span class="godval">25</span></div></div></div>
+<div class="panel"><div class="godrow"><div class="godname"><code>load_config()</code></div><div class="godbarwrap"><div class="godbar" data-w="100.0"></div><span class="godval">37</span></div></div><div class="godrow"><div class="godname"><code>BaseAgent</code></div><div class="godbarwrap"><div class="godbar" data-w="94.6"></div><span class="godval">35</span></div></div><div class="godrow"><div class="godname"><code>BaseAgent</code></div><div class="godbarwrap"><div class="godbar" data-w="86.5"></div><span class="godval">32</span></div></div><div class="godrow"><div class="godname"><code>build_graph()</code></div><div class="godbarwrap"><div class="godbar" data-w="86.5"></div><span class="godval">32</span></div></div><div class="godrow"><div class="godname"><code>get_langfuse_client()</code></div><div class="godbarwrap"><div class="godbar" data-w="83.8"></div><span class="godval">31</span></div></div><div class="godrow"><div class="godname"><code>get_managed_prompt()</code></div><div class="godbarwrap"><div class="godbar" data-w="75.7"></div><span class="godval">28</span></div></div><div class="godrow"><div class="godname"><code>ensure_schema()</code></div><div class="godbarwrap"><div class="godbar" data-w="67.6"></div><span class="godval">25</span></div></div><div class="godrow"><div class="godname"><code>_execute_run()</code></div><div class="godbarwrap"><div class="godbar" data-w="64.9"></div><span class="godval">24</span></div></div><div class="godrow"><div class="godname"><code>DocumentState</code></div><div class="godbarwrap"><div class="godbar" data-w="62.2"></div><span class="godval">23</span></div></div><div class="godrow"><div class="godname"><code>async_session()</code></div><div class="godbarwrap"><div class="godbar" data-w="62.2"></div><span class="godval">23</span></div></div></div>
 </section>
-
 <section id="conns">
-<h2>Surprising Connections <span class="note" style="font-weight:400;font-size:.85rem">(inferred — verify before trusting)</span></h2>
-<ul class="surplist"><li class="surp"><span class="edge"><code>get_audit_trail()</code><span class="rel">--uses&rarr;</span><code>AuditLogEntry</code></span><span class="badge amber">INFERRED</span><span class="paths">src/api/main.py → src/schemas/audit.py</span></li><li class="surp"><span class="edge"><code>ImageExtractor</code><span class="rel">--uses&rarr;</span><code>BaseAgent</code></span><span class="badge amber">INFERRED</span><span class="paths">src/agents/image_extractor.py → src/agents/base.py</span></li><li class="surp"><span class="edge"><code>arbiter_node()</code><span class="rel">--uses&rarr;</span><code>DocumentState</code></span><span class="badge amber">INFERRED</span><span class="paths">src/graph/build_graph.py → src/graph/state.py</span></li><li class="surp"><span class="edge"><code>boss_escalation_node()</code><span class="rel">--uses&rarr;</span><code>DocumentState</code></span><span class="badge amber">INFERRED</span><span class="paths">src/graph/build_graph.py → src/graph/state.py</span></li><li class="surp"><span class="edge"><code>_build_handoff_context()</code><span class="rel">--uses&rarr;</span><code>DocumentState</code></span><span class="badge amber">INFERRED</span><span class="paths">src/graph/build_graph.py → src/graph/state.py</span></li></ul>
+<h2>Surprising Connections <span class="note" style="font-weight:400;font-size:.85rem">(cross-community bridges)</span></h2>
+<ul class="surplist"><li class="surp"><span class="edge"><code>ImageExtractor</code><span class="rel">--uses&rarr;</span><code>BaseAgent</code></span><span class="badge amber">INFERRED</span><span class="paths">src/agents/image_extractor.py → src/agents/base.py</span></li><li class="surp"><span class="edge"><code>PDFTranscriber</code><span class="rel">--uses&rarr;</span><code>BaseAgent</code></span><span class="badge amber">INFERRED</span><span class="paths">src/agents/pdf_transcriber.py → src/agents/base.py</span></li><li class="surp"><span class="edge"><code>BaseAgent</code><span class="rel">--uses&rarr;</span><code>SorterAgent</code></span><span class="badge amber">INFERRED</span><span class="paths">src/langchain_agents/base_agent.py → src/langchain_agents/sorter_agent.py</span></li><li class="surp"><span class="edge"><code>BaseAgent</code><span class="rel">--uses&rarr;</span><code>_SpecialistBase</code></span><span class="badge amber">INFERRED</span><span class="paths">src/langchain_agents/base_agent.py → src/langchain_agents/specialist_agents.py</span></li><li class="surp"><span class="edge"><code>BaseAgent</code><span class="rel">--uses&rarr;</span><code>get_specialist()</code></span><span class="badge amber">INFERRED</span><span class="paths">src/langchain_agents/base_agent.py → src/langchain_agents/specialist_agents.py</span></li></ul>
 </section>
-
 <section id="cycles">
 <h2>Import Cycles</h2>
 <div class="panel"><span class="okpill">✓ None detected — the dependency surface is acyclic.</span></div>
 </section>
-
 <section id="communities">
-<h2>Communities <span class="note" style="font-weight:400;font-size:.85rem">(115 total · 12 thin omitted)</span></h2>
+<h2>Communities <span class="note" style="font-weight:400;font-size:.85rem">(92 total · 24 thin omitted)</span></h2>
 <div class="gridtools"><span id="count"></span></div>
-<div class="cgrid" id="cgrid"><article class="ccard" id="community-0" data-search="conftest.py FakeLangChainLLM, _FakeStructuredRunner, is_classify_call(), MAILROOM-LOCAL (not from upstream): deterministic fake LangChain LLM. The…, Extract the human text from a LangChain message list, handling multimodal list…, Replacement for the ChatOpenAI instance the vendored agents construct. -…, Runnable returned by ``with_structured_output``: invoke() yields the…, user_text_from_messages() (+34 more)">
-<div class="chead"><span class="cid">#000</span><h4>conftest.py</h4>
-<span class="ccount">42 nodes <em>+34 hidden</em></span></div>
+<div class="cgrid" id="cgrid"><article class="ccard" id="community-6" data-search="Managed prompts &amp; judges ArbiterAgent, BossAgent, ComplianceSpecialist, CorporateRecordsSpecialist, CorrespondenceSpecialist, InsuranceClaimsSpecialist, .arbitrate(), .system_prompt() (+51 more)">
+<div class="chead"><span class="cid">#006</span><h4>Managed prompts &amp; judges</h4>
+<span class="ccount">59 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:8%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:5%"></div></div>
+<span class="cohval">0.06</span></div>
+<p class="cprev">ArbiterAgent, BossAgent, ComplianceSpecialist, CorporateRecordsSpecialist, CorrespondenceSpecialist, InsuranceClaimsSpecialist, .arbitrate(), .system_prompt() (+51 more)</p></article><article class="ccard" id="community-5" data-search="Eval mocks &amp; validation FakeLangChainLLM, _FakeStructuredRunner, chat, _Choices, completions, _EvalLangChainLLM, _HintedEvalLangChainLLM, _MockClient (+50 more)">
+<div class="chead"><span class="cid">#005</span><h4>Eval mocks &amp; validation</h4>
+<span class="ccount">58 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:5%"></div></div>
 <span class="cohval">0.05</span></div>
-<p class="cprev">FakeLangChainLLM, _FakeStructuredRunner, is_classify_call(), MAILROOM-LOCAL (not from upstream): deterministic fake LangChain LLM. The…, Extract the human text from a LangChain message list, handling multimodal list…, Replacement for the ChatOpenAI instance the vendored agents construct. -…, Runnable returned by ``with_structured_output``: invoke() yields the…, user_text_from_messages() (+34 more)</p></article><article class="ccard" id="community-1" data-search="test_conveyor_stages.py archive_document(), _file_sha256(), Path, Best-effort sha256 of the archived file (audit A-7)., run_pipeline(), move_to_archive(), Move a file to the archive with a collision-safe name (audit A-20). POSIX…, AuditLogEntry (+25 more)">
-<div class="chead"><span class="cid">#001</span><h4>test_conveyor_stages.py</h4>
-<span class="ccount">33 nodes <em>+25 hidden</em></span></div>
+<p class="cprev">FakeLangChainLLM, _FakeStructuredRunner, chat, _Choices, completions, _EvalLangChainLLM, _HintedEvalLangChainLLM, _MockClient (+50 more)</p></article><article class="ccard" id="community-1" data-search="Hugging Face pilot _catalog_by_trace(), completed_filenames(), enrich_sample_row(), finalize_report(), find_sample_text(), hf_samples_from_report(), _inbox_filename(), latest_hf_reports() (+37 more)">
+<div class="chead"><span class="cid">#001</span><h4>Hugging Face pilot</h4>
+<span class="ccount">45 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:10%"></div></div>
-<span class="cohval">0.06</span></div>
-<p class="cprev">archive_document(), _file_sha256(), Path, Best-effort sha256 of the archived file (audit A-7)., run_pipeline(), move_to_archive(), Move a file to the archive with a collision-safe name (audit A-20). POSIX…, AuditLogEntry (+25 more)</p></article><article class="ccard" id="community-2" data-search="resolve-model.ts apiKey, args, comparison, matched, modelIds, sortBy, apiKey, args (+38 more)">
-<div class="chead"><span class="cid">#002</span><h4>resolve-model.ts</h4>
-<span class="ccount">46 nodes <em>+38 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:10%"></div></div>
-<span class="cohval">0.06</span></div>
-<p class="cprev">apiKey, args, comparison, matched, modelIds, sortBy, apiKey, args (+38 more)</p></article><article class="ccard" id="community-3" data-search="test_run_limits.py check_run_deadline(), check_token_budget(), estimate_cost(), get_call_timeout_seconds(), get_deadline_seconds(), get_max_total_output_tokens(), get_run_limits(), _price_for() (+24 more)">
-<div class="chead"><span class="cid">#003</span><h4>test_run_limits.py</h4>
-<span class="ccount">32 nodes <em>+24 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:13%"></div></div>
-<span class="cohval">0.08</span></div>
-<p class="cprev">check_run_deadline(), check_token_budget(), estimate_cost(), get_call_timeout_seconds(), get_deadline_seconds(), get_max_total_output_tokens(), get_run_limits(), _price_for() (+24 more)</p></article><article class="ccard" id="community-4" data-search="build_graph.py boss_escalation_node(), _chunk_config(), _emit_pipeline_result(), _emit_stage_audit(), _execute_run(), _existing_processing_doc_id(), _extract_contracts(), _fetch_matter_context() (+33 more)">
-<div class="chead"><span class="cid">#004</span><h4>build_graph.py</h4>
-<span class="ccount">41 nodes <em>+33 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:13%"></div></div>
-<span class="cohval">0.08</span></div>
-<p class="cprev">boss_escalation_node(), _chunk_config(), _emit_pipeline_result(), _emit_stage_audit(), _execute_run(), _existing_processing_doc_id(), _extract_contracts(), _fetch_matter_context() (+33 more)</p></article><article class="ccard" id="community-5" data-search="toolkit.py _memory_dir(), _memory_path(), Path, Per-agent OUTCOME MEMORY for the vendored LangChain agents. Every designated…, Count outcomes by source and by feedback keyword (for observability)., Render the last ``k`` outcomes for this agent+doc_type as a prompt appendix —…, recent_context(), stats() (+20 more)">
-<div class="chead"><span class="cid">#005</span><h4>toolkit.py</h4>
-<span class="ccount">28 nodes <em>+20 hidden</em></span></div>
+<div class="cohmeter"><div class="cohfill" style="width:9%"></div></div>
+<span class="cohval">0.10</span></div>
+<p class="cprev">_catalog_by_trace(), completed_filenames(), enrich_sample_row(), finalize_report(), find_sample_text(), hf_samples_from_report(), _inbox_filename(), latest_hf_reports() (+37 more)</p></article><article class="ccard" id="community-19" data-search="Inbox bins _build_checkpointer(), _ensure_dirs(), archive_dir(), claim_file(), classified_dir(), clear_ingestion_paused(), ensure_dirs(), failed_dir() (+36 more)">
+<div class="chead"><span class="cid">#019</span><h4>Inbox bins</h4>
+<span class="ccount">44 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
 <div class="cohmeter"><div class="cohfill" style="width:12%"></div></div>
+<span class="cohval">0.12</span></div>
+<p class="cprev">_build_checkpointer(), _ensure_dirs(), archive_dir(), claim_file(), classified_dir(), clear_ingestion_paused(), ensure_dirs(), failed_dir() (+36 more)</p></article><article class="ccard" id="community-31" data-search="Langfuse tracing _client(), client_kwargs(), flush_langfuse(), get_langfuse_client(), get_trace_id(), install_on_dropped(), instrument_openai_client(), observation() (+32 more)">
+<div class="chead"><span class="cid">#031</span><h4>Langfuse tracing</h4>
+<span class="ccount">40 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:9%"></div></div>
+<span class="cohval">0.09</span></div>
+<p class="cprev">_client(), client_kwargs(), flush_langfuse(), get_langfuse_client(), get_trace_id(), install_on_dropped(), instrument_openai_client(), observation() (+32 more)</p></article><article class="ccard" id="community-8" data-search="Field scoring &amp; metrics _apply_taxonomy_settings(), field_is_ambiguous(), get_field_types(), get_type_bands(), warm_embedding_model(), _date_pair_days(), extraction_diagnostics(), _mean() (+31 more)">
+<div class="chead"><span class="cid">#008</span><h4>Field scoring &amp; metrics</h4>
+<span class="ccount">39 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:7%"></div></div>
 <span class="cohval">0.07</span></div>
-<p class="cprev">_memory_dir(), _memory_path(), Path, Per-agent OUTCOME MEMORY for the vendored LangChain agents. Every designated…, Count outcomes by source and by feedback keyword (for observability)., Render the last ``k`` outcomes for this agent+doc_type as a prompt appendix —…, recent_context(), stats() (+20 more)</p></article><article class="ccard" id="community-6" data-search="specialist_agents.py get_prompt(), list_prompts(), PROMPT_TEMPLATES(), Get a prompt by version name. Args: version: Prompt version key (e.g.,…, List all available prompt versions., Return all prompt templates as a dict. Single source of truth for…, ComplianceFilingSpecialist, ContractsSpecialist (+8 more)">
-<div class="chead"><span class="cid">#006</span><h4>specialist_agents.py</h4>
-<span class="ccount">16 nodes <em>+8 hidden</em></span></div>
+<p class="cprev">_apply_taxonomy_settings(), field_is_ambiguous(), get_field_types(), get_type_bands(), warm_embedding_model(), _date_pair_days(), extraction_diagnostics(), _mean() (+31 more)</p></article><article class="ccard" id="community-34" data-search="LangChain specialists ComplianceFilingSpecialist, CorporateRecordsSpecialist, CorrespondenceSpecialist, _SpecialistBase, get_prompt(), .system_prompt(), .system_prompt(), .system_prompt() (+29 more)">
+<div class="chead"><span class="cid">#034</span><h4>LangChain specialists</h4>
+<span class="ccount">37 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:15%"></div></div>
-<span class="cohval">0.09</span></div>
-<p class="cprev">get_prompt(), list_prompts(), PROMPT_TEMPLATES(), Get a prompt by version name. Args: version: Prompt version key (e.g.,…, List all available prompt versions., Return all prompt templates as a dict. Single source of truth for…, ComplianceFilingSpecialist, ContractsSpecialist (+8 more)</p></article><article class="ccard" id="community-7" data-search="ensure_schema AsyncSession, DeclarativeBase, _all_chains(), main(), _verify(), AuditLogRecord, get_audit_chain(), write_audit_entry() (+30 more)">
-<div class="chead"><span class="cid">#007</span><h4>ensure_schema</h4>
-<span class="ccount">38 nodes <em>+30 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:20%"></div></div>
-<span class="cohval">0.12</span></div>
-<p class="cprev">AsyncSession, DeclarativeBase, _all_chains(), main(), _verify(), AuditLogRecord, get_audit_chain(), write_audit_entry() (+30 more)</p></article><article class="ccard" id="community-8" data-search="main.py FastAPI, get, post, Request, _check_database(), _check_llm_provider(), get_audit_trail(), get_document_status() (+31 more)">
-<div class="chead"><span class="cid">#008</span><h4>main.py</h4>
-<span class="ccount">39 nodes <em>+31 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:13%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:8%"></div></div>
 <span class="cohval">0.08</span></div>
-<p class="cprev">FastAPI, get, post, Request, _check_database(), _check_llm_provider(), get_audit_trail(), get_document_status() (+31 more)</p></article><article class="ccard" id="community-9" data-search="guard_classification Check an extraction against the doc type&#x27;s pydantic schema. Returns…, validate_extraction(), apply_extraction_guard(), guard_classification(), guard_extraction(), _has_substantive_content(), _is_valid_confidence(), Guardrails for agent outputs. Agents are LLMs — they can return junk even when… (+11 more)">
-<div class="chead"><span class="cid">#009</span><h4>guard_classification</h4>
-<span class="ccount">19 nodes <em>+11 hidden</em></span></div>
+<p class="cprev">ComplianceFilingSpecialist, CorporateRecordsSpecialist, CorrespondenceSpecialist, _SpecialistBase, get_prompt(), .system_prompt(), .system_prompt(), .system_prompt() (+29 more)</p></article><article class="ccard" id="community-15" data-search="Pipeline execution _emit_pipeline_result(), _execute_run(), _existing_processing_doc_id(), _extract_text_from_docx(), _extract_text_from_image(), _extract_text_from_pdf(), _file_sha256(), _file_size() (+28 more)">
+<div class="chead"><span class="cid">#015</span><h4>Pipeline execution</h4>
+<span class="ccount">36 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:13%"></div></div>
-<span class="cohval">0.08</span></div>
-<p class="cprev">Check an extraction against the doc type&#x27;s pydantic schema. Returns…, validate_extraction(), apply_extraction_guard(), guard_classification(), guard_extraction(), _has_substantive_content(), _is_valid_confidence(), Guardrails for agent outputs. Agents are LLMs — they can return junk even when… (+11 more)</p></article><article class="ccard" id="community-10" data-search="client.py OpenAI, get_llm(), get_llm_client(), get_llm_model(), instrument_client(), Wrap the OpenAI client with the active tracing backend. Both Langfuse…, _build_providers(), get_provider() (+20 more)">
-<div class="chead"><span class="cid">#010</span><h4>client.py</h4>
-<span class="ccount">28 nodes <em>+20 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:15%"></div></div>
-<span class="cohval">0.09</span></div>
-<p class="cprev">OpenAI, get_llm(), get_llm_client(), get_llm_model(), instrument_client(), Wrap the OpenAI client with the active tracing backend. Both Langfuse…, _build_providers(), get_provider() (+20 more)</p></article><article class="ccard" id="community-11" data-search="base.py extract_text_from_image(), ImageExtractor, BaseAgent, Path, Image extraction agent — uses vision-capable LLMs to extract text from images.…, PDF transcription agent — converts PDF documents to markdown for downstream…, compile_matter_record(), _is_json_mode_400() (+14 more)">
-<div class="chead"><span class="cid">#011</span><h4>base.py</h4>
-<span class="ccount">22 nodes <em>+14 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:17%"></div></div>
-<span class="cohval">0.10</span></div>
-<p class="cprev">extract_text_from_image(), ImageExtractor, BaseAgent, Path, Image extraction agent — uses vision-capable LLMs to extract text from images.…, PDF transcription agent — converts PDF documents to markdown for downstream…, compile_matter_record(), _is_json_mode_400() (+14 more)</p></article><article class="ccard" id="community-12" data-search="fetch_full_cuad.py CorpusUnavailable, _fingerprint(), load_cuad_qa(), load_family_rows(), _normalize_prediction(), Any, Path, Local corpus loaders for the LegalBench suite. Everything reads from corpora… (+28 more)">
-<div class="chead"><span class="cid">#012</span><h4>fetch_full_cuad.py</h4>
-<span class="ccount">36 nodes <em>+28 hidden</em></span></div>
+<div class="cohmeter"><div class="cohfill" style="width:10%"></div></div>
+<span class="cohval">0.11</span></div>
+<p class="cprev">_emit_pipeline_result(), _execute_run(), _existing_processing_doc_id(), _extract_text_from_docx(), _extract_text_from_image(), _extract_text_from_pdf(), _file_sha256(), _file_size() (+28 more)</p></article><article class="ccard" id="community-0" data-search="Catalog &amp; audit trail AuditLogRecord, DocumentRecord, MatterRecord, Base, ops_status(), _persist_scores(), _all_chains(), main() (+25 more)">
+<div class="chead"><span class="cid">#000</span><h4>Catalog &amp; audit trail</h4>
+<span class="ccount">33 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
 <div class="cohmeter"><div class="cohfill" style="width:15%"></div></div>
-<span class="cohval">0.09</span></div>
-<p class="cprev">CorpusUnavailable, _fingerprint(), load_cuad_qa(), load_family_rows(), _normalize_prediction(), Any, Path, Local corpus loaders for the LegalBench suite. Everything reads from corpora… (+28 more)</p></article><article class="ccard" id="community-13" data-search="bins.py _ensure_dirs(), archive_dir(), classified_dir(), ensure_dirs(), failed_dir(), get_base_dir(), _get_config(), _heartbeat_file_path() (+26 more)">
-<div class="chead"><span class="cid">#013</span><h4>bins.py</h4>
-<span class="ccount">34 nodes <em>+26 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:27%"></div></div>
 <span class="cohval">0.16</span></div>
-<p class="cprev">_ensure_dirs(), archive_dir(), classified_dir(), ensure_dirs(), failed_dir(), get_base_dir(), _get_config(), _heartbeat_file_path() (+26 more)</p></article><article class="ccard" id="community-14" data-search="build_graph archive_node(), _bounded(), _build_checkpointer(), build_graph(), _catalog_upsert(), catalog_write_node(), compile_report_node(), _file_sha256() (+15 more)">
-<div class="chead"><span class="cid">#014</span><h4>build_graph</h4>
-<span class="ccount">23 nodes <em>+15 hidden</em></span></div>
+<p class="cprev">AuditLogRecord, DocumentRecord, MatterRecord, Base, ops_status(), _persist_scores(), _all_chains(), main() (+25 more)</p></article><article class="ccard" id="community-13" data-search="Quality scores ensure_field_score_configs(), score_and_log_extraction(), _client(), create_trace_score(), emit_pipeline_scores(), ensure_score_configs(), is_enabled(), langfuse_score_name() (+25 more)">
+<div class="chead"><span class="cid">#013</span><h4>Quality scores</h4>
+<span class="ccount">33 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:10%"></div></div>
 <span class="cohval">0.11</span></div>
-<p class="cprev">archive_node(), _bounded(), _build_checkpointer(), build_graph(), _catalog_upsert(), catalog_write_node(), compile_report_node(), _file_sha256() (+15 more)</p></article><article class="ccard" id="community-15" data-search="BaseAgent ChatOpenAI, BaseAgent, Return the agent&#x27;s system prompt string., System prompt + agent&#x27;s skill files + tool descriptions + recent outcome…, Lazily build the LangChain ``ChatOpenAI`` client. Uses the OpenRouter base URL…, Call ``fn()`` retrying transient failures with backoff + jitter. Mirrors…, Return the FULL document text, capping only past the hard budget. The sorter is…, True when this agent&#x27;s model accepts image input. Vision capability is config-… (+8 more)">
-<div class="chead"><span class="cid">#015</span><h4>BaseAgent</h4>
-<span class="ccount">16 nodes <em>+8 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:17%"></div></div>
-<span class="cohval">0.10</span></div>
-<p class="cprev">ChatOpenAI, BaseAgent, Return the agent&#x27;s system prompt string., System prompt + agent&#x27;s skill files + tool descriptions + recent outcome…, Lazily build the LangChain ``ChatOpenAI`` client. Uses the OpenRouter base URL…, Call ``fn()`` retrying transient failures with backoff + jitter. Mirrors…, Return the FULL document text, capping only past the hard budget. The sorter is…, True when this agent&#x27;s model accepts image input. Vision capability is config-… (+8 more)</p></article><article class="ccard" id="community-16" data-search="inbox_dir inbox_dir(), _auth(), client(), fixture, Live-upload → pipeline queue tests. Covers the `/upload` → inbox → watcher…, TestQueue, TestUploadMetadata, TestWatcherExtensionFilter (+10 more)">
-<div class="chead"><span class="cid">#016</span><h4>inbox_dir</h4>
-<span class="ccount">18 nodes <em>+10 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:15%"></div></div>
-<span class="cohval">0.09</span></div>
-<p class="cprev">inbox_dir(), _auth(), client(), fixture, Live-upload → pipeline queue tests. Covers the `/upload` → inbox → watcher…, TestQueue, TestUploadMetadata, TestWatcherExtensionFilter (+10 more)</p></article><article class="ccard" id="community-17" data-search="query-analytics.ts apiKey, args, section, fetchApi(), fetchMeta(), fetchQuery(), MetaResponse, parseArgs() (+21 more)">
-<div class="chead"><span class="cid">#017</span><h4>query-analytics.ts</h4>
-<span class="ccount">29 nodes <em>+21 hidden</em></span></div>
+<p class="cprev">ensure_field_score_configs(), score_and_log_extraction(), _client(), create_trace_score(), emit_pipeline_scores(), ensure_score_configs(), is_enabled(), langfuse_score_name() (+25 more)</p></article><article class="ccard" id="community-11" data-search="PDF &amp; image transcription ImageExtractor, PDFTranscriber, extract_text_from_image(), .extract(), ._extract_with_vision(), ._fallback_extract(), .system_prompt(), ._extract_raw_text() (+24 more)">
+<div class="chead"><span class="cid">#011</span><h4>PDF &amp; image transcription</h4>
+<span class="ccount">32 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
 <div class="cohmeter"><div class="cohfill" style="width:13%"></div></div>
-<span class="cohval">0.08</span></div>
-<p class="cprev">apiKey, args, section, fetchApi(), fetchMeta(), fetchQuery(), MetaResponse, parseArgs() (+21 more)</p></article><article class="ccard" id="community-18" data-search="test_lanes_062_063.py arbiter_node(), _clean_fields_for_judge(), judge_verify_node(), Drop pipeline metadata keys before judge/arbiter input (mirrors the…, KANBAN-063 (Lane B): in-pipeline completeness judge. Reuses the offline-battle-…, KANBAN-063 (Lane B): arbitration on a failed judge verdict. Bounded decisions…, KANBAN-062 (Lane A): independent agent second opinion on a medium-band…, review_classify_node() (+9 more)">
-<div class="chead"><span class="cid">#018</span><h4>test_lanes_062_063.py</h4>
-<span class="ccount">17 nodes <em>+9 hidden</em></span></div>
+<span class="cohval">0.13</span></div>
+<p class="cprev">ImageExtractor, PDFTranscriber, extract_text_from_image(), .extract(), ._extract_with_vision(), ._fallback_extract(), .system_prompt(), ._extract_raw_text() (+24 more)</p></article><article class="ccard" id="community-16" data-search="Run limits &amp; budgets RunBudgetExceeded, RunDeadlineExceeded, _bounded(), compute_run_metrics(), load_config(), check_run_deadline(), check_token_budget(), estimate_cost() (+24 more)">
+<div class="chead"><span class="cid">#016</span><h4>Run limits &amp; budgets</h4>
+<span class="ccount">32 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:17%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:9%"></div></div>
+<span class="cohval">0.09</span></div>
+<p class="cprev">RunBudgetExceeded, RunDeadlineExceeded, _bounded(), compute_run_metrics(), load_config(), check_run_deadline(), check_token_budget(), estimate_cost() (+24 more)</p></article><article class="ccard" id="community-7" data-search="Agent toolkit &amp; memory AgentTool, .augmented_system_prompt(), ._memory_context(), .system_prompt(), ._tool_context(), _memory_dir(), _memory_path(), recent_context() (+24 more)">
+<div class="chead"><span class="cid">#007</span><h4>Agent toolkit &amp; memory</h4>
+<span class="ccount">32 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:10%"></div></div>
 <span class="cohval">0.10</span></div>
-<p class="cprev">arbiter_node(), _clean_fields_for_judge(), judge_verify_node(), Drop pipeline metadata keys before judge/arbiter input (mirrors the…, KANBAN-063 (Lane B): in-pipeline completeness judge. Reuses the offline-battle-…, KANBAN-063 (Lane B): arbitration on a failed judge verdict. Bounded decisions…, KANBAN-062 (Lane A): independent agent second opinion on a medium-band…, review_classify_node() (+9 more)</p></article><article class="ccard" id="community-19" data-search="routing.py after_boss(), after_classify(), after_extraction(), after_human_review(), after_retry_extraction(), after_retry_extraction_gated(), Route a transient-error flag: retry the same node up to…, Same gate applied to the post-retry extraction router. (+4 more)">
-<div class="chead"><span class="cid">#019</span><h4>routing.py</h4>
-<span class="ccount">12 nodes <em>+4 hidden</em></span></div>
+<p class="cprev">AgentTool, .augmented_system_prompt(), ._memory_context(), .system_prompt(), ._tool_context(), _memory_dir(), _memory_path(), recent_context() (+24 more)</p></article><article class="ccard" id="community-12" data-search="FastAPI intake _check_database(), get_document_status(), get_matter(), get_queue(), health(), lifespan(), _move_rejected_to_failed(), ops_resume() (+24 more)">
+<div class="chead"><span class="cid">#012</span><h4>FastAPI intake</h4>
+<span class="ccount">32 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:20%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:9%"></div></div>
+<span class="cohval">0.10</span></div>
+<p class="cprev">_check_database(), get_document_status(), get_matter(), get_queue(), health(), lifespan(), _move_rejected_to_failed(), ops_resume() (+24 more)</p></article><article class="ccard" id="community-25" data-search="LegalBench runner RunResult, LegalBenchTask, build_parser(), main(), log_run(), _model_name(), print_summary(), run_task() (+23 more)">
+<div class="chead"><span class="cid">#025</span><h4>LegalBench runner</h4>
+<span class="ccount">31 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:12%"></div></div>
 <span class="cohval">0.12</span></div>
-<p class="cprev">after_boss(), after_classify(), after_extraction(), after_human_review(), after_retry_extraction(), after_retry_extraction_gated(), Route a transient-error flag: retry the same node up to…, Same gate applied to the post-retry extraction router. (+4 more)</p></article><article class="ccard" id="community-20" data-search="run_pilot.py _attach_field_scoring(), diff_report(), _ground_truth_scores(), _ingest_scores(), main(), _make_mock_langchain_llm(), _make_real_langchain_llm(), misfile_candidates() (+21 more)">
-<div class="chead"><span class="cid">#020</span><h4>run_pilot.py</h4>
-<span class="ccount">29 nodes <em>+21 hidden</em></span></div>
+<p class="cprev">RunResult, LegalBenchTask, build_parser(), main(), log_run(), _model_name(), print_summary(), run_task() (+23 more)</p></article><article class="ccard" id="community-28" data-search="Graph nodes &amp; state DocumentState, arbiter_node(), boss_escalation_node(), _build_handoff_context(), _build_specialist_dispatch(), catalog_write_node(), _clean_fields_for_judge(), _detect_conflict() (+22 more)">
+<div class="chead"><span class="cid">#028</span><h4>Graph nodes &amp; state</h4>
+<span class="ccount">30 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:10%"></div></div>
 <span class="cohval">0.11</span></div>
-<p class="cprev">_attach_field_scoring(), diff_report(), _ground_truth_scores(), _ingest_scores(), main(), _make_mock_langchain_llm(), _make_real_langchain_llm(), misfile_candidates() (+21 more)</p></article><article class="ccard" id="community-21" data-search="ops_monitor.py Event, DEPRECATED shim — the field-scoring implementation moved to the package. As of…, Load the embedding model OFF the document path (O-10). The first grounded run…, warm_embedding_model(), Warm the score-config schema OFF the document path (O-1).…, warmup_score_configs(), install_on_dropped(), Wire Langfuse&#x27;s on_dropped callback (O-3): when the SDK&#x27;s queue overflows or… (+9 more)">
-<div class="chead"><span class="cid">#021</span><h4>ops_monitor.py</h4>
-<span class="ccount">17 nodes <em>+9 hidden</em></span></div>
+<p class="cprev">DocumentState, arbiter_node(), boss_escalation_node(), _build_handoff_context(), _build_specialist_dispatch(), catalog_write_node(), _clean_fields_for_judge(), _detect_conflict() (+22 more)</p></article><article class="ccard" id="community-18" data-search="LangChain BaseAgent BaseAgent, ._build_user_content(), ._call_llm(), ._call_structured(), ._call_vision(), ._call_vision_multi(), ._check_deadline(), ._invoke_with_retry() (+21 more)">
+<div class="chead"><span class="cid">#018</span><h4>LangChain BaseAgent</h4>
+<span class="ccount">29 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:15%"></div></div>
-<span class="cohval">0.09</span></div>
-<p class="cprev">Event, DEPRECATED shim — the field-scoring implementation moved to the package. As of…, Load the embedding model OFF the document path (O-10). The first grounded run…, warm_embedding_model(), Warm the score-config schema OFF the document path (O-1).…, warmup_score_configs(), install_on_dropped(), Wire Langfuse&#x27;s on_dropped callback (O-3): when the SDK&#x27;s queue overflows or… (+9 more)</p></article><article class="ccard" id="community-22" data-search="watcher.py FileSystemEventHandler, accepted_extensions(), claim_file(), is_ingestion_paused(), Check if the ops monitor has paused ingestion (auto-expiring TTL)., Accepted inbox file extensions from taxonomy.yaml (with defaults)., Liveness beacon: the watcher touches this file every rescan cycle. `/health`…, touch_watcher_heartbeat() (+9 more)">
-<div class="chead"><span class="cid">#022</span><h4>watcher.py</h4>
-<span class="ccount">17 nodes <em>+9 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:22%"></div></div>
-<span class="cohval">0.13</span></div>
-<p class="cprev">FileSystemEventHandler, accepted_extensions(), claim_file(), is_ingestion_paused(), Check if the ops monitor has paused ingestion (auto-expiring TTL)., Accepted inbox file extensions from taxonomy.yaml (with defaults)., Liveness beacon: the watcher touches this file every rescan cycle. `/health`…, touch_watcher_heartbeat() (+9 more)</p></article><article class="ccard" id="community-23" data-search="test_specialists.py ComplianceSpecialist, BaseAgent, CorrespondenceSpecialist, BaseAgent, DueDiligenceSpecialist, BaseAgent, _build_specialist_dispatch(), _extract_compliance() (+8 more)">
-<div class="chead"><span class="cid">#023</span><h4>test_specialists.py</h4>
-<span class="ccount">16 nodes <em>+8 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:15%"></div></div>
-<span class="cohval">0.09</span></div>
-<p class="cprev">ComplianceSpecialist, BaseAgent, CorrespondenceSpecialist, BaseAgent, DueDiligenceSpecialist, BaseAgent, _build_specialist_dispatch(), _extract_compliance() (+8 more)</p></article><article class="ccard" id="community-24" data-search="sync_dashboards.py _client(), _existing_placements(), json_dumps(), main(), _placement_kwargs(), # NOTE: dimension on `model` (the requested model string, e.g., _score_widget(), _spec_to_request() (+10 more)">
-<div class="chead"><span class="cid">#024</span><h4>sync_dashboards.py</h4>
-<span class="ccount">18 nodes <em>+10 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:11%"></div></div>
 <span class="cohval">0.11</span></div>
-<p class="cprev">_client(), _existing_placements(), json_dumps(), main(), _placement_kwargs(), # NOTE: dimension on `model` (the requested model string, e.g., _score_widget(), _spec_to_request() (+10 more)</p></article><article class="ccard" id="community-25" data-search="get_confidence_thresholds RuntimeError, after_retry_classify(), after_review_classify(), KANBAN-062 (Lane A) outcome router. The reviewer&#x27;s high-confidence label wins…, get_confidence_thresholds(), L-10/L-15: guarded Boss node + classify failure handling (audit fixes). - L-10:…, TestBossGuardedNode, TestClassifyFailureRoutesToReview (+1 more)">
-<div class="chead"><span class="cid">#025</span><h4>get_confidence_thresholds</h4>
-<span class="ccount">9 nodes <em>+1 hidden</em></span></div>
+<p class="cprev">BaseAgent, ._build_user_content(), ._call_llm(), ._call_structured(), ._call_vision(), ._call_vision_multi(), ._check_deadline(), ._invoke_with_retry() (+21 more)</p></article><article class="ccard" id="community-20" data-search="Watcher ingest InboxHandler, Watcher, inbox_dir(), is_ingestion_paused(), list_inbox_files(), read_inbox_meta(), touch_watcher_heartbeat(), .is_paused() (+21 more)">
+<div class="chead"><span class="cid">#020</span><h4>Watcher ingest</h4>
+<span class="ccount">29 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
-<span class="cohval">0.11</span></div>
-<p class="cprev">RuntimeError, after_retry_classify(), after_review_classify(), KANBAN-062 (Lane A) outcome router. The reviewer&#x27;s high-confidence label wins…, get_confidence_thresholds(), L-10/L-15: guarded Boss node + classify failure handling (audit fixes). - L-10:…, TestBossGuardedNode, TestClassifyFailureRoutesToReview (+1 more)</p></article><article class="ccard" id="community-26" data-search="get_managed_prompt Arbiter agent — Lane B judgment arbitration (KANBAN-063). Architecture…, LLM-as-a-judge that evaluates extraction completeness against the source…, BaseAgent, Sorter Reviewer agent — Lane A second-opinion classification (KANBAN-062).…, Independent second-opinion classifier (blind re-classification)., Independently classify the document. Returns ``{doc_type, contract_subtype,…, SorterReviewerAgent, _client() (+7 more)">
-<div class="chead"><span class="cid">#026</span><h4>get_managed_prompt</h4>
-<span class="ccount">15 nodes <em>+7 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
-<span class="cohval">0.11</span></div>
-<p class="cprev">Arbiter agent — Lane B judgment arbitration (KANBAN-063). Architecture…, LLM-as-a-judge that evaluates extraction completeness against the source…, BaseAgent, Sorter Reviewer agent — Lane A second-opinion classification (KANBAN-062).…, Independent second-opinion classifier (blind re-classification)., Independently classify the document. Returns ``{doc_type, contract_subtype,…, SorterReviewerAgent, _client() (+7 more)</p></article><article class="ccard" id="community-27" data-search="datetime datetime, main(), _slug(), _client(), main(), _parse_since(), Path, Poll a trace&#x27;s scores until they arrive or the timeout elapses. LLM-as-a-judge… (+12 more)">
-<div class="chead"><span class="cid">#027</span><h4>datetime</h4>
-<span class="ccount">20 nodes <em>+12 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:25%"></div></div>
-<span class="cohval">0.15</span></div>
-<p class="cprev">datetime, main(), _slug(), _client(), main(), _parse_since(), Path, Poll a trace&#x27;s scores until they arrive or the timeout elapses. LLM-as-a-judge… (+12 more)</p></article><article class="ccard" id="community-28" data-search="base_agent.py build_structured_schema(), _is_retryable_error(), ABC, Exception, Same retryable classification as llm/retry.py: connection errors, timeouts, 429…, Build a JSON schema dict for structured output. ``title`` is required by…, LegalBenchAgent, Any (+7 more)">
-<div class="chead"><span class="cid">#028</span><h4>base_agent.py</h4>
-<span class="ccount">15 nodes <em>+7 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
-<span class="cohval">0.11</span></div>
-<p class="cprev">build_structured_schema(), _is_retryable_error(), ABC, Exception, Same retryable classification as llm/retry.py: connection errors, timeouts, 429…, Build a JSON schema dict for structured output. ``title`` is required by…, LegalBenchAgent, Any (+7 more)</p></article><article class="ccard" id="community-29" data-search=".classify_document classify_image(), clean_prediction(), extract_confidence(), extract_reasoning(), extract_runner_up(), Path, Classify a document image using a vision model through OpenRouter API. Args:…, Extract valid class name from LLM response using word boundary matching. (+11 more)">
-<div class="chead"><span class="cid">#029</span><h4>.classify_document</h4>
-<span class="ccount">19 nodes <em>+11 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:20%"></div></div>
-<span class="cohval">0.12</span></div>
-<p class="cprev">classify_image(), clean_prediction(), extract_confidence(), extract_reasoning(), extract_runner_up(), Path, Classify a document image using a vision model through OpenRouter API. Args:…, Extract valid class name from LLM response using word boundary matching. (+11 more)</p></article><article class="ccard" id="community-30" data-search="CompletenessJudge CompletenessJudge, BaseAgent, Render the task specification (taxonomy doc classes) for the judge., Judge whether the sorter&#x27;s assigned class matches the taxonomy task…, Judge whether the extracted field values are factually accurate (no…, TestClassificationJudge, TestCompletenessJudge, TestExtractionCorrectnessJudge">
-<div class="chead"><span class="cid">#030</span><h4>CompletenessJudge</h4>
-<span class="ccount">8 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:25%"></div></div>
-<span class="cohval">0.15</span></div>
-<p class="cprev">CompletenessJudge, BaseAgent, Render the task specification (taxonomy doc classes) for the judge., Judge whether the sorter&#x27;s assigned class matches the taxonomy task…, Judge whether the extracted field values are factually accurate (no…, TestClassificationJudge, TestCompletenessJudge, TestExtractionCorrectnessJudge</p></article><article class="ccard" id="community-31" data-search="test_vision.py Path, Render pages of a PDF to a list of PNG image data-URIs. `cap` is the page…, Encode a single image file as a data-URI for direct vision input. Image inputs…, Render an input document to a list of page-image data-URIs (PDFs only; real…, render_document_pages(), render_image(), render_pdf_pages(), page_images() (+11 more)">
-<div class="chead"><span class="cid">#031</span><h4>test_vision.py</h4>
-<span class="ccount">19 nodes <em>+11 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:22%"></div></div>
-<span class="cohval">0.13</span></div>
-<p class="cprev">Path, Render pages of a PDF to a list of PNG image data-URIs. `cap` is the page…, Encode a single image file as a data-URI for direct vision input. Image inputs…, Render an input document to a list of page-image data-URIs (PDFs only; real…, render_document_pages(), render_image(), render_pdf_pages(), page_images() (+11 more)</p></article><article class="ccard" id="community-32" data-search="tracing.py flush_langfuse(), get_langfuse_client(), get_trace_id(), install_on_dropped(), instrument_openai_client(), observation(), pipeline_trace(), Langfuse tracing backend (langfuse &gt;= 4.x). Two layers of tracing: 1. **LLM… (+10 more)">
-<div class="chead"><span class="cid">#032</span><h4>tracing.py</h4>
-<span class="ccount">18 nodes <em>+10 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:25%"></div></div>
-<span class="cohval">0.15</span></div>
-<p class="cprev">flush_langfuse(), get_langfuse_client(), get_trace_id(), install_on_dropped(), instrument_openai_client(), observation(), pipeline_trace(), Langfuse tracing backend (langfuse &gt;= 4.x). Two layers of tracing: 1. **LLM… (+10 more)</p></article><article class="ccard" id="community-33" data-search="sync_evaluators.py _build_evaluator_request(), _build_output_definition(), _build_rule_request(), _client(), _current_evaluator_prompt(), _ensure_llm_connection(), _existing_rule_ids(), main() (+13 more)">
-<div class="chead"><span class="cid">#033</span><h4>sync_evaluators.py</h4>
-<span class="ccount">21 nodes <em>+13 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:27%"></div></div>
-<span class="cohval">0.16</span></div>
-<p class="cprev">_build_evaluator_request(), _build_output_definition(), _build_rule_request(), _client(), _current_evaluator_prompt(), _ensure_llm_connection(), _existing_rule_ids(), main() (+13 more)</p></article><article class="ccard" id="community-34" data-search="TestVllmProviderSeam _install_modal_stub(), _load_app_module(), KANBAN-064 — Modal+vLLM offline serving capability tests. Network-free by…, The runtime half: DEFAULT_PROVIDER=vllm must reach get_llm untouched., The capability must not move the default serving path., Minimal stand-in for the `modal` module surface used by the app., TestModalVllmApp, TestVllmProviderSeam">
-<div class="chead"><span class="cid">#034</span><h4>TestVllmProviderSeam</h4>
-<span class="ccount">8 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:23%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:13%"></div></div>
 <span class="cohval">0.14</span></div>
-<p class="cprev">_install_modal_stub(), _load_app_module(), KANBAN-064 — Modal+vLLM offline serving capability tests. Network-free by…, The runtime half: DEFAULT_PROVIDER=vllm must reach get_llm untouched., The capability must not move the default serving path., Minimal stand-in for the `modal` module surface used by the app., TestModalVllmApp, TestVllmProviderSeam</p></article><article class="ccard" id="community-35" data-search="experiment_log.py CompletedProcess, append_record(), default_log_path(), default_sibling_root(), _inside(), Path, Experiment-log integration for LegalBench runs. On run completion the runner…, Append one JSON line (stamped with an ISO timestamp if absent). (+8 more)">
-<div class="chead"><span class="cid">#035</span><h4>experiment_log.py</h4>
-<span class="ccount">16 nodes <em>+8 hidden</em></span></div>
+<p class="cprev">InboxHandler, Watcher, inbox_dir(), is_ingestion_paused(), list_inbox_files(), read_inbox_meta(), touch_watcher_heartbeat(), .is_paused() (+21 more)</p></article><article class="ccard" id="community-14" data-search="Confidence routing build_graph(), retry_classify_node(), after_arbiter(), after_boss(), after_classify(), after_extraction(), after_extraction_gated(), after_human_review() (+21 more)">
+<div class="chead"><span class="cid">#014</span><h4>Confidence routing</h4>
+<span class="ccount">29 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:32%"></div></div>
-<span class="cohval">0.19</span></div>
-<p class="cprev">CompletedProcess, append_record(), default_log_path(), default_sibling_root(), _inside(), Path, Experiment-log integration for LegalBench runs. On run completion the runner…, Append one JSON line (stamped with an ISO timestamp if absent). (+8 more)</p></article><article class="ccard" id="community-36" data-search="load_config Comma-joined model names actually used by this run (best-effort)., _resolved_models(), agent_uses_vision(), _any_specialist_uses_vision(), is_vision_capable(), max_pages(), pipeline_uses_vision(), Vision-capable model helpers for the mailroom pipeline. Some input agents (e.g.… (+9 more)">
-<div class="chead"><span class="cid">#036</span><h4>load_config</h4>
-<span class="ccount">17 nodes <em>+9 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:30%"></div></div>
-<span class="cohval">0.18</span></div>
-<p class="cprev">Comma-joined model names actually used by this run (best-effort)., _resolved_models(), agent_uses_vision(), _any_specialist_uses_vision(), is_vision_capable(), max_pages(), pipeline_uses_vision(), Vision-capable model helpers for the mailroom pipeline. Some input agents (e.g.… (+9 more)</p></article><article class="ccard" id="community-37" data-search="sorter_agent.py normalize_subtype(), BaseAgent, Coerce a raw sorter subtype output (or a CUAD folder name) to a canonical…, Classifies legal documents into mailroom document types. Two classification…, Classify a document and return (doc_type, contract_subtype, confidence,…, Classify and return the raw structured dict (used by eval loops). With…, Re-evaluate a document after low-confidence classification. Args: doc_text: The…, SorterAgent">
-<div class="chead"><span class="cid">#037</span><h4>sorter_agent.py</h4>
-<span class="ccount">8 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:27%"></div></div>
-<span class="cohval">0.16</span></div>
-<p class="cprev">normalize_subtype(), BaseAgent, Coerce a raw sorter subtype output (or a CUAD folder name) to a canonical…, Classifies legal documents into mailroom document types. Two classification…, Classify a document and return (doc_type, contract_subtype, confidence,…, Classify and return the raw structured dict (used by eval loops). With…, Re-evaluate a document after low-confidence classification. Args: doc_text: The…, SorterAgent</p></article><article class="ccard" id="community-38" data-search="test_observability.py _clear_observability_env(), fixture, Isolate backend selection per test., TestFlushHealth, TestInstrumentation, TestProviderResolution">
-<div class="chead"><span class="cid">#038</span><h4>test_observability.py</h4>
-<span class="ccount">6 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
-<span class="cohval">0.11</span></div>
-<p class="cprev">_clear_observability_env(), fixture, Isolate backend selection per test., TestFlushHealth, TestInstrumentation, TestProviderResolution</p></article><article class="ccard" id="community-39" data-search="env.py list_stale_processing_files(), Files stranded in processing/&lt;worker_id&gt;/ by a crashed process (L-1/A-18). A…, Move a stale processing claim back to the inbox (L-1/A-18). The watcher&#x27;s…, requeue_stale_processing(), default_environment(), load_env(), Path, Load environment variables from a .env file. The app reads its configuration… (+7 more)">
-<div class="chead"><span class="cid">#039</span><h4>env.py</h4>
-<span class="ccount">15 nodes <em>+7 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:25%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:14%"></div></div>
 <span class="cohval">0.15</span></div>
-<p class="cprev">list_stale_processing_files(), Files stranded in processing/&lt;worker_id&gt;/ by a crashed process (L-1/A-18). A…, Move a stale processing claim back to the inbox (L-1/A-18). The watcher&#x27;s…, requeue_stale_processing(), default_environment(), load_env(), Path, Load environment variables from a .env file. The app reads its configuration… (+7 more)</p></article><article class="ccard" id="community-40" data-search="TestAuth client(), fixture, API security tests (audit L-2/L-18): auth, upload guards, doc_id validation.…, TestAuth, TestDocIdValidation, TestUploadGuards">
-<div class="chead"><span class="cid">#040</span><h4>TestAuth</h4>
-<span class="ccount">6 nodes</span></div>
+<p class="cprev">build_graph(), retry_classify_node(), after_arbiter(), after_boss(), after_classify(), after_extraction(), after_extraction_gated(), after_human_review() (+21 more)</p></article><article class="ccard" id="community-4" data-search="Hub subclass inventories clause_handoff(), skip_conflict_field(), coerce_gt_value(), _compact(), enrich_extraction(), _normalize(), normalize_claim_type(), normalize_communication_type() (+19 more)">
+<div class="chead"><span class="cid">#004</span><h4>Hub subclass inventories</h4>
+<span class="ccount">27 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:14%"></div></div>
+<span class="cohval">0.14</span></div>
+<p class="cprev">clause_handoff(), skip_conflict_field(), coerce_gt_value(), _compact(), enrich_extraction(), _normalize(), normalize_claim_type(), normalize_communication_type() (+19 more)</p></article><article class="ccard" id="community-35" data-search="Sorter classification SorterAgent, SorterAgent, .classify(), .__init__(), _doc_classes_for_prompt(), _sorter_schema(), .classify(), .classify_json() (+18 more)">
+<div class="chead"><span class="cid">#035</span><h4>Sorter classification</h4>
+<span class="ccount">26 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:9%"></div></div>
+<span class="cohval">0.10</span></div>
+<p class="cprev">SorterAgent, SorterAgent, .classify(), .__init__(), _doc_classes_for_prompt(), _sorter_schema(), .classify(), .classify_json() (+18 more)</p></article><article class="ccard" id="community-2" data-search="Vision classifier classify_image(), clean_prediction(), extract_confidence(), extract_reasoning(), extract_runner_up(), _valid_classes(), build_text_messages(), build_vision_messages() (+17 more)">
+<div class="chead"><span class="cid">#002</span><h4>Vision classifier</h4>
+<span class="ccount">25 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:10%"></div></div>
+<span class="cohval">0.11</span></div>
+<p class="cprev">classify_image(), clean_prediction(), extract_confidence(), extract_reasoning(), extract_runner_up(), _valid_classes(), build_text_messages(), build_vision_messages() (+17 more)</p></article><article class="ccard" id="community-17" data-search="Vision rendering _resolved_models(), agent_uses_vision(), _any_specialist_uses_vision(), is_vision_capable(), max_pages(), pipeline_uses_vision(), render_document_pages(), render_image() (+15 more)">
+<div class="chead"><span class="cid">#017</span><h4>Vision rendering</h4>
+<span class="ccount">23 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:15%"></div></div>
+<span class="cohval">0.15</span></div>
+<p class="cprev">_resolved_models(), agent_uses_vision(), _any_specialist_uses_vision(), is_vision_capable(), max_pages(), pipeline_uses_vision(), render_document_pages(), render_image() (+15 more)</p></article><article class="ccard" id="community-42" data-search="Extraction schemas ComplianceFilingExtraction, ContractExtraction, CorporateRecordExtraction, CorrespondenceExtraction, InsuranceClaimExtraction, DocumentManifest, PipelineStage, Matter (+14 more)">
+<div class="chead"><span class="cid">#042</span><h4>Extraction schemas</h4>
+<span class="ccount">22 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:16%"></div></div>
+<span class="cohval">0.16</span></div>
+<p class="cprev">ComplianceFilingExtraction, ContractExtraction, CorporateRecordExtraction, CorrespondenceExtraction, InsuranceClaimExtraction, DocumentManifest, PipelineStage, Matter (+14 more)</p></article><article class="ccard" id="community-21" data-search="Langfuse evaluator sync _build_evaluator_request(), _build_output_definition(), _build_rule_request(), _client(), _current_evaluator_prompt(), _ensure_llm_connection(), _existing_rule_ids(), main() (+14 more)">
+<div class="chead"><span class="cid">#021</span><h4>Langfuse evaluator sync</h4>
+<span class="ccount">22 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:16%"></div></div>
+<span class="cohval">0.16</span></div>
+<p class="cprev">_build_evaluator_request(), _build_output_definition(), _build_rule_request(), _client(), _current_evaluator_prompt(), _ensure_llm_connection(), _existing_rule_ids(), main() (+14 more)</p></article><article class="ccard" id="community-22" data-search="Experiment log append_record(), build_record(), default_log_path(), default_sibling_root(), git_snapshot(), _inside(), regenerate(), _run_python() (+13 more)">
+<div class="chead"><span class="cid">#022</span><h4>Experiment log</h4>
+<span class="ccount">21 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
 <div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
-<span class="cohval">0.11</span></div>
-<p class="cprev">client(), fixture, API security tests (audit L-2/L-18): auth, upload guards, doc_id validation.…, TestAuth, TestDocIdValidation, TestUploadGuards</p></article><article class="ccard" id="community-41" data-search="runner.py ArgumentParser, build_parser(), main(), LegalBench suite CLI. Run a LegalBench task, trace it to Langfuse, and log the…, log_run(), _model_name(), print_summary(), Any (+8 more)">
-<div class="chead"><span class="cid">#041</span><h4>runner.py</h4>
-<span class="ccount">16 nodes <em>+8 hidden</em></span></div>
+<span class="cohval">0.19</span></div>
+<p class="cprev">append_record(), build_record(), default_log_path(), default_sibling_root(), git_snapshot(), _inside(), regenerate(), _run_python() (+13 more)</p></article><article class="ccard" id="community-9" data-search="CUAD corpus loaders _contracts_from_annotations(), _contracts_from_txt(), _download(), download_all(), _list_hf_files(), _load_subtype_taxonomy(), main(), _normalize_category() (+13 more)">
+<div class="chead"><span class="cid">#009</span><h4>CUAD corpus loaders</h4>
+<span class="ccount">21 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:38%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
+<span class="cohval">0.19</span></div>
+<p class="cprev">_contracts_from_annotations(), _contracts_from_txt(), _download(), download_all(), _list_hf_files(), _load_subtype_taxonomy(), main(), _normalize_category() (+13 more)</p></article><article class="ccard" id="community-3" data-search="run pilot _attach_field_scoring(), diff_report(), filter_real_samples(), _ground_truth_scores(), _ingest_scores(), main(), misfile_candidates(), _parse_expected_fields() (+12 more)">
+<div class="chead"><span class="cid">#003</span><h4>run pilot</h4>
+<span class="ccount">20 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:17%"></div></div>
+<span class="cohval">0.18</span></div>
+<p class="cprev">_attach_field_scoring(), diff_report(), filter_real_samples(), _ground_truth_scores(), _ingest_scores(), main(), misfile_candidates(), _parse_expected_fields() (+12 more)</p></article><article class="ccard" id="community-44" data-search="cuad maud as_clause_lines(), enrich_contract_extraction(), flatten_cuad_clause_labels(), flatten_maud_clause_labels(), infer_merger_consideration(), normalize_consideration(), parse_json_obj(), normalize_subtype() (+12 more)">
+<div class="chead"><span class="cid">#044</span><h4>cuad maud</h4>
+<span class="ccount">20 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:17%"></div></div>
+<span class="cohval">0.17</span></div>
+<p class="cprev">as_clause_lines(), enrich_contract_extraction(), flatten_cuad_clause_labels(), flatten_maud_clause_labels(), infer_merger_consideration(), normalize_consideration(), parse_json_obj(), normalize_subtype() (+12 more)</p></article><article class="ccard" id="community-27" data-search="providers ProviderConfig, .__init__(), _check_llm_provider(), compile_report_node(), get_llm(), get_llm_client(), get_llm_model(), instrument_client() (+11 more)">
+<div class="chead"><span class="cid">#027</span><h4>providers</h4>
+<span class="ccount">19 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:20%"></div></div>
+<span class="cohval">0.20</span></div>
+<p class="cprev">ProviderConfig, .__init__(), _check_llm_provider(), compile_report_node(), get_llm(), get_llm_client(), get_llm_model(), instrument_client() (+11 more)</p></article><article class="ccard" id="community-52" data-search="audit AuditLogEntry, archive_document(), _file_sha256(), get_audit_trail(), move_to_archive(), build_audit_entry(), compute_audit_hash(), compute_audit_hash_v1() (+11 more)">
+<div class="chead"><span class="cid">#052</span><h4>audit</h4>
+<span class="ccount">19 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
+<span class="cohval">0.19</span></div>
+<p class="cprev">AuditLogEntry, archive_document(), _file_sha256(), get_audit_trail(), move_to_archive(), build_audit_entry(), compute_audit_hash(), compute_audit_hash_v1() (+11 more)</p></article><article class="ccard" id="community-29" data-search="agent LegalBenchAgent, build_structured_schema(), .answer_binary(), .augmented_system_prompt(), .classify_family(), .__init__(), .system_prompt(), .usage() (+10 more)">
+<div class="chead"><span class="cid">#029</span><h4>agent</h4>
+<span class="ccount">18 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:13%"></div></div>
+<span class="cohval">0.14</span></div>
+<p class="cprev">LegalBenchAgent, build_structured_schema(), .answer_binary(), .augmented_system_prompt(), .classify_family(), .__init__(), .system_prompt(), .usage() (+10 more)</p></article><article class="ccard" id="community-55" data-search="data CorpusUnavailable, Sample, _fingerprint(), load_cuad_qa(), load_family_rows(), _normalize_prediction(), _extract_binary(), data.py (+9 more)">
+<div class="chead"><span class="cid">#055</span><h4>data</h4>
+<span class="ccount">17 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:16%"></div></div>
+<span class="cohval">0.16</span></div>
+<p class="cprev">CorpusUnavailable, Sample, _fingerprint(), load_cuad_qa(), load_family_rows(), _normalize_prediction(), _extract_binary(), data.py (+9 more)</p></article><article class="ccard" id="community-53" data-search="db _apply_sqlite_pragmas(), check_connectivity(), close_db(), _engine_kwargs(), _ensure_models_imported(), get_engine(), get_session(), _get_sessionmaker() (+9 more)">
+<div class="chead"><span class="cid">#053</span><h4>db</h4>
+<span class="ccount">17 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
+<span class="cohval">0.18</span></div>
+<p class="cprev">_apply_sqlite_pragmas(), check_connectivity(), close_db(), _engine_kwargs(), _ensure_models_imported(), get_engine(), get_session(), _get_sessionmaker() (+9 more)</p></article><article class="ccard" id="community-30" data-search="prompts docclass _append(), _build_versions(), _rules(), _specialist_rules(), prompt_templates(), _client(), _current_production(), main() (+8 more)">
+<div class="chead"><span class="cid">#030</span><h4>prompts docclass</h4>
+<span class="ccount">16 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
+<span class="cohval">0.18</span></div>
+<p class="cprev">_append(), _build_versions(), _rules(), _specialist_rules(), prompt_templates(), _client(), _current_production(), main() (+8 more)</p></article><article class="ccard" id="community-26" data-search="ops monitor OpsMonitor, _main(), ._analyze_metrics(), ._gather_metrics(), .__init__(), .pause_info(), ._query_catalog(), .start() (+7 more)">
+<div class="chead"><span class="cid">#026</span><h4>ops monitor</h4>
+<span class="ccount">15 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:19%"></div></div>
+<span class="cohval">0.19</span></div>
+<p class="cprev">OpsMonitor, _main(), ._analyze_metrics(), ._gather_metrics(), .__init__(), .pause_info(), ._query_catalog(), .start() (+7 more)</p></article><article class="ccard" id="community-36" data-search="langfuse setup _NoopLangfuse, _NoopSpan, .create_trace_id(), .flush(), .get_current_trace_id(), .set_current_trace_io(), .shutdown(), .start_as_current_observation() (+7 more)">
+<div class="chead"><span class="cid">#036</span><h4>langfuse setup</h4>
+<span class="ccount">15 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:15%"></div></div>
+<span class="cohval">0.15</span></div>
+<p class="cprev">_NoopLangfuse, _NoopSpan, .create_trace_id(), .flush(), .get_current_trace_id(), .set_current_trace_io(), .shutdown(), .start_as_current_observation() (+7 more)</p></article><article class="ccard" id="community-43" data-search="logging _RotatingFileSink, .__call__(), .__init__(), setup_logging(), _aggregate(), _cell(), main(), _print_table() (+7 more)">
+<div class="chead"><span class="cid">#043</span><h4>logging</h4>
+<span class="ccount">15 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:20%"></div></div>
+<span class="cohval">0.21</span></div>
+<p class="cprev">_RotatingFileSink, .__call__(), .__init__(), setup_logging(), _aggregate(), _cell(), main(), _print_table() (+7 more)</p></article><article class="ccard" id="community-24" data-search="retry _is_retryable_error(), _is_json_mode_400(), _is_retryable(), is_transient_error(), _retry_after_seconds(), _retry_config(), retry_sleep_seconds(), _status_code() (+7 more)">
+<div class="chead"><span class="cid">#024</span><h4>retry</h4>
+<span class="ccount">15 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:22%"></div></div>
 <span class="cohval">0.23</span></div>
-<p class="cprev">ArgumentParser, build_parser(), main(), LegalBench suite CLI. Run a LegalBench task, trace it to Langfuse, and log the…, log_run(), _model_name(), print_summary(), Any (+8 more)</p></article><article class="ccard" id="community-42" data-search="run_quality_judges.py flush_phoenix(), Force-export buffered spans without disabling the provider., create_trace_score(), Attach a score to a trace by id (offline/pilot scoring — no active tracing…, flush(), Flush queued events for the active backend. Safe to call anytime. Tracks flush…, _dim_summary(), _ingest() (+8 more)">
-<div class="chead"><span class="cid">#042</span><h4>run_quality_judges.py</h4>
-<span class="ccount">16 nodes <em>+8 hidden</em></span></div>
+<p class="cprev">_is_retryable_error(), _is_json_mode_400(), _is_retryable(), is_transient_error(), _retry_after_seconds(), _retry_config(), retry_sleep_seconds(), _status_code() (+7 more)</p></article><article class="ccard" id="community-37" data-search="guards apply_classification_guard(), apply_extraction_guard(), guard_classification(), guard_extraction(), _has_substantive_content(), _is_valid_confidence(), _valid_subtypes(), guards.py (+7 more)">
+<div class="chead"><span class="cid">#037</span><h4>guards</h4>
+<span class="ccount">15 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:30%"></div></div>
-<span class="cohval">0.18</span></div>
-<p class="cprev">flush_phoenix(), Force-export buffered spans without disabling the provider., create_trace_score(), Attach a score to a trace by id (offline/pilot scoring — no active tracing…, flush(), Flush queued events for the active backend. Safe to call anytime. Tracks flush…, _dim_summary(), _ingest() (+8 more)</p></article><article class="ccard" id="community-43" data-search="PipelineStage Enum, _build_handoff_context(), classify_node(), _detect_conflict(), extract_node(), Chained-eval handoff: prefix the sorter&#x27;s classification (doc class + contract…, Deterministically compare a fresh extraction against archived records of the…, retry_classify_node() (+7 more)">
-<div class="chead"><span class="cid">#043</span><h4>PipelineStage</h4>
-<span class="ccount">15 nodes <em>+7 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:28%"></div></div>
-<span class="cohval">0.17</span></div>
-<p class="cprev">Enum, _build_handoff_context(), classify_node(), _detect_conflict(), extract_node(), Chained-eval handoff: prefix the sorter&#x27;s classification (doc class + contract…, Deterministically compare a fresh extraction against archived records of the…, retry_classify_node() (+7 more)</p></article><article class="ccard" id="community-44" data-search="resume_from_review _extract_text_from_docx(), _extract_text_from_image(), _extract_text_from_pdf(), Path, Render an input document to page-image data-URIs for vision-capable agents…, Extract text from .docx (paragraphs + tables) via python-docx. Previously .docx…, Resume a human-approved review document with a FRESH extraction. Stateless…, _read_file_text() (+10 more)">
-<div class="chead"><span class="cid">#044</span><h4>resume_from_review</h4>
-<span class="ccount">18 nodes <em>+10 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:22%"></div></div>
-<span class="cohval">0.13</span></div>
-<p class="cprev">_extract_text_from_docx(), _extract_text_from_image(), _extract_text_from_pdf(), Path, Render an input document to page-image data-URIs for vision-capable agents…, Extract text from .docx (paragraphs + tables) via python-docx. Previously .docx…, Resume a human-approved review document with a FRESH extraction. Stateless…, _read_file_text() (+10 more)</p></article><article class="ccard" id="community-45" data-search="get-generation.ts apiKey, args, apiKey, args, json, json, fetchApi(), fetchGeneration() (+4 more)">
-<div class="chead"><span class="cid">#045</span><h4>get-generation.ts</h4>
-<span class="ccount">12 nodes <em>+4 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:32%"></div></div>
-<span class="cohval">0.19</span></div>
-<p class="cprev">apiKey, args, apiKey, args, json, json, fetchApi(), fetchGeneration() (+4 more)</p></article><article class="ccard" id="community-46" data-search="DocumentManifest entry_route(), Entry router: a review-resume re-invocation starts at fresh extraction…, DocumentManifest, BaseModel, phased_client(), fixture, P0.3 — Review resume-lite: an approved review re-invokes the graph starting at…, Mock LLM clients with a scripted sequence: the LangChain sorter returns low… (+3 more)">
-<div class="chead"><span class="cid">#046</span><h4>DocumentManifest</h4>
-<span class="ccount">11 nodes <em>+3 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:27%"></div></div>
-<span class="cohval">0.16</span></div>
-<p class="cprev">entry_route(), Entry router: a review-resume re-invocation starts at fresh extraction…, DocumentManifest, BaseModel, phased_client(), fixture, P0.3 — Review resume-lite: an approved review re-invokes the graph starting at…, Mock LLM clients with a scripted sequence: the LangChain sorter returns low… (+3 more)</p></article><article class="ccard" id="community-47" data-search="test_legalbench.py family_classification_prompt_v1(), get_prompt(), Versioned LegalBench task prompts. Prompt version = experiment identity in the…, Fill the 25-family list into the multiclass prompt (called per run so the…, Resolve a prompt version to its system-prompt text., contracts_dir(), cuad_file(), _cuad_payload() (+4 more)">
-<div class="chead"><span class="cid">#047</span><h4>test_legalbench.py</h4>
-<span class="ccount">12 nodes <em>+4 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:28%"></div></div>
-<span class="cohval">0.17</span></div>
-<p class="cprev">family_classification_prompt_v1(), get_prompt(), Versioned LegalBench task prompts. Prompt version = experiment identity in the…, Fill the 25-family list into the multiclass prompt (called per run so the…, Resolve a prompt version to its system-prompt text., contracts_dir(), cuad_file(), _cuad_payload() (+4 more)</p></article><article class="ccard" id="community-48" data-search="SorterAgent _LangChainSorterAgent, Mailroom-configured sorter. - Model/budget defaults come from ``taxonomy.yaml``…, Classify a document, optionally with page images attached. Returns ``(doc_type,…, SorterAgent, get_all_doc_types(), TestSorterAgent">
-<div class="chead"><span class="cid">#048</span><h4>SorterAgent</h4>
-<span class="ccount">6 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:37%"></div></div>
-<span class="cohval">0.22</span></div>
-<p class="cprev">_LangChainSorterAgent, Mailroom-configured sorter. - Model/budget defaults come from ``taxonomy.yaml``…, Classify a document, optionally with page images attached. Returns ``(doc_type,…, SorterAgent, get_all_doc_types(), TestSorterAgent</p></article><article class="ccard" id="community-49" data-search="langfuse_tracing.py attach_run_scores(), ensure_score_configs_if_enabled(), _environment(), legalbench_trace(), Any, question_observation(), Langfuse tracing for LegalBench runs. One trace per run (deterministic seed =…, Open the per-run Langfuse trace (no-op when tracing is disabled). (+6 more)">
-<div class="chead"><span class="cid">#049</span><h4>langfuse_tracing.py</h4>
-<span class="ccount">14 nodes <em>+6 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:28%"></div></div>
-<span class="cohval">0.17</span></div>
-<p class="cprev">attach_run_scores(), ensure_score_configs_if_enabled(), _environment(), legalbench_trace(), Any, question_observation(), Langfuse tracing for LegalBench runs. One trace per run (deterministic seed =…, Open the per-run Langfuse trace (no-op when tracing is disabled). (+6 more)</p></article><article class="ccard" id="community-50" data-search="get_field_types get_field_types(), Field→scoring-type mapping, auto-loading mailroom&#x27;s taxonomy. The package…, TestFieldTypesFromConfig, TestLangfuseWiring, TestScoreExtraction">
-<div class="chead"><span class="cid">#050</span><h4>get_field_types</h4>
-<span class="ccount">5 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:28%"></div></div>
-<span class="cohval">0.17</span></div>
-<p class="cprev">get_field_types(), Field→scoring-type mapping, auto-loading mailroom&#x27;s taxonomy. The package…, TestFieldTypesFromConfig, TestLangfuseWiring, TestScoreExtraction</p></article><article class="ccard" id="community-52" data-search="calibrate_field_scoring.py main(), _perturb_date(), _perturb_entity_list(), _perturb_free_text(), _perturb_money(), _perturb_name(), _predictions_for(), Random (+6 more)">
-<div class="chead"><span class="cid">#052</span><h4>calibrate_field_scoring.py</h4>
-<span class="ccount">14 nodes <em>+6 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:33%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:20%"></div></div>
 <span class="cohval">0.20</span></div>
-<p class="cprev">main(), _perturb_date(), _perturb_entity_list(), _perturb_free_text(), _perturb_money(), _perturb_name(), _predictions_for(), Random (+6 more)</p></article><article class="ccard" id="community-53" data-search="FakeEmbedding FakeEmbedding, Deterministic fake embedding similarity for rescue tests., TestFreeTextField, TestNameField">
-<div class="chead"><span class="cid">#053</span><h4>FakeEmbedding</h4>
-<span class="ccount">4 nodes</span></div>
+<p class="cprev">apply_classification_guard(), apply_extraction_guard(), guard_classification(), guard_extraction(), _has_substantive_content(), _is_valid_confidence(), _valid_subtypes(), guards.py (+7 more)</p></article><article class="ccard" id="community-56" data-search="sync dataset _escape(), generate_pdf_from_text(), _load_manifest(), prepare_samples(), _client(), _doc_text(), _ensure_dataset(), main() (+7 more)">
+<div class="chead"><span class="cid">#056</span><h4>sync dataset</h4>
+<span class="ccount">15 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:23%"></div></div>
-<span class="cohval">0.14</span></div>
-<p class="cprev">FakeEmbedding, Deterministic fake embedding similarity for rescue tests., TestFreeTextField, TestNameField</p></article><article class="ccard" id="community-54" data-search="prompt_templates parametrize, _langchain_prompt(), prompt_templates(), Local template for the vendored LangChain agents&#x27; versioned prompts…, agent_name -&gt; local prompt template (with `{{var}}` placeholders). Single…, _normalize(), Guard the evidence-based confidence calibration rule in agent prompts. The…, test_confidence_calibration_rule_present() (+1 more)">
-<div class="chead"><span class="cid">#054</span><h4>prompt_templates</h4>
-<span class="ccount">9 nodes <em>+1 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:33%"></div></div>
-<span class="cohval">0.20</span></div>
-<p class="cprev">parametrize, _langchain_prompt(), prompt_templates(), Local template for the vendored LangChain agents&#x27; versioned prompts…, agent_name -&gt; local prompt template (with `{{var}}` placeholders). Single…, _normalize(), Guard the evidence-based confidence calibration rule in agent prompts. The…, test_confidence_calibration_rule_present() (+1 more)</p></article><article class="ccard" id="community-55" data-search="setup_logging RotatingFileHandler, Structlog processor that emits the rendered event dict to a rotating stdlib…, _RotatingFileSink, setup_logging(), TestLoggingSetup">
-<div class="chead"><span class="cid">#055</span><h4>setup_logging</h4>
-<span class="ccount">5 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:43%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:25%"></div></div>
 <span class="cohval">0.26</span></div>
-<p class="cprev">RotatingFileHandler, Structlog processor that emits the rendered event dict to a rotating stdlib…, _RotatingFileSink, setup_logging(), TestLoggingSetup</p></article><article class="ccard" id="community-56" data-search="BaseAgent BaseAgent, ABC, Build the user-message content for a document input. Vision-capable models get…, Truncate document text to the agent&#x27;s configured input budget, marking the…, True when this agent&#x27;s model accepts image input and (optionally) page images…">
-<div class="chead"><span class="cid">#056</span><h4>BaseAgent</h4>
-<span class="ccount">5 nodes</span></div>
+<p class="cprev">_escape(), generate_pdf_from_text(), _load_manifest(), prepare_samples(), _client(), _doc_text(), _ensure_dataset(), main() (+7 more)</p></article><article class="ccard" id="community-23" data-search="base BaseAgent, ._build_multimodal(), ._call_llm(), ._call_structured(), ._configured_max_input_chars(), ._configured_max_tokens(), ._configured_reasoning_effort(), .system_prompt() (+6 more)">
+<div class="chead"><span class="cid">#023</span><h4>base</h4>
+<span class="ccount">14 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:38%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:23%"></div></div>
 <span class="cohval">0.23</span></div>
-<p class="cprev">BaseAgent, ABC, Build the user-message content for a document input. Vision-capable models get…, Truncate document text to the agent&#x27;s configured input budget, marking the…, True when this agent&#x27;s model accepts image input and (optionally) page images…</p></article><article class="ccard" id="community-57" data-search="scoring.py equivalent_subtypes(), Return True when two subtype keys are the same family or members of the same…, _binary_f1(), _ece(), _mean(), Any, Deterministic scoring for LegalBench runs — every number computed locally. No…, Expected calibration error over confidence/outcome pairs. (+5 more)">
-<div class="chead"><span class="cid">#057</span><h4>scoring.py</h4>
-<span class="ccount">13 nodes <em>+5 hidden</em></span></div>
+<p class="cprev">BaseAgent, ._build_multimodal(), ._call_llm(), ._call_structured(), ._configured_max_input_chars(), ._configured_max_tokens(), ._configured_reasoning_effort(), .system_prompt() (+6 more)</p></article><article class="ccard" id="community-39" data-search="judge CompletenessJudge, ._field_list(), .judge_classification(), .judge_completeness(), .judge_extraction_correctness(), .system_prompt(), ._taxonomy_spec(), ._truncate() (+6 more)">
+<div class="chead"><span class="cid">#039</span><h4>judge</h4>
+<span class="ccount">14 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:42%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
+<span class="cohval">0.19</span></div>
+<p class="cprev">CompletenessJudge, ._field_list(), .judge_classification(), .judge_completeness(), .judge_extraction_correctness(), .system_prompt(), ._taxonomy_spec(), ._truncate() (+6 more)</p></article><article class="ccard" id="community-41" data-search="sync dashboards WidgetSpec, _client(), _existing_placements(), json_dumps(), main(), _placement_kwargs(), _score_widget(), _spec_to_request() (+6 more)">
+<div class="chead"><span class="cid">#041</span><h4>sync dashboards</h4>
+<span class="ccount">14 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:28%"></div></div>
+<span class="cohval">0.29</span></div>
+<p class="cprev">WidgetSpec, _client(), _existing_placements(), json_dumps(), main(), _placement_kwargs(), _score_widget(), _spec_to_request() (+6 more)</p></article><article class="ccard" id="community-38" data-search="sync langfuse logs main(), _slug(), _client(), main(), _parse_since(), sync_logs(), _trace_basics(), _trace_stage() (+6 more)">
+<div class="chead"><span class="cid">#038</span><h4>sync langfuse logs</h4>
+<span class="ccount">14 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:24%"></div></div>
+<span class="cohval">0.24</span></div>
+<p class="cprev">main(), _slug(), _client(), main(), _parse_since(), sync_logs(), _trace_basics(), _trace_stage() (+6 more)</p></article><article class="ccard" id="community-40" data-search="langfuse tracing attach_run_scores(), ensure_score_configs_if_enabled(), _environment(), legalbench_trace(), question_observation(), is_enabled(), langfuse_tracing.py, Any (+6 more)">
+<div class="chead"><span class="cid">#040</span><h4>langfuse tracing</h4>
+<span class="ccount">14 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:18%"></div></div>
+<span class="cohval">0.19</span></div>
+<p class="cprev">attach_run_scores(), ensure_score_configs_if_enabled(), _environment(), legalbench_trace(), question_observation(), is_enabled(), langfuse_tracing.py, Any (+6 more)</p></article><article class="ccard" id="community-58" data-search="scoring equivalent_subtypes(), _binary_f1(), _ece(), _mean(), _safe_div(), score_binary(), score_multiclass(), scoring.py (+6 more)">
+<div class="chead"><span class="cid">#058</span><h4>scoring</h4>
+<span class="ccount">14 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:25%"></div></div>
 <span class="cohval">0.25</span></div>
-<p class="cprev">equivalent_subtypes(), Return True when two subtype keys are the same family or members of the same…, _binary_f1(), _ece(), _mean(), Any, Deterministic scoring for LegalBench runs — every number computed locally. No…, Expected calibration error over confidence/outcome pairs. (+5 more)</p></article><article class="ccard" id="community-58" data-search="build_structured_schema build_structured_schema(), BossAgent, BaseAgent, TestBossAgent, TestBossBudgets">
-<div class="chead"><span class="cid">#058</span><h4>build_structured_schema</h4>
-<span class="ccount">5 nodes</span></div>
+<p class="cprev">equivalent_subtypes(), _binary_f1(), _ece(), _mean(), _safe_div(), score_binary(), score_multiclass(), scoring.py (+6 more)</p></article><article class="ccard" id="community-10" data-search="build graph _write_review_audit_entry(), archive_node(), classify_node(), _emit_stage_audit(), _latest_audit_hash(), _run_coro(), _touch_heartbeat(), _write_audit_log() (+5 more)">
+<div class="chead"><span class="cid">#010</span><h4>build graph</h4>
+<span class="ccount">13 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:43%"></div></div>
-<span class="cohval">0.26</span></div>
-<p class="cprev">build_structured_schema(), BossAgent, BaseAgent, TestBossAgent, TestBossBudgets</p></article><article class="ccard" id="community-59" data-search="MockLegalBenchModel _hash(), MockLegalBenchModel, Any, Deterministic mock model for LegalBench runs (no network, no OpenAI). Answers…, Implements the LegalBenchAgent interface deterministically., TestMockModel">
-<div class="chead"><span class="cid">#059</span><h4>MockLegalBenchModel</h4>
-<span class="ccount">6 nodes</span></div>
+<div class="cohmeter"><div class="cohfill" style="width:19%"></div></div>
+<span class="cohval">0.19</span></div>
+<p class="cprev">_write_review_audit_entry(), archive_node(), classify_node(), _emit_stage_audit(), _latest_audit_hash(), _run_coro(), _touch_heartbeat(), _write_audit_log() (+5 more)</p></article><article class="ccard" id="community-60" data-search="phoenix setup flush_phoenix(), _init_opentelemetry(), _instrument_openai(), instrument_openai_client(), is_configured(), phoenix_enabled(), phoenix_setup.py, Arize Phoenix tracing backend — local, cost-free default for llm-mailroom.… (+5 more)">
+<div class="chead"><span class="cid">#060</span><h4>phoenix setup</h4>
+<span class="ccount">13 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:37%"></div></div>
-<span class="cohval">0.22</span></div>
-<p class="cprev">_hash(), MockLegalBenchModel, Any, Deterministic mock model for LegalBench runs (no network, no OpenAI). Answers…, Implements the LegalBenchAgent interface deterministically., TestMockModel</p></article><article class="ccard" id="community-60" data-search="field_is_ambiguous field_is_ambiguous(), get_type_bands(), Per-field-type ambiguous-band overrides from ``field_scoring.type_bands``.…, Is this field score in the (possibly type-specific) ambiguous band? Band check…, Calibrated per-field-type ambiguous bands (issue #4 calibration step)., TestTypeBands">
-<div class="chead"><span class="cid">#060</span><h4>field_is_ambiguous</h4>
-<span class="ccount">6 nodes</span></div>
+<div class="cohmeter"><div class="cohfill" style="width:20%"></div></div>
+<span class="cohval">0.21</span></div>
+<p class="cprev">flush_phoenix(), _init_opentelemetry(), _instrument_openai(), instrument_openai_client(), is_configured(), phoenix_enabled(), phoenix_setup.py, Arize Phoenix tracing backend — local, cost-free default for llm-mailroom.… (+5 more)</p></article><article class="ccard" id="community-57" data-search="Docclass prompt arm list_prompts(), PROMPT_TEMPLATES(), docclass_prompts_enabled(), langchain_prompt_version(), managed_prompt_lookup(), langchain_agents/prompts.py, docclass_mode.py, List all available prompt versions. (+4 more)">
+<div class="chead"><span class="cid">#057</span><h4>Docclass prompt arm</h4>
+<span class="ccount">12 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:38%"></div></div>
-<span class="cohval">0.23</span></div>
-<p class="cprev">field_is_ambiguous(), get_type_bands(), Per-field-type ambiguous-band overrides from ``field_scoring.type_bands``.…, Is this field score in the (possibly type-specific) ambiguous band? Band check…, Calibrated per-field-type ambiguous bands (issue #4 calibration step)., TestTypeBands</p></article><article class="ccard" id="community-61" data-search="scores.py _client(), compute_run_metrics(), emit_pipeline_scores(), is_enabled(), Quality scores for document runs. Backend-agnostic helpers to attach evaluation…, Attach a score to the currently active trace (inside a pipeline_trace block).…, Core per-run metrics, computed for EVERY finished run regardless of the tracing…, Attach self-evident production scores for a finished run (no ground truth… (+4 more)">
-<div class="chead"><span class="cid">#061</span><h4>scores.py</h4>
-<span class="ccount">12 nodes <em>+4 hidden</em></span></div>
+<div class="cohmeter"><div class="cohfill" style="width:19%"></div></div>
+<span class="cohval">0.20</span></div>
+<p class="cprev">list_prompts(), PROMPT_TEMPLATES(), docclass_prompts_enabled(), langchain_prompt_version(), managed_prompt_lookup(), langchain_agents/prompts.py, docclass_mode.py, List all available prompt versions. (+4 more)</p></article><article class="ccard" id="community-46" data-search="mock MockLegalBenchModel, _hash(), .answer_binary(), .classify_family(), .__init__(), .last_usage(), .usage(), legalbench/mock.py (+3 more)">
+<div class="chead"><span class="cid">#046</span><h4>mock</h4>
+<span class="ccount">11 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:38%"></div></div>
-<span class="cohval">0.23</span></div>
-<p class="cprev">_client(), compute_run_metrics(), emit_pipeline_scores(), is_enabled(), Quality scores for document runs. Backend-agnostic helpers to attach evaluation…, Attach a score to the currently active trace (inside a pipeline_trace block).…, Core per-run metrics, computed for EVERY finished run regardless of the tracing…, Attach self-evident production scores for a finished run (no ground truth… (+4 more)</p></article><article class="ccard" id="community-62" data-search="get_extraction_schema ComplianceFilingExtraction, ContractExtraction, CorporateRecordExtraction, CorrespondenceExtraction, CourtOpinionExtraction, DueDiligenceExtraction, get_extraction_schema(), BaseModel (+2 more)">
-<div class="chead"><span class="cid">#062</span><h4>get_extraction_schema</h4>
-<span class="ccount">10 nodes <em>+2 hidden</em></span></div>
+<div class="cohmeter"><div class="cohfill" style="width:27%"></div></div>
+<span class="cohval">0.27</span></div>
+<p class="cprev">MockLegalBenchModel, _hash(), .answer_binary(), .classify_family(), .__init__(), .last_usage(), .usage(), legalbench/mock.py (+3 more)</p></article><article class="ccard" id="community-33" data-search="sync models default_environment(), _client(), _cost_models(), _existing_by_name(), main(), _match_pattern(), _prices_match(), sync_models() (+3 more)">
+<div class="chead"><span class="cid">#033</span><h4>sync models</h4>
+<span class="ccount">11 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:53%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:29%"></div></div>
+<span class="cohval">0.29</span></div>
+<p class="cprev">default_environment(), _client(), _cost_models(), _existing_by_name(), main(), _match_pattern(), _prices_match(), sync_models() (+3 more)</p></article><article class="ccard" id="community-45" data-search="Intake clerk apply_intake(), deterministic_normalize(), intake_span_output(), looks_messy(), check_contract(), select_stratified(), intake.py, Deterministic intake clerk — whitespace / hyphen / NBSP normalize. Procedural… (+3 more)">
+<div class="chead"><span class="cid">#045</span><h4>Intake clerk</h4>
+<span class="ccount">11 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:25%"></div></div>
+<span class="cohval">0.25</span></div>
+<p class="cprev">apply_intake(), deterministic_normalize(), intake_span_output(), looks_messy(), check_contract(), select_stratified(), intake.py, Deterministic intake clerk — whitespace / hyphen / NBSP normalize. Procedural… (+3 more)</p></article><article class="ccard" id="community-47" data-search="bootstrap bootstrap_ci(), _clean(), delta_significance(), _resample_means(), bootstrap.py, Any, Random, Bootstrap confidence intervals and small-sample delta testing. Ported verbatim… (+3 more)">
+<div class="chead"><span class="cid">#047</span><h4>bootstrap</h4>
+<span class="ccount">11 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:29%"></div></div>
+<span class="cohval">0.29</span></div>
+<p class="cprev">bootstrap_ci(), _clean(), delta_significance(), _resample_means(), bootstrap.py, Any, Random, Bootstrap confidence intervals and small-sample delta testing. Ported verbatim… (+3 more)</p></article><article class="ccard" id="community-48" data-search="fetch external samples _caption_from_text(), _download(), fetch_atticus(), fetch_legalbench(), fetch_pileoflaw(), main(), _stream_pol_records(), fetch_external_samples.py (+3 more)">
+<div class="chead"><span class="cid">#048</span><h4>fetch external samples</h4>
+<span class="ccount">11 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:32%"></div></div>
+<span class="cohval">0.33</span></div>
+<p class="cprev">_caption_from_text(), _download(), fetch_atticus(), fetch_legalbench(), fetch_pileoflaw(), main(), _stream_pol_records(), fetch_external_samples.py (+3 more)</p></article><article class="ccard" id="community-32" data-search="Taxonomy extract aliases review_classify_node(), get_all_doc_types(), get_doc_class(), get_extraction_schema_name(), get_sorter_label_set(), resolve_extract_class(), config.py, KANBAN-062 (Lane A): independent agent second opinion on a medium-band… (+2 more)">
+<div class="chead"><span class="cid">#032</span><h4>Taxonomy extract aliases</h4>
+<span class="ccount">10 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:28%"></div></div>
+<span class="cohval">0.29</span></div>
+<p class="cprev">review_classify_node(), get_all_doc_types(), get_doc_class(), get_extraction_schema_name(), get_sorter_label_set(), resolve_extract_class(), config.py, KANBAN-062 (Lane A): independent agent second opinion on a medium-band… (+2 more)</p></article><article class="ccard" id="community-49" data-search="cutover cutover_agent(), cutover_all(), list_agents(), list_local_models(), load_config(), main(), recommend_cutover_order(), save_config() (+2 more)">
+<div class="chead"><span class="cid">#049</span><h4>cutover</h4>
+<span class="ccount">10 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:40%"></div></div>
+<span class="cohval">0.40</span></div>
+<p class="cprev">cutover_agent(), cutover_all(), list_agents(), list_local_models(), load_config(), main(), recommend_cutover_order(), save_config() (+2 more)</p></article><article class="ccard" id="community-50" data-search="Contracts specialist ContractsSpecialist, ContractsSpecialist, .__init__(), .__init__(), .system_prompt(), _LangChainContractsSpecialist, contracts_specialist.py, Contracts specialist — LangChain version vendored from llm-entity-extraction.… (+1 more)">
+<div class="chead"><span class="cid">#050</span><h4>Contracts specialist</h4>
+<span class="ccount">9 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:25%"></div></div>
+<span class="cohval">0.25</span></div>
+<p class="cprev">ContractsSpecialist, ContractsSpecialist, .__init__(), .__init__(), .system_prompt(), _LangChainContractsSpecialist, contracts_specialist.py, Contracts specialist — LangChain version vendored from llm-entity-extraction.… (+1 more)</p></article><article class="ccard" id="community-51" data-search="env utils bool_env(), get_env(), load_env(), require_env(), env_utils.py, Load ``braintrust.env`` then ``.env`` into the environment (idempotent).…, Validate that all given environment variables are set and non-empty. Returns…, Get an environment variable with a default fallback. (+1 more)">
+<div class="chead"><span class="cid">#051</span><h4>env utils</h4>
+<span class="ccount">9 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:27%"></div></div>
+<span class="cohval">0.28</span></div>
+<p class="cprev">bool_env(), get_env(), load_env(), require_env(), env_utils.py, Load ``braintrust.env`` then ``.env`` into the environment (idempotent).…, Validate that all given environment variables are set and non-empty. Returns…, Get an environment variable with a default fallback. (+1 more)</p></article><article class="ccard" id="community-54" data-search="write pilot report build_report(), _clean_extracted(), _field_score_for(), _fmt_usd(), _json_block(), _load_config(), main(), _manifest_rows() (+1 more)">
+<div class="chead"><span class="cid">#054</span><h4>write pilot report</h4>
+<span class="ccount">9 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:41%"></div></div>
+<span class="cohval">0.42</span></div>
+<p class="cprev">build_report(), _clean_extracted(), _field_score_for(), _fmt_usd(), _json_block(), _load_config(), main(), _manifest_rows() (+1 more)</p></article><article class="ccard" id="community-61" data-search="braintrust setup configure(), flush_braintrust(), instrument_openai_client(), is_configured(), braintrust_setup.py, Braintrust tracing backend — alternative to Langfuse. Switch to it with…, Initialize Braintrust (idempotent). Returns True when active., Wrap `client` with Braintrust instrumentation, or return it unchanged.">
+<div class="chead"><span class="cid">#061</span><h4>braintrust setup</h4>
+<span class="ccount">8 nodes</span></div>
+<div class="cohrow"><span class="cohlabel">cohesion</span>
+<div class="cohmeter"><div class="cohfill" style="width:32%"></div></div>
 <span class="cohval">0.32</span></div>
-<p class="cprev">ComplianceFilingExtraction, ContractExtraction, CorporateRecordExtraction, CorrespondenceExtraction, CourtOpinionExtraction, DueDiligenceExtraction, get_extraction_schema(), BaseModel (+2 more)</p></article><article class="ccard" id="community-63" data-search="test_field_scoring.py _no_real_embedding(), fixture, Deterministic field-type-aware extraction scoring (issues #4/#5). Covers the…, Never load sentence-transformers in tests (no model download)., TestDispatch, TestIdField">
-<div class="chead"><span class="cid">#063</span><h4>test_field_scoring.py</h4>
-<span class="ccount">6 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:25%"></div></div>
-<span class="cohval">0.15</span></div>
-<p class="cprev">_no_real_embedding(), fixture, Deterministic field-type-aware extraction scoring (issues #4/#5). Covers the…, Never load sentence-transformers in tests (no model download)., TestDispatch, TestIdField</p></article><article class="ccard" id="community-64" data-search="modal_vllm.py build_vllm_command(), main(), KANBAN-064 — Modal-deployed vLLM server for llm-mailroom (offline capability).…, `modal run modal_vllm.py` prints deployment guidance without serving., Environment for the vLLM process inside the container., Assemble the `vllm serve` argv. Kept pure for unit testing., serve(), _server_env() (+3 more)">
-<div class="chead"><span class="cid">#064</span><h4>modal_vllm.py</h4>
-<span class="ccount">11 nodes <em>+3 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:33%"></div></div>
-<span class="cohval">0.20</span></div>
-<p class="cprev">build_vllm_command(), main(), KANBAN-064 — Modal-deployed vLLM server for llm-mailroom (offline capability).…, `modal run modal_vllm.py` prints deployment guidance without serving., Environment for the vLLM process inside the container., Assemble the `vllm serve` argv. Kept pure for unit testing., serve(), _server_env() (+3 more)</p></article><article class="ccard" id="community-65" data-search="CorporateRecordsSpecialist CorporateRecordsSpecialist, BaseAgent, The `json_object` response format requires the literal token `json` in the…, TestStructuredCallJsonInvariant, TestCorporateRecordsSpecialist">
-<div class="chead"><span class="cid">#065</span><h4>CorporateRecordsSpecialist</h4>
-<span class="ccount">5 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:40%"></div></div>
-<span class="cohval">0.24</span></div>
-<p class="cprev">CorporateRecordsSpecialist, BaseAgent, The `json_object` response format requires the literal token `json` in the…, TestStructuredCallJsonInvariant, TestCorporateRecordsSpecialist</p></article><article class="ccard" id="community-66" data-search="after_judge after_arbiter(), after_judge(), KANBAN-063 (Lane B): judge outcome router. ``complete`` (or a skipped/gated-out…, KANBAN-063 (Lane B): arbiter outcome router, with the retry bound.…, TestLaneBRouting">
-<div class="chead"><span class="cid">#066</span><h4>after_judge</h4>
-<span class="ccount">5 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:40%"></div></div>
-<span class="cohval">0.24</span></div>
-<p class="cprev">after_arbiter(), after_judge(), KANBAN-063 (Lane B): judge outcome router. ``complete`` (or a skipped/gated-out…, KANBAN-063 (Lane B): arbiter outcome router, with the retry bound.…, TestLaneBRouting</p></article><article class="ccard" id="community-67" data-search="metrics.py _date_pair_days(), extraction_diagnostics(), _mean(), _median(), parse_duration_days(), _r2(), Run-level diagnostic metrics for extraction scoring. Ported from ``llm-entity-…, Coefficient of determination ``1 - SS_res/SS_tot`` over (predicted, expected)… (+3 more)">
-<div class="chead"><span class="cid">#067</span><h4>metrics.py</h4>
-<span class="ccount">11 nodes <em>+3 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:40%"></div></div>
-<span class="cohval">0.24</span></div>
-<p class="cprev">_date_pair_days(), extraction_diagnostics(), _mean(), _median(), parse_duration_days(), _r2(), Run-level diagnostic metrics for extraction scoring. Ported from ``llm-entity-…, Coefficient of determination ``1 - SS_res/SS_tot`` over (predicted, expected)… (+3 more)</p></article><article class="ccard" id="community-68" data-search="test_real_sample_gate.py is_real_sample(), True when a manifest row is a real committed legal document. Real samples are…, filter_real_samples(), Restrict a pilot manifest to samples a given mode may process. Real (non-mock)…, _env_no_dotenv(), Real (non-mock) pilot runs must only process actual committed legal documents —…, _rows(), test_filter_real_samples_blocks_synthetic_for_real() (+3 more)">
-<div class="chead"><span class="cid">#068</span><h4>test_real_sample_gate.py</h4>
-<span class="ccount">11 nodes <em>+3 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:48%"></div></div>
-<span class="cohval">0.29</span></div>
-<p class="cprev">is_real_sample(), True when a manifest row is a real committed legal document. Real samples are…, filter_real_samples(), Restrict a pilot manifest to samples a given mode may process. Real (non-mock)…, _env_no_dotenv(), Real (non-mock) pilot runs must only process actual committed legal documents —…, _rows(), test_filter_real_samples_blocks_synthetic_for_real() (+3 more)</p></article><article class="ccard" id="community-69" data-search="tasks.py LegalBench evaluation suite — a second lens on model quality. The suite runs…, _extract_family(), _family_labels(), LegalBenchTask, LegalBench task registry. Two task families, per the LegalBench taxonomy: -…">
-<div class="chead"><span class="cid">#069</span><h4>tasks.py</h4>
-<span class="ccount">5 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:33%"></div></div>
-<span class="cohval">0.20</span></div>
-<p class="cprev">LegalBench evaluation suite — a second lens on model quality. The suite runs…, _extract_family(), _family_labels(), LegalBenchTask, LegalBench task registry. Two task families, per the LegalBench taxonomy: -…</p></article><article class="ccard" id="community-70" data-search="bootstrap.py bootstrap_ci(), _clean(), delta_significance(), Any, Random, Bootstrap confidence intervals and small-sample delta testing. Ported verbatim…, Coerce a per-document score list to floats, dropping None/non-numeric., Percentile-bootstrap 95% CI over per-document scores. Returns ``{&quot;lo&quot;, &quot;hi&quot;,… (+2 more)">
-<div class="chead"><span class="cid">#070</span><h4>bootstrap.py</h4>
-<span class="ccount">10 nodes <em>+2 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:48%"></div></div>
-<span class="cohval">0.29</span></div>
-<p class="cprev">bootstrap_ci(), _clean(), delta_significance(), Any, Random, Bootstrap confidence intervals and small-sample delta testing. Ported verbatim…, Coerce a per-document score list to floats, dropping None/non-numeric., Percentile-bootstrap 95% CI over per-document scores. Returns ``{&quot;lo&quot;, &quot;hi&quot;,… (+2 more)</p></article><article class="ccard" id="community-71" data-search="fetch_external_samples.py _caption_from_text(), _download(), fetch_atticus(), fetch_legalbench(), fetch_pileoflaw(), main(), Path, Yield (record, url) for courtlistener opinions, streaming + aborting early per… (+2 more)">
-<div class="chead"><span class="cid">#071</span><h4>fetch_external_samples.py</h4>
-<span class="ccount">10 nodes <em>+2 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:55%"></div></div>
-<span class="cohval">0.33</span></div>
-<p class="cprev">_caption_from_text(), _download(), fetch_atticus(), fetch_legalbench(), fetch_pileoflaw(), main(), Path, Yield (record, url) for courtlistener opinions, streaming + aborting early per… (+2 more)</p></article><article class="ccard" id="community-72" data-search="prepare_samples _escape(), generate_pdf_from_text(), _load_manifest(), prepare_samples(), Path, Materialize every manifest row under data/samples/. Returns its path., test_generated_pdf_transcribes_short_text(), test_prepare_samples_materializes_manifest() (+1 more)">
-<div class="chead"><span class="cid">#072</span><h4>prepare_samples</h4>
-<span class="ccount">9 nodes <em>+1 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:55%"></div></div>
-<span class="cohval">0.33</span></div>
-<p class="cprev">_escape(), generate_pdf_from_text(), _load_manifest(), prepare_samples(), Path, Materialize every manifest row under data/samples/. Returns its path., test_generated_pdf_transcribes_short_text(), test_prepare_samples_materializes_manifest() (+1 more)</p></article><article class="ccard" id="community-73" data-search="Path Path, TestDataLoaders, TestRunner">
-<div class="chead"><span class="cid">#073</span><h4>Path</h4>
-<span class="ccount">3 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:48%"></div></div>
-<span class="cohval">0.29</span></div>
-<p class="cprev">Path, TestDataLoaders, TestRunner</p></article><article class="ccard" id="community-74" data-search="PDFTranscriber PDFTranscriber, BaseAgent, Path, Heuristic: if a PDF yields a dense, clean text extraction, the LLM reformat…, transcribe_pdf()">
-<div class="chead"><span class="cid">#074</span><h4>PDFTranscriber</h4>
-<span class="ccount">5 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:55%"></div></div>
-<span class="cohval">0.33</span></div>
-<p class="cprev">PDFTranscriber, BaseAgent, Path, Heuristic: if a PDF yields a dense, clean text extraction, the LLM reformat…, transcribe_pdf()</p></article><article class="ccard" id="community-75" data-search="braintrust_setup.py configure(), flush_braintrust(), instrument_openai_client(), is_configured(), Braintrust tracing backend — alternative to Langfuse. Switch to it with…, Initialize Braintrust (idempotent). Returns True when active., Wrap `client` with Braintrust instrumentation, or return it unchanged., _apply_taxonomy_settings() (+1 more)">
-<div class="chead"><span class="cid">#075</span><h4>braintrust_setup.py</h4>
-<span class="ccount">9 nodes <em>+1 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:40%"></div></div>
-<span class="cohval">0.24</span></div>
-<p class="cprev">configure(), flush_braintrust(), instrument_openai_client(), is_configured(), Braintrust tracing backend — alternative to Langfuse. Switch to it with…, Initialize Braintrust (idempotent). Returns True when active., Wrap `client` with Braintrust instrumentation, or return it unchanged., _apply_taxonomy_settings() (+1 more)</p></article><article class="ccard" id="community-76" data-search="cutover.py cutover_agent(), cutover_all(), list_agents(), list_local_models(), load_config(), main(), recommend_cutover_order(), save_config() (+1 more)">
-<div class="chead"><span class="cid">#076</span><h4>cutover.py</h4>
-<span class="ccount">9 nodes <em>+1 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:67%"></div></div>
-<span class="cohval">0.40</span></div>
-<p class="cprev">cutover_agent(), cutover_all(), list_agents(), list_local_models(), load_config(), main(), recommend_cutover_order(), save_config() (+1 more)</p></article><article class="ccard" id="community-77" data-search="test_samples_manifest.py _rows(), test_court_opinion_samples_map_to_court_opinion_class(), test_manifest_expected_classes_are_valid_taxonomy(), test_manifest_expected_stages_valid(), test_manifest_has_rows_and_unique_ids(), test_manifest_has_schema_compatible_field_ground_truth(), test_manifest_has_six_samples_per_external_source(), test_manifest_referenced_sources_exist()">
-<div class="chead"><span class="cid">#077</span><h4>test_samples_manifest.py</h4>
+<p class="cprev">configure(), flush_braintrust(), instrument_openai_client(), is_configured(), braintrust_setup.py, Braintrust tracing backend — alternative to Langfuse. Switch to it with…, Initialize Braintrust (idempotent). Returns True when active., Wrap `client` with Braintrust instrumentation, or return it unchanged.</p></article><article class="ccard" id="community-64" data-search="run vision sweep load_env(), _base_env(), main(), run_config(), env.py, Path, run_vision_sweep.py, Load environment variables from a .env file. The app reads its configuration…">
+<div class="chead"><span class="cid">#064</span><h4>run vision sweep</h4>
 <span class="ccount">8 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:60%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:35%"></div></div>
 <span class="cohval">0.36</span></div>
-<p class="cprev">_rows(), test_court_opinion_samples_map_to_court_opinion_class(), test_manifest_expected_classes_are_valid_taxonomy(), test_manifest_expected_stages_valid(), test_manifest_has_rows_and_unique_ids(), test_manifest_has_schema_compatible_field_ground_truth(), test_manifest_has_six_samples_per_external_source(), test_manifest_referenced_sources_exist()</p></article><article class="ccard" id="community-78" data-search="ensure_score_configs ExtractionScoreResult, ensure_field_score_configs(), Wire deterministic field scoring into Langfuse (GitHub issue #5). The scoring…, Idempotent: register the field-scoring configs in the Langfuse project. The…, Score one extraction deterministically and push every score to Langfuse,…, score_and_log_extraction(), ensure_score_configs(), Create any missing score configs. Idempotent and process-cached — safe to call…">
-<div class="chead"><span class="cid">#078</span><h4>ensure_score_configs</h4>
-<span class="ccount">8 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:42%"></div></div>
-<span class="cohval">0.25</span></div>
-<p class="cprev">ExtractionScoreResult, ensure_field_score_configs(), Wire deterministic field scoring into Langfuse (GitHub issue #5). The scoring…, Idempotent: register the field-scoring configs in the Langfuse project. The…, Score one extraction deterministically and push every score to Langfuse,…, score_and_log_extraction(), ensure_score_configs(), Create any missing score configs. Idempotent and process-cached — safe to call…</p></article><article class="ccard" id="community-79" data-search="ContractsSpecialist _LangChainContractsSpecialist, ContractsSpecialist, Mailroom-configured contracts specialist. - Model/budget defaults come from…, TestContractsSpecialist">
-<div class="chead"><span class="cid">#079</span><h4>ContractsSpecialist</h4>
-<span class="ccount">4 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:55%"></div></div>
-<span class="cohval">0.33</span></div>
-<p class="cprev">_LangChainContractsSpecialist, ContractsSpecialist, Mailroom-configured contracts specialist. - Model/budget defaults come from…, TestContractsSpecialist</p></article><article class="ccard" id="community-80" data-search="CourtOpinionsSpecialist CourtOpinionsSpecialist, BaseAgent, _extract_court_opinions(), TestCourtOpinionsSpecialist">
-<div class="chead"><span class="cid">#080</span><h4>CourtOpinionsSpecialist</h4>
-<span class="ccount">4 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:47%"></div></div>
-<span class="cohval">0.28</span></div>
-<p class="cprev">CourtOpinionsSpecialist, BaseAgent, _extract_court_opinions(), TestCourtOpinionsSpecialist</p></article><article class="ccard" id="community-81" data-search="load_env bool_env(), get_env(), load_env(), Load ``braintrust.env`` then ``.env`` into the environment (idempotent).…, Validate that all given environment variables are set and non-empty. Returns…, Get an environment variable with a default fallback., Get a boolean environment variable., require_env()">
-<div class="chead"><span class="cid">#081</span><h4>load_env</h4>
-<span class="ccount">8 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:47%"></div></div>
-<span class="cohval">0.28</span></div>
-<p class="cprev">bool_env(), get_env(), load_env(), Load ``braintrust.env`` then ``.env`` into the environment (idempotent).…, Validate that all given environment variables are set and non-empty. Returns…, Get an environment variable with a default fallback., Get a boolean environment variable., require_env()</p></article><article class="ccard" id="community-82" data-search="sync_models.py _client(), _cost_models(), _existing_by_name(), main(), _match_pattern(), _prices_match(), Map model_name -&gt; registry Model for every user-defined entry. Paginates: the…, sync_models()">
-<div class="chead"><span class="cid">#082</span><h4>sync_models.py</h4>
-<span class="ccount">8 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:65%"></div></div>
-<span class="cohval">0.39</span></div>
-<p class="cprev">_client(), _cost_models(), _existing_by_name(), main(), _match_pattern(), _prices_match(), Map model_name -&gt; registry Model for every user-defined entry. Paginates: the…, sync_models()</p></article><article class="ccard" id="community-83" data-search="test_graphify_skill.py Path, KANBAN-065: vendored Graphify skill integrity checks. The…, _read(), test_all_reference_sidecars_present(), test_provenance_names_upstream_source(), test_sibling_entity_copy_is_identical(), test_skill_documents_core_workflows(), test_skill_md_exists_with_valid_frontmatter()">
-<div class="chead"><span class="cid">#083</span><h4>test_graphify_skill.py</h4>
-<span class="ccount">8 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:60%"></div></div>
-<span class="cohval">0.36</span></div>
-<p class="cprev">Path, KANBAN-065: vendored Graphify skill integrity checks. The…, _read(), test_all_reference_sidecars_present(), test_provenance_names_upstream_source(), test_sibling_entity_copy_is_identical(), test_skill_documents_core_workflows(), test_skill_md_exists_with_valid_frontmatter()</p></article><article class="ccard" id="community-84" data-search="traced_node Decorator that wraps a graph node fn in a named observation span. Applies…, traced_node(), TestLangfuseClient">
-<div class="chead"><span class="cid">#084</span><h4>traced_node</h4>
-<span class="ccount">3 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:42%"></div></div>
-<span class="cohval">0.25</span></div>
-<p class="cprev">Decorator that wraps a graph node fn in a named observation span. Applies…, traced_node(), TestLangfuseClient</p></article><article class="ccard" id="community-85" data-search="sync_dataset.py _client(), _doc_text(), _ensure_dataset(), main(), Path, sync_items(), _validate_ground_truth()">
-<div class="chead"><span class="cid">#085</span><h4>sync_dataset.py</h4>
+<p class="cprev">load_env(), _base_env(), main(), run_config(), env.py, Path, run_vision_sweep.py, Load environment variables from a .env file. The app reads its configuration…</p></article><article class="ccard" id="community-59" data-search="run pilot (59) _check_cost_watchdog(), _fetch_openrouter_prices(), _price_for(), _record_langchain_response(), Warn at $0.15, abort the run at $0.20 (cumulative across all samples)., Mirror _wrap_client&#x27;s usage/cost accounting for a LangChain response., Fetch live OpenRouter pricing (per-token), normalized to $/M tokens. The…">
+<div class="chead"><span class="cid">#059</span><h4>run pilot (59)</h4>
 <span class="ccount">7 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:83%"></div></div>
-<span class="cohval">0.50</span></div>
-<p class="cprev">_client(), _doc_text(), _ensure_dataset(), main(), Path, sync_items(), _validate_ground_truth()</p></article><article class="ccard" id="community-87" data-search="openrouter-analytics/scripts/package.json devDependencies, tsx, tsx, name, private, type">
-<div class="chead"><span class="cid">#087</span><h4>openrouter-analytics/scripts/package.json</h4>
-<span class="ccount">6 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:48%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:28%"></div></div>
 <span class="cohval">0.29</span></div>
-<p class="cprev">devDependencies, tsx, tsx, name, private, type</p></article><article class="ccard" id="community-88" data-search="suggest-queries.ts now, resolve(), resolved, TEMPLATES, thirtyDaysAgo, todayStart">
-<div class="chead"><span class="cid">#088</span><h4>suggest-queries.ts</h4>
+<p class="cprev">_check_cost_watchdog(), _fetch_openrouter_prices(), _price_for(), _record_langchain_response(), Warn at $0.15, abort the run at $0.20 (cumulative across all samples)., Mirror _wrap_client&#x27;s usage/cost accounting for a LangChain response., Fetch live OpenRouter pricing (per-token), normalized to $/M tokens. The…</p></article><article class="ccard" id="community-66" data-search="sorter reviewer SorterReviewerAgent, .review(), .system_prompt(), BaseAgent, Independent second-opinion classifier (blind re-classification)., Independently classify the document. Returns ``{doc_type, contract_subtype,…">
+<div class="chead"><span class="cid">#066</span><h4>sorter reviewer</h4>
 <span class="ccount">6 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:55%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:33%"></div></div>
 <span class="cohval">0.33</span></div>
-<p class="cprev">now, resolve(), resolved, TEMPLATES, thirtyDaysAgo, todayStart</p></article><article class="ccard" id="community-89" data-search="openrouter-generations/scripts/package.json devDependencies, tsx, tsx, name, private, type">
-<div class="chead"><span class="cid">#089</span><h4>openrouter-generations/scripts/package.json</h4>
+<p class="cprev">SorterReviewerAgent, .review(), .system_prompt(), BaseAgent, Independent second-opinion classifier (blind re-classification)., Independently classify the document. Returns ``{doc_type, contract_subtype,…</p></article><article class="ccard" id="community-62" data-search="prompts family_classification_prompt_v1(), get_prompt(), legalbench/prompts.py, Versioned LegalBench task prompts. Prompt version = experiment identity in the…, Fill the 25-family list into the multiclass prompt (called per run so the…, Resolve a prompt version to its system-prompt text.">
+<div class="chead"><span class="cid">#062</span><h4>prompts</h4>
 <span class="ccount">6 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:48%"></div></div>
-<span class="cohval">0.29</span></div>
-<p class="cprev">devDependencies, tsx, tsx, name, private, type</p></article><article class="ccard" id="community-90" data-search="openrouter-models/scripts/package.json devDependencies, tsx, tsx, name, private, type">
-<div class="chead"><span class="cid">#090</span><h4>openrouter-models/scripts/package.json</h4>
-<span class="ccount">6 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:48%"></div></div>
-<span class="cohval">0.29</span></div>
-<p class="cprev">devDependencies, tsx, tsx, name, private, type</p></article><article class="ccard" id="community-91" data-search="config.py Contracts specialist — LangChain version vendored from llm-entity-extraction.…, Sorter agent — LangChain version vendored from llm-entity-extraction. Re-…, get_doc_class(), get_extraction_schema_name()">
-<div class="chead"><span class="cid">#091</span><h4>config.py</h4>
-<span class="ccount">4 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:55%"></div></div>
-<span class="cohval">0.33</span></div>
-<p class="cprev">Contracts specialist — LangChain version vendored from llm-entity-extraction.…, Sorter agent — LangChain version vendored from llm-entity-extraction. Re-…, get_doc_class(), get_extraction_schema_name()</p></article><article class="ccard" id="community-92" data-search="_record_langchain_response _check_cost_watchdog(), _fetch_openrouter_prices(), _price_for(), Warn at $0.15, abort the run at $0.20 (cumulative across all samples)., Mirror _wrap_client&#x27;s usage/cost accounting for a LangChain response., Fetch live OpenRouter pricing (per-token), normalized to $/M tokens. The…, _record_langchain_response()">
-<div class="chead"><span class="cid">#092</span><h4>_record_langchain_response</h4>
-<span class="ccount">7 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:48%"></div></div>
-<span class="cohval">0.29</span></div>
-<p class="cprev">_check_cost_watchdog(), _fetch_openrouter_prices(), _price_for(), Warn at $0.15, abort the run at $0.20 (cumulative across all samples)., Mirror _wrap_client&#x27;s usage/cost accounting for a LangChain response., Fetch live OpenRouter pricing (per-token), normalized to $/M tokens. The…, _record_langchain_response()</p></article><article class="ccard" id="community-94" data-search="ArbiterAgent ArbiterAgent, BaseAgent, Judgment arbitration on failed judge verdicts., Decide the outcome for a judge-rejected extraction. Returns ``{decision,…">
-<div class="chead"><span class="cid">#094</span><h4>ArbiterAgent</h4>
-<span class="ccount">4 nodes</span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:55%"></div></div>
-<span class="cohval">0.33</span></div>
-<p class="cprev">ArbiterAgent, BaseAgent, Judgment arbitration on failed judge verdicts., Decide the outcome for a judge-rejected extraction. Returns ``{decision,…</p></article><article class="ccard" id="community-95" data-search="build_record build_record(), git_snapshot(), Any, llm-mailroom commit at run time (best-effort)., One experiment-log record in the upstream schema (see the JSONL header of…">
-<div class="chead"><span class="cid">#095</span><h4>build_record</h4>
+<div class="cohmeter"><div class="cohfill" style="width:40%"></div></div>
+<span class="cohval">0.40</span></div>
+<p class="cprev">family_classification_prompt_v1(), get_prompt(), legalbench/prompts.py, Versioned LegalBench task prompts. Prompt version = experiment identity in the…, Fill the 25-family list into the multiclass prompt (called per run so the…, Resolve a prompt version to its system-prompt text.</p></article><article class="ccard" id="community-63" data-search="Chunked extraction _chunk_config(), _extract_contracts(), _run_chunked_extraction(), Chunked-extraction config from taxonomy.yaml (`chunking:` block). Chunking…, Run a specialist extraction, chunking long documents (v15+ pass).…">
+<div class="chead"><span class="cid">#063</span><h4>Chunked extraction</h4>
 <span class="ccount">5 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:67%"></div></div>
+<div class="cohmeter"><div class="cohfill" style="width:40%"></div></div>
 <span class="cohval">0.40</span></div>
-<p class="cprev">build_record(), git_snapshot(), Any, llm-mailroom commit at run time (best-effort)., One experiment-log record in the upstream schema (see the JSONL header of…</p></article><article class="ccard" id="community-98" data-search="sync_prompts.py _client(), _current_production(), main(), sync_one()">
-<div class="chead"><span class="cid">#098</span><h4>sync_prompts.py</h4>
+<p class="cprev">_chunk_config(), _extract_contracts(), _run_chunked_extraction(), Chunked-extraction config from taxonomy.yaml (`chunking:` block). Chunking…, Run a specialist extraction, chunking long documents (v15+ pass).…</p></article><article class="ccard" id="community-65" data-search="build graph (65) _prompt_versions(), _bound_prompt_versions(), Prompt versions bound during the run (best-effort; Langfuse-managed prompts…, Version keys currently wired into production / agent defaults. Used for catalog…">
+<div class="chead"><span class="cid">#065</span><h4>build graph (65)</h4>
 <span class="ccount">4 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:100%"></div></div>
-<span class="cohval">0.70</span></div>
-<p class="cprev">_client(), _current_production(), main(), sync_one()</p></article><article class="ccard" id="community-99" data-search="_ParseErrorLangChainLLM _ParseErrorLangChainLLM, Fake whose structured runner reports a parsing_error (the vendored…, _Runner">
-<div class="chead"><span class="cid">#099</span><h4>_ParseErrorLangChainLLM</h4>
+<div class="cohmeter"><div class="cohfill" style="width:50%"></div></div>
+<span class="cohval">0.50</span></div>
+<p class="cprev">_prompt_versions(), _bound_prompt_versions(), Prompt versions bound during the run (best-effort; Langfuse-managed prompts…, Version keys currently wired into production / agent defaults. Used for catalog…</p></article><article class="ccard" id="community-67" data-search="main _require_token(), Request, Dependency: reject requests without the bearer token (audit L-2).">
+<div class="chead"><span class="cid">#067</span><h4>main</h4>
 <span class="ccount">3 nodes</span></div>
 <div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:83%"></div></div>
-<span class="cohval">0.50</span></div>
-<p class="cprev">_ParseErrorLangChainLLM, Fake whose structured runner reports a parsing_error (the vendored…, _Runner</p></article><article class="ccard" id="community-114" data-search="_SpecialistBase get_specialist(), _norm(), normalize_extraction(), BaseAgent, Shared extract() implementation over a per-class schema., Extract a long document in overlapping chunks and merge the passes. Documents…, Normalize clause text for dedupe: whitespace-collapse + casefold. The chunk…, Sum per-chunk usage dicts (prompt/completion/total tokens, cost). (+6 more)">
-<div class="chead"><span class="cid">#114</span><h4>_SpecialistBase</h4>
-<span class="ccount">14 nodes <em>+6 hidden</em></span></div>
-<div class="cohrow"><span class="cohlabel">cohesion</span>
-<div class="cohmeter"><div class="cohfill" style="width:22%"></div></div>
-<span class="cohval">0.13</span></div>
-<p class="cprev">get_specialist(), _norm(), normalize_extraction(), BaseAgent, Shared extract() implementation over a per-class schema., Extract a long document in overlapping chunks and merge the passes. Documents…, Normalize clause text for dedupe: whitespace-collapse + casefold. The chunk…, Sum per-chunk usage dicts (prompt/completion/total tokens, cost). (+6 more)</p></article></div>
-<div class="noresults" id="noresults">🦉 Nothing matches that filter, hoo.</div>
+<div class="cohmeter"><div class="cohfill" style="width:66%"></div></div>
+<span class="cohval">0.67</span></div>
+<p class="cprev">_require_token(), Request, Dependency: reject requests without the bearer token (audit L-2).</p></article></div>
+<div class="noresults" id="noresults">No communities match.</div>
 </section>
-
 <section id="gaps">
 <h2>Knowledge Gaps</h2>
-<div class="gapcard"><strong>77 isolated node(s):</strong> `MetaResponse`, `QueryResponse`, `Filter`, `ScoredModel`, `GenerationResponse` (+72 more)<br><span class="gapsub">These have ≤1 connection - possible missing edges or undocumented components.</span></div>
+<div class="gapcard">Rationale comments and a handful of stdlib/unattributed symbols sit in thin communities.
+They are hidden on the map by default. Isolated <code>__init__.py</code> package markers are expected.</div>
 </section>
-
 <section id="questions">
 <h2>Suggested Questions</h2>
-<details class="qa"><summary>Why does `BaseAgent` connect `BaseAgent` to `conftest.py`, `CorporateRecordsSpecialist`, `TestVendoredRetryContract`, `sorter_agent.py`, `specialist_agents.py`, `toolkit.py`, `SorterAgent`, `_SpecialistBase`, `run_pilot.py`, `base_agent.py`?</summary><p>High betweenness centrality (0.059) - this node is a cross-community bridge.</p></details><details class="qa"><summary>Why does `load_config()` connect `load_config` to `test_run_limits.py`, `build_graph.py`, `toolkit.py`, `main.py`, `base.py`, `bins.py`, `ops_monitor.py`, `test_specialists.py`, `get_confidence_thresholds`, `get_managed_prompt`, `base_agent.py`, `CompletenessJudge`, `sync_evaluators.py`, `SorterAgent`, `get_field_types`, `field_is_ambiguous`, `PDFTranscriber`, `braintrust_setup.py`, `test_samples_manifest.py`, `sync_models.py`, `config.py`?</summary><p>High betweenness centrality (0.055) - this node is a cross-community bridge.</p></details><details class="qa"><summary>Why does `inbox_dir()` connect `inbox_dir` to `conftest.py`, `build_graph.py`, `env.py`, `main.py`, `bins.py`, `build_graph`, `run_pilot.py`, `watcher.py`?</summary><p>High betweenness centrality (0.036) - this node is a cross-community bridge.</p></details><details class="qa"><summary>Are the 11 inferred relationships involving `BaseAgent` (e.g. with `SorterAgent` and `get_specialist()`) actually correct?</summary><p>`BaseAgent` has 11 INFERRED edges - model-reasoned connections that need verification.</p></details><details class="qa"><summary>Are the 24 inferred relationships involving `build_graph()` (e.g. with `arbiter_node()` and `archive_node()`) actually correct?</summary><p>`build_graph()` has 24 INFERRED edges - model-reasoned connections that need verification.</p></details><details class="qa"><summary>Are the 12 inferred relationships involving `BaseAgent` (e.g. with `ArbiterAgent` and `BossAgent`) actually correct?</summary><p>`BaseAgent` has 12 INFERRED edges - model-reasoned connections that need verification.</p></details><details class="qa"><summary>What connects `MetaResponse`, `QueryResponse`, `Filter` to the rest of the system?</summary><p>77 weakly-connected nodes found - possible documentation gaps or missing edges.</p></details>
+<details class="qa"><summary>Why does `BaseAgent` connect `LangChain BaseAgent` to `Hugging Face pilot`, `LangChain specialists`, `run pilot`, `Sorter classification`, `Eval mocks &amp; validation`, `Agent toolkit &amp; memory`, `base agent`, `base agent (77)`, `base agent (78)`, `Run limits &amp; budgets`, `agent`?</summary><p>High betweenness centrality (0.070) - this node is a cross-community bridge.</p></details><details class="qa"><summary>Why does `load_config()` connect `Run limits &amp; budgets` to `Taxonomy extract aliases`, `sync models`, `Sorter classification`, `Managed prompts &amp; judges`, `judge`, `Agent toolkit &amp; memory`, `Field scoring &amp; metrics`, `PDF &amp; image transcription`, `FastAPI intake`, `Confidence routing`, `Pipeline execution`, `Vision rendering`, `Inbox bins`, `Langfuse evaluator sync`, `retry`, `Graph nodes &amp; state`, `Chunked extraction`?</summary><p>High betweenness centrality (0.058) - this node is a cross-community bridge.</p></details><details class="qa"><summary>Why does `load_env()` connect `run vision sweep` to `Catalog &amp; audit trail`, `Hugging Face pilot`, `sync models`, `run pilot`, `Eval mocks &amp; validation`, `sync langfuse logs`, `Field scoring &amp; metrics`, `CUAD corpus loaders`, `sync dashboards`, `logging`, `FastAPI intake`, `Quality scores`, `Inbox bins`, `Watcher ingest`, `Langfuse evaluator sync`, `sync dataset`, `providers`, `prompts docclass`?</summary><p>High betweenness centrality (0.042) - this node is a cross-community bridge.</p></details><details class="qa"><summary>Are the 8 inferred relationships involving `BaseAgent` (e.g. with `SorterAgent` and `_SpecialistBase`) actually correct?</summary><p>`BaseAgent` has 8 INFERRED edges - model-reasoned connections that need verification.</p></details><details class="qa"><summary>Are the 10 inferred relationships involving `BaseAgent` (e.g. with `ArbiterAgent` and `BossAgent`) actually correct?</summary><p>`BaseAgent` has 10 INFERRED edges - model-reasoned connections that need verification.</p></details><details class="qa"><summary>Are the 24 inferred relationships involving `build_graph()` (e.g. with `archive_node()` and `ingest_node()`) actually correct?</summary><p>`build_graph()` has 24 INFERRED edges - model-reasoned connections that need verification.</p></details><details class="qa"><summary>What connects `mailroom` to the rest of the system?</summary><p>1 weakly-connected nodes found - possible documentation gaps or missing edges.</p></details>
 </section>
-
 <footer>
-<span>Built by hermes 🦉 · graphify 0.9.48 · code-only AST extraction (zero API spend)</span>
-<span><a href="./">interactive graph</a> · <a href="./GRAPH_REPORT.md">raw markdown</a></span>
+<span>Derived artifact of https://github.com/Exios66/llm-mailroom @ 30ff6874 · graphify 0.9.50 · local AST, 0 tokens</span>
+<a href="./">Back to the map</a>
 </footer>
 </main>
 <button id="totop" aria-label="Back to top">↑</button>
 <script>
-(function() {
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // reading progress + totop
-  const prog = document.getElementById('progress'), totop = document.getElementById('totop');
-  addEventListener('scroll', () => {
-    const h = document.documentElement;
-    prog.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + '%';
-    totop.classList.toggle('show', h.scrollTop > 600);
-  }, {passive: true});
-  totop.onclick = () => scrollTo({top: 0, behavior: reduced ? 'auto' : 'smooth'});
-  // count-up
-  document.querySelectorAll('.num').forEach(el => {
-    const target = parseInt(el.dataset.count, 10);
-    if (reduced || isNaN(target)) { el.textContent = target; return; }
-    const t0 = performance.now(), dur = 900;
-    (function tick(t) {
-      const p = Math.min((t - t0) / dur, 1), e = 1 - Math.pow(1 - p, 3);
-      el.textContent = Math.round(target * e).toLocaleString();
-      if (p < 1) requestAnimationFrame(tick);
-    })(t0);
-  });
-  // god bars
-  const io = new IntersectionObserver(es => es.forEach(e => {
-    if (e.isIntersecting) { e.target.style.width = e.target.dataset.w + '%'; io.unobserve(e.target); }
-  }), {threshold: .4});
-  document.querySelectorAll('.godbar').forEach(b => io.observe(b));
-  // community search
-  const input = document.getElementById('search');
-  const cards = [...document.querySelectorAll('.ccard')];
-  const countEl = document.getElementById('count');
-  const empty = document.getElementById('noresults');
-  function apply() {
-    const q = input.value.trim().toLowerCase();
-    let visible = 0;
-    cards.forEach(c => {
-      const hit = !q || c.dataset.search.includes(q);
-      c.classList.toggle('hide', !hit);
-      if (hit) visible++;
-    });
-    countEl.textContent = 'showing ' + visible + ' of ' + cards.length;
-    empty.style.display = visible ? 'none' : 'block';
-  }
-  input.addEventListener('input', apply);
-  addEventListener('keydown', e => {
-    if (e.key === '/' && document.activeElement !== input) { e.preventDefault(); input.focus(); }
-    if (e.key === 'Escape') { input.value = ''; apply(); input.blur(); }
-  });
-  document.querySelectorAll('.hub-chip').forEach(ch => ch.addEventListener('click', () => {
-    input.value = ch.dataset.hub; apply();
-    document.getElementById('communities').scrollIntoView({behavior: reduced ? 'auto' : 'smooth'});
-  }));
-  apply();
-})();
+const nums=[...document.querySelectorAll('.num')];
+const bars=[...document.querySelectorAll('.godbar')];
+requestAnimationFrame(()=>{
+  nums.forEach(el=>{const t=+el.dataset.count; let n=0; const s=Math.max(1,Math.floor(t/40));
+    const id=setInterval(()=>{n=Math.min(t,n+s); el.textContent=n; if(n>=t) clearInterval(id);},16);});
+  bars.forEach(b=> b.style.width=b.dataset.w+'%');
+});
+const search=document.getElementById('search');
+const cards=[...document.querySelectorAll('.ccard')];
+const no=document.getElementById('noresults');
+const count=document.getElementById('count');
+function filter(q){
+  q=q.toLowerCase().trim(); let n=0;
+  cards.forEach(c=>{const show=!q || (c.dataset.search||'').toLowerCase().includes(q);
+    c.classList.toggle('hide', !show); if(show) n++;});
+  no.style.display=n? 'none':'block'; count.textContent=n+' shown';
+}
+search.addEventListener('input', e=>filter(e.target.value));
+document.querySelectorAll('.hub-chip').forEach(b=>b.addEventListener('click',()=>{search.value=b.dataset.hub; filter(b.dataset.hub); document.getElementById('communities').scrollIntoView();}));
+document.addEventListener('keydown', e=>{if(e.key==='/' && document.activeElement!==search){e.preventDefault();search.focus();}});
+const totop=document.getElementById('totop'); const prog=document.getElementById('progress');
+window.addEventListener('scroll',()=>{totop.classList.toggle('show', scrollY>400);
+  const h=document.documentElement; prog.style.width=(scrollY/(h.scrollHeight-h.clientHeight)*100)+'%';});
+totop.onclick=()=>scrollTo({top:0,behavior:'smooth'});
+filter('');
 </script>
-</body>
-</html>
+</body></html>
