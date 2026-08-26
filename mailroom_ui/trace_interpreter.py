@@ -11,6 +11,7 @@ verdicts). v4 SDK payloads use `observationType` (camelCase) as well as
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from typing import Any, Optional
 
@@ -20,6 +21,8 @@ from .pipeline_schema import (
     SPAN_STAGE_MAP,
     STAGE_PHASE,
     PipelineSchema,
+    canonical_score_name,
+    langfuse_score_name,
     observation_type_for,
 )
 
@@ -142,6 +145,158 @@ def _int(value: Any) -> Optional[int]:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def _jsonish(value: Any) -> Any:
+    """Parse a JSON object/array string; leave other values untouched."""
+    if isinstance(value, str):
+        s = value.strip()
+        if s[:1] in "{[":
+            try:
+                return json.loads(s)
+            except (TypeError, ValueError):
+                return value
+    return value
+
+
+def _canonicalize_score_map(score_map: dict[str, Any]) -> dict[str, Any]:
+    """Dual-write Langfuse 35-char aliases so metrics and inspector agree."""
+    extra: dict[str, Any] = {}
+    for name, value in list(score_map.items()):
+        canon = canonical_score_name(name)
+        wire = langfuse_score_name(name)
+        if canon not in score_map and canon not in extra:
+            extra[canon] = value
+        if wire not in score_map and wire not in extra:
+            extra[wire] = value
+    score_map.update(extra)
+    return score_map
+
+
+def _payloads_for_subclass(
+    t_output: dict[str, Any],
+    spans: list[NodeSpan],
+    generations: list[Generation],
+) -> list[dict[str, Any]]:
+    """Priority order for mining doc_subclass / contract_subtype.
+
+    llm-mailroom ``_result_summary()`` still only writes stage/doc_type/
+    confidences onto node spans, so curated I/O often omits subclass. Mine
+    sorter output first, then classify-document generation JSON, then
+    catalog/reporter payloads — and stay correct if upstream later adds
+    ``doc_subclass`` to the span summary.
+    """
+    payloads: list[dict[str, Any]] = []
+    sorter = _as_dict(t_output.get("sorter"))
+    if sorter:
+        payloads.append(sorter)
+    payloads.append(t_output)
+
+    classify_gens: list[dict[str, Any]] = []
+    other_gens: list[dict[str, Any]] = []
+    for gen in generations:
+        parsed = _jsonish(gen.output)
+        if not isinstance(parsed, dict):
+            continue
+        bucket = classify_gens if (gen.name or "") in (
+            "classify-document", "classify", "retry_classify", "review_classify",
+        ) else other_gens
+        bucket.append(parsed)
+        nested = _as_dict(parsed.get("sorter"))
+        if nested:
+            bucket.append(nested)
+    payloads.extend(classify_gens)
+
+    for span in spans:
+        out = _as_dict(span.output)
+        if not out:
+            continue
+        payloads.append(out)
+        nested = _as_dict(out.get("sorter"))
+        if nested:
+            payloads.append(nested)
+        extracted = _as_dict(out.get("extracted_data"))
+        if extracted:
+            payloads.append(extracted)
+    payloads.extend(other_gens)
+    return payloads
+
+
+def _lift_subclass(
+    t_output: dict[str, Any],
+    spans: list[NodeSpan],
+    generations: list[Generation],
+) -> tuple[Optional[str], Optional[str]]:
+    doc_subclass: Optional[str] = None
+    contract_subtype: Optional[str] = None
+    for payload in _payloads_for_subclass(t_output, spans, generations):
+        if not doc_subclass:
+            doc_subclass = _clean(payload.get("doc_subclass"))
+        if not contract_subtype:
+            contract_subtype = _clean(payload.get("contract_subtype"))
+        if doc_subclass and contract_subtype:
+            break
+    # CUAD contract_subtype is the contract subclass when doc_subclass is empty.
+    if not doc_subclass and contract_subtype:
+        doc_subclass = contract_subtype
+    return doc_subclass, contract_subtype
+
+
+def _lift_ground_truth(
+    t_input: dict[str, Any],
+    t_output: dict[str, Any],
+    metadata: dict[str, Any],
+) -> tuple[Optional[str], Optional[str]]:
+    blobs: list[dict[str, Any]] = []
+    for src in (t_output, t_input, metadata):
+        if not isinstance(src, dict):
+            continue
+        gt = src.get("ground_truth")
+        if isinstance(gt, dict):
+            blobs.append(gt)
+        blobs.append(src)
+    expected_hf: Optional[str] = None
+    expected_subclass: Optional[str] = None
+    for blob in blobs:
+        if expected_hf is None:
+            expected_hf = (
+                _clean(blob.get("expected_hf_class"))
+                or _clean(blob.get("expected_doc_class"))
+                or _clean(blob.get("expected"))
+            )
+        if expected_subclass is None:
+            expected_subclass = _clean(blob.get("expected_subclass"))
+        if expected_hf and expected_subclass:
+            break
+    return expected_hf, expected_subclass
+
+
+def _lift_intake(spans: list[NodeSpan]) -> dict[str, Any]:
+    empty = {
+        "intake_messy": None,
+        "intake_changed": None,
+        "intake_method": None,
+        "intake_chars": None,
+    }
+    for span in spans:
+        if span.name != "normalize-intake":
+            continue
+        out = _as_dict(span.output)
+        messy = out.get("messy")
+        changed = out.get("changed")
+        if changed is None:
+            wraps = out.get("collapsed_blank_runs") or out.get("hyphen_unwraps")
+            changed = bool(wraps) if wraps is not None else None
+        chars = out.get("chars")
+        if chars is None:
+            chars = out.get("cleaned_chars")
+        return {
+            "intake_messy": bool(messy) if messy is not None else None,
+            "intake_changed": bool(changed) if changed is not None else None,
+            "intake_method": _clean(out.get("method")),
+            "intake_chars": _int(chars),
+        }
+    return empty
 
 
 def derive_stage(
@@ -486,6 +641,7 @@ def interpret_trace(
                 continue
         score_map[name] = value
         score_stamps[name] = stamp
+    score_map = _canonicalize_score_map(score_map)
 
     scored_duration = _float(score_map.get("run_duration_seconds"))
     if scored_duration is not None:
@@ -500,6 +656,9 @@ def interpret_trace(
     sorter_out = _as_dict(t_output.get("sorter"))
     doc_type = (_clean(sorter_out.get("doc_type")) or _clean(t_output.get("doc_type"))
                 or _clean(t_input.get("doc_type")))
+    doc_subclass, contract_subtype = _lift_subclass(t_output, spans, generations)
+    expected_hf_class, expected_subclass = _lift_ground_truth(t_input, t_output, metadata)
+    intake = _lift_intake(spans)
     attempt = _pick(t_input, "attempt", "run_attempt")
     if attempt is None:
         attempt = metadata.get("attempt")
@@ -576,6 +735,14 @@ def interpret_trace(
         stage=stage,
         phase=STAGE_PHASE.get(stage, STAGE_PHASE[Stage.UNKNOWN]),
         doc_type=doc_type,
+        doc_subclass=doc_subclass,
+        contract_subtype=contract_subtype,
+        expected_hf_class=expected_hf_class,
+        expected_subclass=expected_subclass,
+        intake_messy=intake["intake_messy"],
+        intake_changed=intake["intake_changed"],
+        intake_method=intake["intake_method"],
+        intake_chars=intake["intake_chars"],
         classification_confidence=_float(score_map.get("classification_confidence"))
         or _float(t_output.get("classification_confidence"))
         or _float(sorter_out.get("confidence")),

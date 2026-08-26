@@ -206,7 +206,7 @@ const App = (() => {
       const data = await Obs.api.reviewQueue();
       const rows = (data.runs || []).map((r) => `<tr>
         <th scope="row"><button type="button" class="row-btn" data-trace="${Obs.esc(r.trace_id)}">${Obs.esc(r.filename || r.trace_id)}</button></th>
-        <td>${Obs.esc((r.doc_type || "—").replaceAll("_", " "))}</td>
+        <td>${Obs.esc((r.doc_type || "—").replaceAll("_", " "))}${r.doc_subclass || r.contract_subtype ? ` / ${Obs.esc(r.doc_subclass || r.contract_subtype)}` : ""}</td>
         <td>${Obs.esc(r.escalation_reason || r.review_decision || "—")}</td>
         <td>${Obs.fmt.conf(r.extraction_confidence)}</td>
         <td>${r.verdict ? `<span class="badge ${verdictClass(r.verdict)}">${Obs.esc(r.verdict)}</span>` : "—"}</td>
@@ -229,7 +229,7 @@ const App = (() => {
       const rows = (data.runs || []).map((r) => `<tr>
         <th scope="row"><button type="button" class="row-btn" data-trace="${Obs.esc(r.trace_id)}">${Obs.esc(r.filename || r.trace_id)}</button></th>
         <td>${Obs.esc((r.stage || "—").replaceAll("_", " "))}</td>
-        <td>${Obs.esc((r.doc_type || "—").replaceAll("_", " "))}</td>
+        <td>${Obs.esc((r.doc_type || "—").replaceAll("_", " "))}${r.doc_subclass || r.contract_subtype ? ` / ${Obs.esc(r.doc_subclass || r.contract_subtype)}` : ""}</td>
         <td>${r.verdict ? `<span class="badge ${verdictClass(r.verdict)}">${Obs.esc(r.verdict)}</span>` : "—"}</td>
         <td>${Obs.fmt.when(r.updated_at || r.created_at)}</td>
         <td><button type="button" class="btn" data-replay="${Obs.esc(r.trace_id)}">Replay</button></td>
@@ -298,6 +298,21 @@ const App = (() => {
             <span>${v}</span></div>`;
         }).join("")}</div>`;
       };
+      const pct = (v) => (v == null ? "—" : `${(Number(v) * 100).toFixed(1)}%`);
+      const extraTiles = [
+        m.avg_extraction_verified_precision != null ? metricTile("Verified precision", pct(m.avg_extraction_verified_precision)) : "",
+        m.avg_content_topic_accuracy != null ? metricTile("Topic accuracy", pct(m.avg_content_topic_accuracy)) : "",
+        m.avg_content_topic_f1_macro != null ? metricTile("Topic F1", pct(m.avg_content_topic_f1_macro)) : "",
+        m.avg_sentiment_accuracy != null ? metricTile("Sentiment accuracy", pct(m.avg_sentiment_accuracy)) : "",
+        m.avg_sentiment_f1_macro != null ? metricTile("Sentiment F1", pct(m.avg_sentiment_f1_macro)) : "",
+        m.avg_maud_question_accuracy != null ? metricTile("MAUD question acc", pct(m.avg_maud_question_accuracy)) : "",
+        m.avg_maud_question_macro_accuracy != null ? metricTile("MAUD question macro", pct(m.avg_maud_question_macro_accuracy)) : "",
+        m.avg_maud_clause_presence != null ? metricTile("MAUD clause", pct(m.avg_maud_clause_presence)) : "",
+        m.avg_maud_valid_class_rate != null ? metricTile("MAUD valid class", pct(m.avg_maud_valid_class_rate)) : "",
+        m.avg_maud_category_accuracy != null ? metricTile("MAUD category", pct(m.avg_maud_category_accuracy)) : "",
+      ].join("");
+      const subclasses = Object.entries(m.per_doc_subclass || {});
+      const maxS = Math.max(1, ...subclasses.map(([, v]) => v));
       el.innerHTML = `<dl class="metrics">${
         metricTile("Documents", m.total_docs ?? "—")
         + metricTile("Archived", m.archived ?? "—")
@@ -308,7 +323,8 @@ const App = (() => {
         + metricTile("Tokens", Obs.fmt.tokens(m.total_tokens))
         + metricTile("LLM calls", Obs.fmt.tokens(m.llm_calls))
         + metricTile("Avg quality", m.avg_quality == null ? "—" : Number(m.avg_quality).toFixed(2))
-      }</dl>${bars("Judge verdicts", verdicts, maxV, true)}${bars("Document types", docs, maxD, false)}`;
+        + extraTiles
+      }</dl>${bars("Judge verdicts", verdicts, maxV, true)}${bars("Document types", docs, maxD, false)}${bars("Document subclasses", subclasses, maxS, false)}`;
       dbg("traces", { where: "metrics", docs: m.total_docs });
     } catch (err) {
       dbg("metrics-error", { message: err.message });
@@ -351,6 +367,15 @@ const App = (() => {
         ["Stage", run.stage],
         ["Phase", run.phase],
         ["Type", run.doc_type],
+        ["Subclass", run.doc_subclass || run.contract_subtype || "—"],
+        ["Expected class", run.expected_hf_class || "—"],
+        ["Expected subclass", run.expected_subclass || "—"],
+        ["Intake", [
+          run.intake_method,
+          run.intake_messy ? "messy" : null,
+          run.intake_changed ? "changed" : null,
+          run.intake_chars != null ? `${run.intake_chars} chars` : null,
+        ].filter(Boolean).join(" · ") || "—"],
         ["Matter", run.session_id || run.matter_id],
         ["User", run.user_id || "—"],
         ["Release", run.release || "—"],
@@ -379,14 +404,29 @@ const App = (() => {
          ${g.usage_total_tokens != null ? ` · ${Obs.fmt.tokens(g.usage_total_tokens)} tok` : ""}
          ${g.cost_usd ? ` · ${Obs.fmt.cost(g.cost_usd)}` : ""}</div>`).join("")
         || `<p class="empty">No generations on this trace</p>`;
-      const scores = scoreEntries(run.scores).map(([k, v]) =>
-        `<div class="span"><strong>${Obs.esc(k)}</strong> · ${Obs.esc(fmtScore(v))}</div>`).join("")
-        || `<p class="empty">No scores attached</p>`;
+      const scores = scoreEntries(run.scores);
+      const SUITE_EXTRA_SCORES = new Set([
+        "content_topic_accuracy", "content_topic_f1_macro",
+        "sentiment_accuracy", "sentiment_f1_macro",
+        "maud_question_accuracy", "maud_question_macro_accuracy",
+        "maud_clause_presence", "maud_valid_class_rate", "maud_category_accuracy",
+      ]);
+      const suite = scores.filter(([k]) => SUITE_EXTRA_SCORES.has(k));
+      const rest = scores.filter(([k]) => !SUITE_EXTRA_SCORES.has(k));
+      const scoreHtml = (entries) => entries.map(([k, v]) =>
+        `<div class="span"><strong>${Obs.esc(k)}</strong> · ${Obs.esc(fmtScore(v))}</div>`).join("");
+      const scoresBlock = rest.length
+        ? scoreHtml(rest)
+        : (suite.length ? "" : `<p class="empty">No scores attached</p>`);
+      const suiteBlock = suite.length
+        ? `<h3>Suite extras</h3><div class="stack">${scoreHtml(suite)}</div>`
+        : "";
       body.innerHTML = `
         <dl class="kv">${rows.map(([k, v]) => `<dt>${Obs.esc(k)}</dt><dd>${Obs.esc(v == null ? "—" : v)}</dd>`).join("")}</dl>
         <h3>Observations</h3><div class="stack">${spans}</div>
         <h3>LLM generations</h3><div class="stack">${gens}</div>
-        <h3>Scores</h3><div class="stack">${scores}</div>`;
+        ${scoresBlock ? `<h3>Scores</h3><div class="stack">${scoresBlock}</div>` : ""}
+        ${suiteBlock}`;
       dbg("traces", { where: "inspect", id: traceId, spans: (run.spans || []).length });
     } catch (err) {
       dbg("detail-error", { id: traceId, message: err.message });

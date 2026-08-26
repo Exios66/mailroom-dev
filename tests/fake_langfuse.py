@@ -50,16 +50,28 @@ def make_trace(
     user_id: str | None = None,
     release: str | None = None,
     include_root: bool = False,
+    extra_scores: dict | None = None,
+    extra_metadata: dict | None = None,
+    extra_input: dict | None = None,
+    intake_output: dict | None = None,
+    classify_generation_output: object | None = None,
+    doc_subclass: str | None = None,
+    contract_subtype: str | None = None,
 ) -> dict:
     base_time = base_time or datetime(2026, 1, 1, 12, 0, 0)
-    span_names = span_names or [
+    span_names = list(span_names or [
         "ingest-document",
         "classify-document",
         "extract-fields",
         "compile-report",
         "write-catalog",
         "archive-document",
-    ]
+    ])
+    if intake_output and "normalize-intake" not in span_names:
+        if "ingest-document" in span_names:
+            span_names.insert(span_names.index("ingest-document") + 1, "normalize-intake")
+        else:
+            span_names.insert(0, "normalize-intake")
     obs = []
     if include_root:
         obs.append(
@@ -77,6 +89,16 @@ def make_trace(
             )
         )
     for i, name in enumerate(span_names):
+        span_out = {"stage": "ok", "error": "boom"} if error_spans else {"stage": "ok"}
+        if name == "normalize-intake" and intake_output:
+            span_out = dict(intake_output)
+        elif name == "classify-document" and (doc_subclass or contract_subtype):
+            span_out = {
+                **span_out,
+                "doc_type": doc_type,
+                "doc_subclass": doc_subclass,
+                "contract_subtype": contract_subtype,
+            }
         obs.append(
             Obj(
                 id=f"span-{trace_id}-{i}",
@@ -87,9 +109,18 @@ def make_trace(
                 latency=8.0,
                 level="ERROR" if error_spans else "DEFAULT",
                 input={"doc_id": filename},
-                output={"stage": "ok", "error": "boom"} if error_spans else {"stage": "ok"},
+                output=span_out,
             )
         )
+    classify_out = classify_generation_output
+    if classify_out is None and (doc_subclass or contract_subtype):
+        classify_out = {
+            "doc_type": doc_type,
+            "doc_subclass": doc_subclass,
+            "contract_subtype": contract_subtype,
+        }
+    if classify_out is None:
+        classify_out = "contract"
     obs.append(
         Obj(
             id=f"gen-{trace_id}-0",
@@ -100,7 +131,7 @@ def make_trace(
             end_time=base_time + timedelta(seconds=20),
             latency=9.0,
             input={"messages": "..."},
-            output="contract",
+            output=classify_out,
             usage={"total": 1200, "input": 1000, "output": 200},
             cost_details={"total": 0.00015},
             level="DEFAULT",
@@ -133,14 +164,36 @@ def make_trace(
         scores.append(Obj(name="mailroom-pipeline-judge", value=verdict, data_type="CATEGORICAL"))
     if quality is not None:
         scores.append(Obj(name="mailroom-pipeline-quality", value=quality, data_type="NUMERIC"))
+    if extra_scores:
+        for name, value in extra_scores.items():
+            scores.append(Obj(name=name, value=value, data_type="NUMERIC"))
     output = {
         "stage": stage,
         "doc_type": doc_type,
         "classification_confidence": class_conf,
         "extraction_confidence": extract_conf,
     }
+    if doc_subclass:
+        output["doc_subclass"] = doc_subclass
+    if contract_subtype:
+        output["contract_subtype"] = contract_subtype
+        output.setdefault("sorter", {})
+        if isinstance(output.get("sorter"), dict):
+            output["sorter"] = {
+                **output["sorter"],
+                "doc_type": doc_type,
+                "doc_subclass": doc_subclass,
+                "contract_subtype": contract_subtype,
+                "confidence": class_conf,
+            }
     if output_extra:
         output.update(output_extra)
+    metadata = {"pipeline": "mailroom", "attempt": attempt}
+    if extra_metadata:
+        metadata.update(extra_metadata)
+    inp = {"filename": filename, "matter_id": matter_id, "attempt": attempt}
+    if extra_input:
+        inp.update(extra_input)
     trace = {
         "id": trace_id,
         "name": "document-pipeline",
@@ -152,8 +205,8 @@ def make_trace(
         "user_id": user_id,
         "release": release,
         "tags": tags or ["mailroom", environment],
-        "metadata": {"pipeline": "mailroom", "attempt": attempt},
-        "input": {"filename": filename, "matter_id": matter_id, "attempt": attempt},
+        "metadata": metadata,
+        "input": inp,
         "output": output,
         "observations": obs,
         "scores": scores,
@@ -170,6 +223,13 @@ def make_trace_v4(
     matter_id: str = "MATTER-V4",
     stage: str = "archived",
     doc_type: str = "contract",
+    extra_scores: dict | None = None,
+    extra_metadata: dict | None = None,
+    extra_input: dict | None = None,
+    intake_output: dict | None = None,
+    classify_generation_output: object | None = None,
+    doc_subclass: str | None = None,
+    contract_subtype: str | None = None,
 ) -> dict:
     """A trace shaped like the Langfuse v4 SDK (camelCase observations).
 
@@ -180,6 +240,9 @@ def make_trace_v4(
     EVALUATOR / RETRIEVER / CHAIN), not a blanket SPAN.
     """
     base_time = datetime(2026, 3, 3, 9, 0, 0)
+    span_names = ["ingest-document", "classify-document", "extract-fields", "archive-document"]
+    if intake_output:
+        span_names.insert(1, "normalize-intake")
     obs = [
         Obj(
             id=f"v4-chain-{trace_id}",
@@ -192,9 +255,17 @@ def make_trace_v4(
             level="DEFAULT",
         )
     ]
-    for i, name in enumerate(
-        ["ingest-document", "classify-document", "extract-fields", "archive-document"]
-    ):
+    for i, name in enumerate(span_names):
+        span_out = {"stage": "ok"}
+        if name == "normalize-intake" and intake_output:
+            span_out = dict(intake_output)
+        elif name == "classify-document" and (doc_subclass or contract_subtype):
+            span_out = {
+                "stage": "ok",
+                "doc_type": doc_type,
+                "doc_subclass": doc_subclass,
+                "contract_subtype": contract_subtype,
+            }
         obs.append(
             Obj(
                 id=f"v4-span-{trace_id}-{i}",
@@ -204,8 +275,16 @@ def make_trace_v4(
                 endTime=base_time + timedelta(seconds=10 * i + 8),
                 latency=8.0,
                 level="DEFAULT",
+                output=span_out,
             )
         )
+    classify_out = classify_generation_output
+    if classify_out is None and (doc_subclass or contract_subtype):
+        classify_out = {
+            "doc_type": doc_type,
+            "doc_subclass": doc_subclass,
+            "contract_subtype": contract_subtype,
+        }
     obs.append(
         Obj(
             id=f"v4-gen-{trace_id}-0",
@@ -221,8 +300,35 @@ def make_trace_v4(
             outputTokens=200,
             totalCost=0.00015,
             level="DEFAULT",
+            output=classify_out if classify_out is not None else "contract",
         )
     )
+    output = {
+        "stage": stage,
+        "doc_type": doc_type,
+        "classification_confidence": 0.97,
+        "extraction_confidence": 0.88,
+    }
+    if doc_subclass:
+        output["doc_subclass"] = doc_subclass
+    if contract_subtype:
+        output["contract_subtype"] = contract_subtype
+        output["sorter"] = {
+            "doc_type": doc_type,
+            "doc_subclass": doc_subclass,
+            "contract_subtype": contract_subtype,
+            "confidence": 0.97,
+        }
+    scores = []
+    if extra_scores:
+        for name, value in extra_scores.items():
+            scores.append(Obj(name=name, value=value, data_type="NUMERIC"))
+    metadata = {"pipeline": "mailroom", "attempt": 0}
+    if extra_metadata:
+        metadata.update(extra_metadata)
+    inp = {"filename": filename, "matter_id": matter_id, "attempt": 0}
+    if extra_input:
+        inp.update(extra_input)
     return {
         "id": trace_id,
         "name": "document-pipeline",
@@ -234,16 +340,11 @@ def make_trace_v4(
         "userId": "pilot-operator",
         "release": "mailroom@test",
         "tags": ["mailroom", "pilot"],
-        "metadata": {"pipeline": "mailroom", "attempt": 0},
-        "input": {"filename": filename, "matter_id": matter_id, "attempt": 0},
-        "output": {
-            "stage": stage,
-            "doc_type": doc_type,
-            "classification_confidence": 0.97,
-            "extraction_confidence": 0.88,
-        },
+        "metadata": metadata,
+        "input": inp,
+        "output": output,
         "observations": obs,
-        "scores": [],
+        "scores": scores,
     }
 
 

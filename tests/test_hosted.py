@@ -36,6 +36,10 @@ def test_live_assets_are_mounted():
         debug = c.get("/live/static/js/debug.js")
     assert js.status_code == 200 and "startReplay" in js.text
     assert "Observations" in js.text and "observation_type" in js.text
+    assert "Subclass" in js.text
+    assert "Expected subclass" in js.text
+    assert "Suite extras" in js.text
+    assert "content_topic_accuracy" in js.text
     assert css.status_code == 200 and "skip-link" in css.text and ".obs-type" in css.text
     assert client.status_code == 200 and "reviewQueue" in client.text
     assert debug.status_code == 200 and "__OBSERVATORY_DEBUG__" in debug.text

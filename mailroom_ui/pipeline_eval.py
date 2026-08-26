@@ -30,6 +30,22 @@ def aligned(expected: str, predicted: str | None) -> bool:
     return ALIGN.get(expected) == predicted or ALIGN.get(predicted) == expected
 
 
+def predicted_subclass_token(row: dict) -> str | None:
+    """CUAD ``contract_subtype`` counts as the contract subclass."""
+    token = row.get("predicted_subclass") or row.get("doc_subclass") or row.get("contract_subtype")
+    if token is None:
+        return None
+    text = str(token).strip()
+    return text or None
+
+
+def subclass_ok(expected: str | None, predicted: str | None) -> bool:
+    """Exact token match (case-insensitive) for Hub/CUAD subclass labels."""
+    if not expected or not predicted:
+        return False
+    return str(expected).strip().lower() == str(predicted).strip().lower()
+
+
 def classify_failure(row: dict) -> str:
     stage = (row.get("stage") or "").lower()
     if row.get("error") and stage in ("failed", ""):
@@ -73,10 +89,20 @@ def score_rows(rows: list[dict]) -> dict:
     for r in rows:
         exp, pred = r.get("expected") or "unknown", r.get("predicted") or "none"
         confusion[exp][pred] += 1
+    subclass_rows = [r for r in rows if r.get("expected_subclass")]
+    n_sub = len(subclass_rows)
+    subclass_hits = 0
+    for r in subclass_rows:
+        ok = r.get("subclass_ok")
+        if ok is None:
+            ok = subclass_ok(r.get("expected_subclass"), predicted_subclass_token(r))
+        subclass_hits += int(bool(ok))
     return {
         "n": n,
         "exact_accuracy": exact / n if n else 0.0,
         "aligned_accuracy": aligned_n / n if n else 0.0,
+        "n_subclass": n_sub,
+        "subclass_accuracy": (subclass_hits / n_sub) if n_sub else None,
         "failure_modes": dict(modes),
         "by_class": {k: dict(v) for k, v in by_class.items()},
         "confusion": {k: dict(v) for k, v in confusion.items()},

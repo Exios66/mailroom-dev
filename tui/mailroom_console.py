@@ -247,6 +247,22 @@ def metrics_table(m: dict) -> Table:
         ("p95 gen latency", "-" if m.get("p95_generation_latency_s") is None else f"{m['p95_generation_latency_s']:.1f}s"),
         ("avg quality", "-" if m.get("avg_quality") is None else f"{m['avg_quality']:.2f}"),
     ]
+    extra_metrics = (
+        ("verified precision", "avg_extraction_verified_precision"),
+        ("topic accuracy", "avg_content_topic_accuracy"),
+        ("topic f1", "avg_content_topic_f1_macro"),
+        ("sentiment accuracy", "avg_sentiment_accuracy"),
+        ("sentiment f1", "avg_sentiment_f1_macro"),
+        ("maud question acc", "avg_maud_question_accuracy"),
+        ("maud question macro", "avg_maud_question_macro_accuracy"),
+        ("maud clause", "avg_maud_clause_presence"),
+        ("maud valid class", "avg_maud_valid_class_rate"),
+        ("maud category", "avg_maud_category_accuracy"),
+    )
+    for label, key in extra_metrics:
+        value = m.get(key)
+        if value is not None:
+            rows.append((label, f"{value:.4f}" if isinstance(value, float) else value))
     for name, value in rows:
         table.add_row(name, "-" if value is None else str(value))
     verdicts = m.get("verdict_counts") or {}
@@ -262,20 +278,34 @@ def inspect_panels(run: dict) -> list[Panel]:
     head = Text()
     head.append(f"{title}\n", style="bold white")
     head.append(f"trace {run.get('trace_id')} · {run.get('stage')} · "
-                f"{run.get('doc_type') or 'no doc type'} · env {run.get('environment') or '-'}\n",
+                f"{run.get('doc_type') or 'no doc type'}"
+                f"{(' / ' + (run.get('doc_subclass') or run.get('contract_subtype'))) if (run.get('doc_subclass') or run.get('contract_subtype')) else ''}"
+                f" · env {run.get('environment') or '-'}\n",
                 style="grey50")
     if run.get("verdict"):
         head.append(f"verdict {run['verdict']} · quality {_fmt(run.get('quality'))}\n", style="bold")
     kv = Table(box=None, pad_edge=False)
     kv.add_column("FIELD", style="dim")
     kv.add_column("VALUE")
+    labels = {
+        "doc_subclass": "SUBCLASS",
+        "contract_subtype": "CONTRACT SUBTYPE",
+        "expected_hf_class": "EXPECTED CLASS",
+        "expected_subclass": "EXPECTED SUBCLASS",
+        "intake_messy": "INTAKE MESSY",
+        "intake_changed": "INTAKE CHANGED",
+        "intake_method": "INTAKE METHOD",
+        "intake_chars": "INTAKE CHARS",
+    }
     for key in ("session_id", "matter_id", "user_id", "release", "attempt", "environment",
+                "doc_subclass", "contract_subtype", "expected_hf_class", "expected_subclass",
+                "intake_messy", "intake_changed", "intake_method", "intake_chars",
                 "classification_confidence", "extraction_confidence", "latency",
                 "llm_call_count", "total_tokens", "cost_usd", "created_at",
                 "escalation_reason", "error_message"):
         value = run.get(key)
         if value is not None:
-            kv.add_row(key, str(value))
+            kv.add_row(labels.get(key, key), str(value))
     panels = [Panel(Group(head, kv), title="RUN", border_style="blue")]
 
     spans = run.get("spans") or []

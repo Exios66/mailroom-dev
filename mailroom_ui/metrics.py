@@ -7,6 +7,11 @@ from datetime import datetime
 from typing import Iterable, Optional
 
 from .models import Metrics, PipelineRun, Stage
+from .pipeline_schema import (
+    SUITE_EXTRA_SCORES,
+    canonical_score_name,
+    langfuse_score_name,
+)
 
 
 def _p95(values: list[float]) -> float:
@@ -34,12 +39,23 @@ def compute_metrics(runs: Iterable[PipelineRun], since: Optional[datetime] = Non
         "run_duration_seconds": [],
         "classification_attempts": [],
         "extraction_attempts": [],
+        "extraction_overall_verified_precision": [],
     }
+    suite_keys = {name: [] for name in SUITE_EXTRA_SCORES}
     n_grounded = 0
 
     def _score_value(run: PipelineRun, name: str):
         # PipelineRun.scores maps name -> raw value (trace scores flattened).
+        # Resolve the 35-char Langfuse alias in either direction.
         value = run.scores.get(name)
+        if value is None:
+            alias = langfuse_score_name(name)
+            if alias != name:
+                value = run.scores.get(alias)
+        if value is None:
+            canon = canonical_score_name(name)
+            if canon != name:
+                value = run.scores.get(canon)
         try:
             return float(value) if value is not None else None
         except (TypeError, ValueError):
@@ -89,6 +105,9 @@ def compute_metrics(runs: Iterable[PipelineRun], since: Optional[datetime] = Non
             qualities.append(run.quality)
         if run.doc_type:
             m.per_doc_type[run.doc_type] = m.per_doc_type.get(run.doc_type, 0) + 1
+        if run.doc_subclass:
+            sub_key = f"{run.doc_type or 'unknown'}/{run.doc_subclass}"
+            m.per_doc_subclass[sub_key] = m.per_doc_subclass.get(sub_key, 0) + 1
 
         # Grounded-run extraction quality: a run counts as grounded when the
         # deterministic field score is present (mirrors pilot grounded runs).
@@ -96,6 +115,10 @@ def compute_metrics(runs: Iterable[PipelineRun], since: Optional[datetime] = Non
         if field_score is not None:
             n_grounded += 1
         for key, bucket in grounded_keys.items():
+            value = _score_value(run, key)
+            if value is not None:
+                bucket.append(value)
+        for key, bucket in suite_keys.items():
             value = _score_value(run, key)
             if value is not None:
                 bucket.append(value)
@@ -120,6 +143,9 @@ def compute_metrics(runs: Iterable[PipelineRun], since: Optional[datetime] = Non
             "run_duration_seconds": "avg_run_duration_s",
             "classification_attempts": "avg_classification_attempts",
             "extraction_attempts": "avg_extraction_attempts",
+            "extraction_overall_verified_precision": "avg_extraction_verified_precision",
         }[key]
         setattr(m, attr, round(statistics.mean(bucket), 4) if bucket else None)
+    for key, bucket in suite_keys.items():
+        setattr(m, f"avg_{key}", round(statistics.mean(bucket), 4) if bucket else None)
     return m

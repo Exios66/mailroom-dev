@@ -110,6 +110,14 @@ class PipelineRun(BaseModel):
     stage: Stage = Stage.UNKNOWN
     phase: Phase = Phase.INTAKE_SORT
     doc_type: Optional[str] = None
+    doc_subclass: Optional[str] = None
+    contract_subtype: Optional[str] = None
+    expected_hf_class: Optional[str] = None
+    expected_subclass: Optional[str] = None
+    intake_messy: Optional[bool] = None
+    intake_changed: Optional[bool] = None
+    intake_method: Optional[str] = None
+    intake_chars: Optional[int] = None
     classification_confidence: Optional[float] = None
     extraction_confidence: Optional[float] = None
     review_decision: Optional[str] = None
@@ -178,3 +186,17 @@ class Metrics(BaseModel):
     avg_run_duration_s: Optional[float] = None
     avg_classification_attempts: Optional[float] = None
     avg_extraction_attempts: Optional[float] = None
+    # Wire alias extraction_verified_precision (35-char Langfuse cap) is
+    # resolved onto this field; None when no run in the window carries it.
+    avg_extraction_verified_precision: Optional[float] = None
+    # Dedicated specialist-suite extras (Enron topic/sentiment, MAUD).
+    avg_content_topic_accuracy: Optional[float] = None
+    avg_content_topic_f1_macro: Optional[float] = None
+    avg_sentiment_accuracy: Optional[float] = None
+    avg_sentiment_f1_macro: Optional[float] = None
+    avg_maud_question_accuracy: Optional[float] = None
+    avg_maud_question_macro_accuracy: Optional[float] = None
+    avg_maud_clause_presence: Optional[float] = None
+    avg_maud_valid_class_rate: Optional[float] = None
+    avg_maud_category_accuracy: Optional[float] = None
+    per_doc_subclass: dict[str, int] = Field(default_factory=dict)

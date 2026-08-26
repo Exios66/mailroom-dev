@@ -96,9 +96,15 @@ trace, showing the latest run.
 observation-type map (`src/observability/tracing.py`
 `NODE_OBSERVATION_TYPES`): node/span names (including `normalize-intake` →
 INGEST), typed observations (chain/agent/evaluator/retriever/generation/span),
-stage→phase mapping, node order, agent roster (16 agents incl. `intake`), doc
-classes (7, incl. `court_opinion` and `insurance_claim`), specialist dispatch,
-and confidence thresholds (incl. `judge_band_high`). The `MAILROOM_TAXONOMY`
+stage→phase mapping, node order, agent roster (incl. `intake` and
+`compliance_specialist`), live doc classes (5 extract classes —
+`contract`, `corporate_record`, `correspondence`, `compliance_filing`,
+`insurance_claim` — plus the HF/sorter alias `merger_agreement` and the
+routing token `unknown`; retired `court_opinion` / `due_diligence` stay
+off the roster), Hub subclass catalogs + CUAD `contract_subtype`,
+Langfuse score-name aliases, specialist-suite extras (Enron/MAUD),
+specialist dispatch, and confidence thresholds (incl. `judge_band_high`).
+The `MAILROOM_TAXONOMY`
 env var can point at the live
 `taxonomy.yaml` so thresholds/doc classes come straight from the pipeline
 config instead of the mirror (cached at process level — restart to reload).

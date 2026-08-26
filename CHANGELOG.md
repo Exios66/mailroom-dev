@@ -8,6 +8,23 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- **Dojo 0.9.0 / llm-mailroom #30 scoring sync.** Live taxonomy is five extract
+  classes (`contract`, `corporate_record`, `correspondence`, `compliance_filing`,
+  `insurance_claim`) plus the HF/sorter alias `merger_agreement` (still tints and
+  labels, extracts via `contracts_specialist`) and the routing token `unknown`.
+  Retired `court_opinion` / `due_diligence` stay off the roster.
+  `compliance_specialist` is on the agent list. Hub subclass catalogs and CUAD
+  `contract_subtype` keys are copied into `DOC_SUBCLASS_BY_CLASS`. The interpreter
+  lifts `doc_subclass` / `contract_subtype`, HF ground truth
+  (`expected_hf_class`, `expected_subclass`), and `normalize-intake` span stats
+  onto `PipelineRun` and the compact floor payload. Langfuse's 35-char score
+  alias `extraction_verified_precision` dual-writes the canonical
+  `extraction_overall_verified_precision`. Metrics tiles Enron topic/sentiment
+  and MAUD extras only when those scores exist (never fabricated zeros). Eval
+  reports `subclass_accuracy` (exact token match; CUAD subtype counts as the
+  contract subclass). Inspector, history/review, Observatory, and TUI show
+  subclass + intake chips/rows and a grouped suite-extras score section.
+
 - **Langfuse data-model + batching mirror (llm-mailroom #29).** The interpreter
   reads v4 `observationType` as well as `type` and treats `CHAIN` / `AGENT` /
   `EVALUATOR` / `RETRIEVER` (plus SPAN/EVENT) as node observations, so

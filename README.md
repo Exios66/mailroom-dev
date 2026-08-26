@@ -354,7 +354,8 @@ The-Mailroom does not own the trace contract it renders — it **mirrors** it
 from the upstream pipeline. This is the repo's #1 maintenance duty: when
 `llm-mailroom` changes span names, observation types (`NODE_OBSERVATION_TYPES`:
 chain / agent / evaluator / retriever / generation / span), node order, the
-agent roster (15 agents), doc classes (7 classes), confidence thresholds, or
+agent roster, live doc classes (5 extract classes + `merger_agreement` alias +
+`unknown` routing token), Hub subclasses, confidence thresholds, or
 judge score names (`mailroom-pipeline-judge`, `mailroom-pipeline-quality`),
 this repo must update `mailroom_ui/pipeline_schema.py` and
 `mailroom_ui/trace_interpreter.py` in the same change window.

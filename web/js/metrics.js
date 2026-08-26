@@ -28,16 +28,32 @@ const MetricsView = (() => {
 
   function scoreValue(run, name) {
     const scores = run.scores;
-    if (!scores) return null;
-    if (Array.isArray(scores)) {
-      const hit = scores.find((s) => s && s.name === name && s.value != null);
-      return hit ? Number(hit.value) : null;
-    }
-    if (typeof scores === "object" && scores[name] != null) {
-      const v = scores[name];
-      if (typeof v === "object" && v !== null && "value" in v) return Number(v.value);
-      const n = Number(v);
-      return Number.isFinite(n) ? n : null;
+    const aliases = {
+      extraction_overall_verified_precision: "extraction_verified_precision",
+      extraction_verified_precision: "extraction_overall_verified_precision",
+    };
+    const names = [name];
+    if (aliases[name]) names.push(aliases[name]);
+    for (const key of names) {
+      if (!scores) continue;
+      if (Array.isArray(scores)) {
+        const hit = scores.find((s) => s && s.name === key && s.value != null);
+        if (hit) {
+          const n = Number(hit.value);
+          if (Number.isFinite(n)) return n;
+        }
+        continue;
+      }
+      if (typeof scores === "object" && scores[key] != null) {
+        const v = scores[key];
+        if (typeof v === "object" && v !== null && "value" in v) {
+          const n = Number(v.value);
+          if (Number.isFinite(n)) return n;
+        } else {
+          const n = Number(v);
+          if (Number.isFinite(n)) return n;
+        }
+      }
     }
     return null;
   }
@@ -68,6 +84,17 @@ const MetricsView = (() => {
       avg_run_duration_s: null,
       avg_classification_attempts: null,
       avg_extraction_attempts: null,
+      avg_extraction_verified_precision: null,
+      avg_content_topic_accuracy: null,
+      avg_content_topic_f1_macro: null,
+      avg_sentiment_accuracy: null,
+      avg_sentiment_f1_macro: null,
+      avg_maud_question_accuracy: null,
+      avg_maud_question_macro_accuracy: null,
+      avg_maud_clause_presence: null,
+      avg_maud_valid_class_rate: null,
+      avg_maud_category_accuracy: null,
+      per_doc_subclass: {},
     };
     const latencies = [];
     const qualities = [];
@@ -81,6 +108,16 @@ const MetricsView = (() => {
       run_duration_seconds: [],
       classification_attempts: [],
       extraction_attempts: [],
+      extraction_overall_verified_precision: [],
+      content_topic_accuracy: [],
+      content_topic_f1_macro: [],
+      sentiment_accuracy: [],
+      sentiment_f1_macro: [],
+      maud_question_accuracy: [],
+      maud_question_macro_accuracy: [],
+      maud_clause_presence: [],
+      maud_valid_class_rate: [],
+      maud_category_accuracy: [],
     };
     for (const r of runs) {
       m.total_docs++;
@@ -98,6 +135,10 @@ const MetricsView = (() => {
       if (r.quality != null) qualities.push(r.quality);
       if (r.doc_type) {
         m.per_doc_type[r.doc_type] = (m.per_doc_type[r.doc_type] || 0) + 1;
+      }
+      if (r.doc_subclass) {
+        const subKey = `${r.doc_type || "unknown"}/${r.doc_subclass}`;
+        m.per_doc_subclass[subKey] = (m.per_doc_subclass[subKey] || 0) + 1;
       }
       const fs = scoreValue(r, "extraction_field_score");
       if (fs != null) m.n_grounded_runs++;
@@ -123,9 +164,19 @@ const MetricsView = (() => {
       run_duration_seconds: "avg_run_duration_s",
       classification_attempts: "avg_classification_attempts",
       extraction_attempts: "avg_extraction_attempts",
+      extraction_overall_verified_precision: "avg_extraction_verified_precision",
+      content_topic_accuracy: "avg_content_topic_accuracy",
+      content_topic_f1_macro: "avg_content_topic_f1_macro",
+      sentiment_accuracy: "avg_sentiment_accuracy",
+      sentiment_f1_macro: "avg_sentiment_f1_macro",
+      maud_question_accuracy: "avg_maud_question_accuracy",
+      maud_question_macro_accuracy: "avg_maud_question_macro_accuracy",
+      maud_clause_presence: "avg_maud_clause_presence",
+      maud_valid_class_rate: "avg_maud_valid_class_rate",
+      maud_category_accuracy: "avg_maud_category_accuracy",
     };
     for (const [key, attr] of Object.entries(attrMap)) {
-      if (buckets[key].length) {
+      if (buckets[key] && buckets[key].length) {
         m[attr] = buckets[key].reduce((a, b) => a + b, 0) / buckets[key].length;
       }
     }
@@ -177,6 +228,8 @@ const MetricsView = (() => {
         value: v,
         color: "#d9a866",
       }));
+    const subclassBars = Object.entries(m.per_doc_subclass || {})
+      .map(([k, v]) => ({ label: k, value: v, color: "#8aa3c0" }));
 
     const quality = m.avg_quality == null ? "—" : Number(m.avg_quality).toFixed(2);
     const qcls = m.avg_quality != null ? (m.avg_quality >= 0.8 ? "good" : "warn") : "";
@@ -210,6 +263,37 @@ const MetricsView = (() => {
         m.avg_hallucination_rate <= 0.05 ? "good" : "bad");
       html += tile("FIELD PRESENCE", pct(m.avg_expected_field_presence));
     }
+    if (m.avg_extraction_verified_precision != null) {
+      html += tile("VERIFIED PRECISION", pct(m.avg_extraction_verified_precision),
+        m.avg_extraction_verified_precision >= 0.8 ? "good" : "warn");
+    }
+    if (m.avg_content_topic_accuracy != null) {
+      html += tile("TOPIC ACC", pct(m.avg_content_topic_accuracy));
+    }
+    if (m.avg_content_topic_f1_macro != null) {
+      html += tile("TOPIC F1", pct(m.avg_content_topic_f1_macro));
+    }
+    if (m.avg_sentiment_accuracy != null) {
+      html += tile("SENTIMENT ACC", pct(m.avg_sentiment_accuracy));
+    }
+    if (m.avg_sentiment_f1_macro != null) {
+      html += tile("SENTIMENT F1", pct(m.avg_sentiment_f1_macro));
+    }
+    if (m.avg_maud_question_accuracy != null) {
+      html += tile("MAUD Q ACC", pct(m.avg_maud_question_accuracy));
+    }
+    if (m.avg_maud_question_macro_accuracy != null) {
+      html += tile("MAUD Q MACRO", pct(m.avg_maud_question_macro_accuracy));
+    }
+    if (m.avg_maud_clause_presence != null) {
+      html += tile("MAUD CLAUSE", pct(m.avg_maud_clause_presence));
+    }
+    if (m.avg_maud_valid_class_rate != null) {
+      html += tile("MAUD VALID", pct(m.avg_maud_valid_class_rate));
+    }
+    if (m.avg_maud_category_accuracy != null) {
+      html += tile("MAUD CATEGORY", pct(m.avg_maud_category_accuracy));
+    }
     if (m.avg_run_duration_s != null) {
       html += tile("AVG RUN DURATION", Mailroom.fmt.latency(m.avg_run_duration_s));
     }
@@ -221,6 +305,7 @@ const MetricsView = (() => {
     }
     if (vBars.length) html += bars("JUDGE VERDICTS", vBars, "#5f9e6e");
     if (docBars.length) html += bars("DOC TYPES", docBars, "#d9a866");
+    if (subclassBars.length) html += bars("DOC SUBCLASSES", subclassBars, "#8aa3c0");
     if (rawRuns && rawRuns.length) html += trendBars(rawRuns);
     gridEl.innerHTML = html || `<div class="hint mono">NO METRICS YET</div>`;
   }

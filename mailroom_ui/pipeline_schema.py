@@ -118,8 +118,8 @@ NODE_ORDER: list[Stage] = [
 
 # Agent display roster: key -> (label, role). Mirrors src/agents/ of
 # llm-mailroom (+ langchain_agents/sorter_agent.py for sorter/sorter_reviewer).
-# The due-diligence / compliance / court-opinions specialists were REMOVED:
-# their doc classes no longer exist in the pilot universe (docclass-pilot).
+# Retired specialists (court opinions / due diligence) stay off this roster;
+# the sorter emits `unknown` for those classes.
 AGENTS: dict[str, dict[str, str]] = {
     "sorter": {"label": "Sorter", "role": "classify"},
     "intake": {"label": "Intake", "role": "prepare"},
@@ -127,6 +127,7 @@ AGENTS: dict[str, dict[str, str]] = {
     "contracts_specialist": {"label": "Contracts", "role": "extract"},
     "corporate_records_specialist": {"label": "Corporate", "role": "extract"},
     "correspondence_specialist": {"label": "Correspondence", "role": "extract"},
+    "compliance_specialist": {"label": "Compliance", "role": "extract"},
     "insurance_claims_specialist": {"label": "Insurance Claims", "role": "extract"},
     "arbiter": {"label": "Arbiter", "role": "adjudicate"},
     "boss": {"label": "Boss", "role": "adjudicate"},
@@ -136,14 +137,28 @@ AGENTS: dict[str, dict[str, str]] = {
     "image_extractor": {"label": "Image Extractor", "role": "ingest"},
 }
 
-# The valid doc-class universe — mirrors the Lucius-Morningstar/docclass-pilot
-# HF dataset (configs `default` + `ground_truth`), the pilot-run default.
+# Live taxonomy classes that dispatch to a specialist (llm-mailroom v0.5+ /
+# llm-dojo-scoring LIVE_DOC_TYPES). `merger_agreement` is an HF/sorter alias
+# that extracts through contracts; `unknown` is a routing token, not a class.
+LIVE_DOC_TYPES: tuple[str, ...] = (
+    "contract",
+    "corporate_record",
+    "correspondence",
+    "compliance_filing",
+    "insurance_claim",
+)
+RETIRED_DOC_TYPES: tuple[str, ...] = ("court_opinion", "due_diligence")
+UNKNOWN_DOC_TYPE = "unknown"
+EXTRACT_CLASS_ALIASES: dict[str, str] = {"merger_agreement": "contract"}
+
 DOC_CLASSES: dict[str, str] = {
     "contract": "Contract / Agreement",
-    "merger_agreement": "Merger Agreement",
     "corporate_record": "Corporate Record",
     "correspondence": "Correspondence",
+    "compliance_filing": "Compliance Filing",
     "insurance_claim": "Insurance Claim",
+    "merger_agreement": "Merger Agreement",  # display/HF alias, not a taxonomy row
+    "unknown": "Unknown",
 }
 
 DEFAULT_DOC_CLASSES: dict[str, str] = dict(DOC_CLASSES)
@@ -153,8 +168,90 @@ SPECIALIST_BY_DOC_CLASS: dict[str, str] = {
     "merger_agreement": "contracts_specialist",
     "corporate_record": "corporate_records_specialist",
     "correspondence": "correspondence_specialist",
+    "compliance_filing": "compliance_specialist",
     "insurance_claim": "insurance_claims_specialist",
 }
+
+# Hub subclass catalogs (llm-dojo-scoring mailroom.HUB_SUBCLASS_INVENTORIES
+# + CUAD contract_subtype keys + MAUD consideration types).
+CONTRACT_SUBTYPE_KEYS: tuple[str, ...] = (
+    "affiliate", "agency", "collaboration", "co_branding", "consulting",
+    "development", "distributor", "endorsement", "franchise", "hosting",
+    "ip", "joint_venture", "license", "maintenance", "manufacturing",
+    "marketing", "non_compete_no_solicit", "outsourcing", "promotion",
+    "reseller", "service", "sponsorship", "strategic_alliance", "supply",
+    "transportation",
+)
+DOC_SUBCLASS_BY_CLASS: dict[str, tuple[str, ...]] = {
+    "contract": CONTRACT_SUBTYPE_KEYS,
+    "merger_agreement": (
+        "all_cash", "all_stock", "mixed_cash_stock",
+        "mixed_cash_stock_election", "other",
+    ),
+    "corporate_record": (
+        "articles_of_incorporation", "bylaws", "powers_of_attorney",
+        "rights_instrument", "other",
+    ),
+    "correspondence": (
+        "email", "letter", "memo", "notice", "demand", "attorney_demand",
+        "press_release", "meeting_request",
+    ),
+    "insurance_claim": ("pde", "inpatient", "outpatient", "carrier"),
+    "compliance_filing": (
+        "10-K", "10-Q", "8-K", "S-1", "DEF 14A", "13D", "13G",
+        "Form 4", "20-F", "6-K", "other",
+    ),
+}
+
+# Langfuse Cloud rejects score *config* names over 35 characters.
+LANGFUSE_SCORE_NAME_ALIASES: dict[str, str] = {
+    "extraction_overall_verified_precision": "extraction_verified_precision",
+}
+_CANONICAL_SCORE_NAMES: dict[str, str] = {
+    alias: canonical for canonical, alias in LANGFUSE_SCORE_NAME_ALIASES.items()
+}
+
+# Dedicated specialist-suite extras (llm-mailroom suite_scoring.py / dojo 0.9.0).
+SUITE_EXTRA_SCORES: tuple[str, ...] = (
+    "content_topic_accuracy",
+    "content_topic_f1_macro",
+    "sentiment_accuracy",
+    "sentiment_f1_macro",
+    "maud_question_accuracy",
+    "maud_question_macro_accuracy",
+    "maud_clause_presence",
+    "maud_valid_class_rate",
+    "maud_category_accuracy",
+)
+SUITE_EXTRA_SCORE_SET = frozenset(SUITE_EXTRA_SCORES)
+
+GROUND_TRUTH_KEYS: tuple[str, ...] = (
+    "expected_hf_class",
+    "expected_doc_class",
+    "expected_subclass",
+    "expected",
+)
+
+
+def resolve_extract_class(doc_type: Optional[str]) -> Optional[str]:
+    """Live taxonomy class used for extraction, or None if parked."""
+    if not doc_type:
+        return None
+    key = str(doc_type).strip().lower()
+    if key == UNKNOWN_DOC_TYPE or key in RETIRED_DOC_TYPES:
+        return None
+    aliased = EXTRACT_CLASS_ALIASES.get(key, key)
+    if aliased in LIVE_DOC_TYPES:
+        return aliased
+    return None
+
+
+def langfuse_score_name(name: str) -> str:
+    return LANGFUSE_SCORE_NAME_ALIASES.get(name, name)
+
+
+def canonical_score_name(name: str) -> str:
+    return _CANONICAL_SCORE_NAMES.get(name, name)
 
 
 @dataclass
@@ -198,4 +295,7 @@ class PipelineSchema:
         return schema
 
     def specialist_for(self, doc_type: str) -> Optional[str]:
-        return SPECIALIST_BY_DOC_CLASS.get(doc_type)
+        if not doc_type:
+            return None
+        key = EXTRACT_CLASS_ALIASES.get(doc_type, doc_type)
+        return SPECIALIST_BY_DOC_CLASS.get(key) or SPECIALIST_BY_DOC_CLASS.get(doc_type)

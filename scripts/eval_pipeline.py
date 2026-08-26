@@ -39,7 +39,9 @@ from mailroom_ui.intake_normalize import deterministic_normalize, looks_messy  #
 from mailroom_ui.pipeline_eval import (  # noqa: E402
     aligned as _aligned,
     classify_failure,
+    predicted_subclass_token,
     score_rows,
+    subclass_ok,
 )
 
 DATASET_ID = "Lucius-Morningstar/docclass-merged"
@@ -145,6 +147,53 @@ def _score_map(scores: list[dict]) -> dict:
     return out
 
 
+def _ground_truth_blob(*sources) -> dict:
+    for src in sources:
+        if isinstance(src, dict) and isinstance(src.get("ground_truth"), dict):
+            return src["ground_truth"]
+    return {}
+
+
+def _expected_class(gt: dict, *fallbacks) -> str | None:
+    for blob in (gt, *fallbacks):
+        if not isinstance(blob, dict):
+            continue
+        for key in ("expected_hf_class", "expected_doc_class", "expected"):
+            val = blob.get(key)
+            if val:
+                return val
+    return None
+
+
+def _expected_subclass(gt: dict, *fallbacks) -> str | None:
+    for blob in (gt, *fallbacks):
+        if not isinstance(blob, dict):
+            continue
+        val = blob.get("expected_subclass")
+        if val:
+            return val
+    return None
+
+
+def _predicted_subclass_from(out: dict, *payloads) -> str | None:
+    for blob in (out, _as_dict(out.get("sorter")) if isinstance(out, dict) else {}, *payloads):
+        if not isinstance(blob, dict):
+            continue
+        token = blob.get("doc_subclass") or blob.get("contract_subtype")
+        if token:
+            return token
+    return None
+
+
+def _stamp_subclass(row: dict) -> None:
+    predicted = predicted_subclass_token(row)
+    if predicted and not row.get("predicted_subclass"):
+        row["predicted_subclass"] = predicted
+    expected = row.get("expected_subclass")
+    if expected:
+        row["subclass_ok"] = subclass_ok(expected, predicted_subclass_token(row))
+
+
 def traces_to_rows(traces: list[dict]) -> list[dict]:
     rows = []
     for t in traces:
@@ -153,11 +202,12 @@ def traces_to_rows(traces: list[dict]) -> list[dict]:
         meta = t.get("metadata") if isinstance(t.get("metadata"), dict) else {}
         filename = inp.get("filename") or meta.get("filename")
         scores = _score_map(t.get("scores") or [])
-        predicted = out.get("doc_type")
-        expected = (
-            (out.get("ground_truth") or {}).get("expected_hf_class")
-            if isinstance(out.get("ground_truth"), dict) else None
-        ) or (meta.get("expected_hf_class") if isinstance(meta, dict) else None)
+        sorter = _as_dict(out.get("sorter"))
+        predicted = out.get("doc_type") or sorter.get("doc_type")
+        gt = _ground_truth_blob(out, inp, meta)
+        expected = _expected_class(gt, meta, inp, out)
+        expected_sub = _expected_subclass(gt, meta, inp, out)
+        predicted_sub = _predicted_subclass_from(out)
         started = t.get("timestamp") or t.get("createdAt")
         ended = t.get("updatedAt") or t.get("updated_at")
         seconds = None
@@ -175,6 +225,10 @@ def traces_to_rows(traces: list[dict]) -> list[dict]:
             "predicted": predicted,
             "exact_ok": bool(expected and predicted and expected == predicted),
             "aligned_ok": _aligned(expected, predicted) if expected else False,
+            "expected_subclass": expected_sub,
+            "predicted_subclass": predicted_sub,
+            "doc_subclass": predicted_sub,
+            "contract_subtype": sorter.get("contract_subtype") or out.get("contract_subtype"),
             "stage": out.get("stage"),
             "class_conf": out.get("classification_confidence"),
             "extract_conf": out.get("extraction_confidence"),
@@ -194,6 +248,7 @@ def traces_to_rows(traces: list[dict]) -> list[dict]:
             "intake_changed": False,
             "intake_messy": False,
         }
+        _stamp_subclass(row)
         rows.append(row)
     return rows
 
@@ -233,12 +288,31 @@ def enrich_intake(rows: list[dict]) -> list[dict]:
                     gt = obs_out.get("ground_truth") if isinstance(obs_out.get("ground_truth"), dict) else {}
                 if not row.get("extracted_data"):
                     row["extracted_data"] = obs_out.get("extracted_data")
+            if name in ("classify-document", "classify", "pipeline-result",
+                        "write-catalog", "compile-report"):
+                if not row.get("predicted_subclass"):
+                    token = obs_out.get("doc_subclass") or obs_out.get("contract_subtype")
+                    nested = _as_dict(obs_out.get("sorter"))
+                    token = token or nested.get("doc_subclass") or nested.get("contract_subtype")
+                    if token:
+                        row["predicted_subclass"] = token
+                        row["doc_subclass"] = row.get("doc_subclass") or token
+                        if obs_out.get("contract_subtype") or nested.get("contract_subtype"):
+                            row["contract_subtype"] = (
+                                obs_out.get("contract_subtype") or nested.get("contract_subtype")
+                            )
         expected = (
             row.get("expected")
             or gt.get("expected_hf_class")
             or meta.get("expected_hf_class")
             or gt.get("expected_doc_class")
         )
+        if not row.get("expected_subclass"):
+            row["expected_subclass"] = (
+                gt.get("expected_subclass")
+                or meta.get("expected_subclass")
+                or inp.get("expected_subclass")
+            )
         if expected:
             row["expected"] = expected
             pred = row.get("predicted") or out.get("doc_type")
@@ -249,6 +323,12 @@ def enrich_intake(rows: list[dict]) -> list[dict]:
             if row.get("expected"):
                 row["exact_ok"] = row["expected"] == row.get("predicted")
                 row["aligned_ok"] = _aligned(row["expected"], row.get("predicted"))
+        if not row.get("predicted_subclass"):
+            token = _predicted_subclass_from(out)
+            if token:
+                row["predicted_subclass"] = token
+                row["doc_subclass"] = row.get("doc_subclass") or token
+        _stamp_subclass(row)
         if not row.get("stage"):
             row["stage"] = out.get("stage")
         if not row.get("error"):

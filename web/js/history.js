@@ -75,7 +75,7 @@ const HistoryView = (() => {
         <span class="run-file">${Mailroom.esc(r.filename || r.trace_id)}</span>
         ${chip(r)}
         ${verdictChip(r)}
-        <span style="color:var(--paper-dim)">${Mailroom.esc(r.doc_type || "—")}</span>
+        <span style="color:var(--paper-dim)">${Mailroom.esc(r.doc_type || "—")}${r.doc_subclass || r.contract_subtype ? ` / ${Mailroom.esc(r.doc_subclass || r.contract_subtype)}` : ""}</span>
         <span style="color:var(--gold)">${cost}</span>
         <span style="color:var(--paper-dim)">${toks}</span>
         <span class="run-when" style="display:flex;gap:6px;align-items:center;justify-content:flex-end">

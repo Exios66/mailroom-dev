@@ -150,3 +150,39 @@ def test_judge_gate_run_flows_through_display_api():
     assert any(s["name"] == "judge-verify" for s in detail["spans"])
     judge = next(s for s in detail["spans"] if s["name"] == "judge-verify")
     assert judge["observation_type"] == "EVALUATOR"
+
+
+def test_compliance_filing_floor_payload_exposes_subclass_and_intake():
+    now = datetime.now() - timedelta(hours=1)
+    traces = [
+        make_trace(
+            "t-compliance-floor",
+            base_time=now,
+            doc_type="compliance_filing",
+            doc_subclass="10-K",
+            extra_metadata={"expected_hf_class": "compliance_filing",
+                            "expected_subclass": "10-K"},
+            extra_scores={"maud_question_accuracy": 0.8,
+                          "extraction_verified_precision": 0.7},
+            intake_output={"messy": True, "changed": True,
+                           "method": "deterministic", "chars": 200},
+        ),
+    ]
+    src = LangfuseSource(client=FakeClient(traces))
+    with TestClient(create_app(src)) as c:
+        listing = c.get("/api/traces?since=3600").json()
+        detail = c.get("/api/traces/t-compliance-floor").json()
+        metrics = c.get("/api/metrics?since=3600").json()
+    run = listing["runs"][0]
+    assert run["doc_type"] == "compliance_filing"
+    assert run["doc_subclass"] == "10-K"
+    assert run["expected_subclass"] == "10-K"
+    assert detail["doc_subclass"] == "10-K"
+    assert detail["intake_messy"] is True
+    assert detail["intake_changed"] is True
+    assert detail["intake_method"] == "deterministic"
+    assert detail["scores"]["extraction_overall_verified_precision"] == 0.7
+    assert detail["scores"]["maud_question_accuracy"] == 0.8
+    assert metrics["avg_maud_question_accuracy"] == 0.8
+    assert metrics["avg_extraction_verified_precision"] == 0.7
+    assert metrics["per_doc_subclass"]["compliance_filing/10-K"] == 1

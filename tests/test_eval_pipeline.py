@@ -4,6 +4,27 @@ from mailroom_ui.intake_normalize import deterministic_normalize, looks_messy
 from mailroom_ui.pipeline_eval import aligned, classify_failure, score_rows
 
 
+def test_empty_text_is_not_messy():
+    cleaned, stats = deterministic_normalize("")
+    assert cleaned == ""
+    assert stats["changed"] is False
+    assert looks_messy(cleaned, stats) is False
+
+
+def test_normalize_is_idempotent():
+    raw = "Hello   world.\r\n\r\n\r\nagree-\nment\n"
+    once, _ = deterministic_normalize(raw)
+    twice, stats = deterministic_normalize(once)
+    assert once == twice
+    assert stats["changed"] is False
+
+
+def test_markdown_table_rows_keep_internal_spaces():
+    raw = "| col  a | col  b |\n\n\nNext."
+    cleaned, _ = deterministic_normalize(raw)
+    assert "| col  a | col  b |" in cleaned
+
+
 def test_normalize_collapses_and_unwraps():
     cleaned, stats = deterministic_normalize("A\u00a0B\n\n\n\nagree-\nment")
     assert "A B" in cleaned
@@ -36,6 +57,47 @@ def test_eval_scorer_merger_alias_and_failures():
     assert not aligned("correspondence", "contract")
     assert summary["confusion"]["merger_agreement"]["contract"] == 1
     assert summary["confusion"]["correspondence"]["contract"] == 1
+    assert summary["subclass_accuracy"] is None
+    assert summary["n_subclass"] == 0
+
+
+def test_eval_subclass_accuracy_uses_contract_subtype():
+    rows = [
+        {"expected": "contract", "predicted": "contract", "stage": "archived",
+         "exact_ok": True, "aligned_ok": True,
+         "expected_subclass": "license", "contract_subtype": "license"},
+        {"expected": "compliance_filing", "predicted": "compliance_filing",
+         "stage": "archived", "exact_ok": True, "aligned_ok": True,
+         "expected_subclass": "10-K", "doc_subclass": "8-K"},
+        {"expected": "contract", "predicted": "contract", "stage": "archived",
+         "exact_ok": True, "aligned_ok": True},
+    ]
+    summary = score_rows(rows)
+    assert summary["n_subclass"] == 2
+    assert abs(summary["subclass_accuracy"] - 0.5) < 1e-9
+
+
+def test_traces_to_rows_lifts_subclass_and_gt():
+    from scripts.eval_pipeline import traces_to_rows
+
+    rows = traces_to_rows([{
+        "id": "t-sub",
+        "input": {"filename": "sec.txt", "ground_truth": {
+            "expected_hf_class": "compliance_filing",
+            "expected_subclass": "10-K",
+        }},
+        "output": {
+            "stage": "archived",
+            "doc_type": "compliance_filing",
+            "sorter": {"doc_type": "compliance_filing", "doc_subclass": "10-K"},
+        },
+        "metadata": {},
+        "scores": [],
+    }])
+    assert rows[0]["expected"] == "compliance_filing"
+    assert rows[0]["expected_subclass"] == "10-K"
+    assert rows[0]["predicted_subclass"] == "10-K"
+    assert rows[0]["subclass_ok"] is True
 
 
 def test_attach_manifest_joins_trace_id_and_local_filename():

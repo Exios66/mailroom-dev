@@ -157,6 +157,53 @@ class TestGroundedScoreMining:
         # absent score -> None (never fabricated)
         assert m.avg_expected_field_presence is None
 
+    def test_verified_precision_alias_and_suite_extras(self):
+        from mailroom_ui.metrics import compute_metrics
+
+        runs = [
+            self._run({
+                "extraction_field_score": 0.9,
+                "extraction_verified_precision": 0.8,
+                "content_topic_accuracy": 1.0,
+                "content_topic_f1_macro": 0.9,
+                "sentiment_accuracy": 0.5,
+                "maud_question_accuracy": 0.7,
+                "maud_clause_presence": 1.0,
+            }),
+            self._run({
+                "extraction_overall_verified_precision": 0.6,
+                "content_topic_accuracy": 0.5,
+            }),
+        ]
+        m = compute_metrics(runs)
+        assert m.avg_extraction_verified_precision == 0.7
+        assert m.avg_content_topic_accuracy == 0.75
+        assert m.avg_content_topic_f1_macro == 0.9
+        assert m.avg_sentiment_accuracy == 0.5
+        assert m.avg_maud_question_accuracy == 0.7
+        assert m.avg_maud_clause_presence == 1.0
+        # absent extras are not fabricated as zeros
+        assert m.avg_maud_category_accuracy is None
+        assert m.avg_sentiment_f1_macro is None
+
+    def test_per_doc_subclass_counts(self):
+        from mailroom_ui.metrics import compute_metrics
+        from mailroom_ui.models import PipelineRun
+
+        runs = [
+            PipelineRun(trace_id="a", stage="archived", doc_type="contract",
+                        doc_subclass="license"),
+            PipelineRun(trace_id="b", stage="archived", doc_type="contract",
+                        doc_subclass="license"),
+            PipelineRun(trace_id="c", stage="archived", doc_type="compliance_filing",
+                        doc_subclass="10-K"),
+        ]
+        m = compute_metrics(runs)
+        assert m.per_doc_subclass == {
+            "contract/license": 2,
+            "compliance_filing/10-K": 1,
+        }
+
     def test_no_grounded_runs(self):
         from mailroom_ui.metrics import compute_metrics
 

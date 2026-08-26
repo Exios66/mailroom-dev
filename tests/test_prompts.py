@@ -53,12 +53,19 @@ def test_override_loader_rejects_bad_shape(tmp_path):
 
 
 def test_schema_roster_consistency():
-    """The schema's specialist mapping must only reference agents that exist
-    in the prompt registry or are non-LLM roles (transcriber/image)."""
-    from mailroom_ui.pipeline_schema import SPECIALIST_BY_DOC_CLASS
+    """The schema's specialist mapping must only reference agents on the
+    live roster. Extractors may have a vendored production prompt, a
+    docclass-arm prompt, or both (compliance_specialist is live again in
+    dojo 0.9.0 / mailroom #30; its production prompt_templates catch-up
+    is still on the pipeline)."""
+    from mailroom_ui.docclass_prompts import DOCLASS_PROMPT_VERSIONS
+    from mailroom_ui.pipeline_schema import AGENTS, SPECIALIST_BY_DOC_CLASS
 
     for doc_class, specialist in SPECIALIST_BY_DOC_CLASS.items():
-        assert specialist in PROMPT_TEMPLATES, f"{doc_class} -> {specialist} has no prompt"
+        assert specialist in AGENTS, f"{doc_class} -> {specialist} missing from AGENTS"
+        has_live = specialist in PROMPT_TEMPLATES
+        has_docclass = any(k.startswith(specialist) for k in DOCLASS_PROMPT_VERSIONS)
+        assert has_live or has_docclass, f"{doc_class} -> {specialist} has no prompt"
 
 
 def test_docclass_registry_shape():

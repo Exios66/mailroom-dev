@@ -112,6 +112,11 @@ def test_inspector_renders_typed_observations():
     assert "observation_type" in inspector
     assert "obsTypeChip" in inspector
     assert "run.user_id" in inspector and "run.release" in inspector
+    assert "run.doc_subclass" in inspector
+    assert "run.expected_subclass" in inspector
+    assert "run.intake_messy" in inspector
+    assert "SUITE EXTRAS" in inspector
+    assert "content_topic_accuracy" in inspector
     assert ".chip.obs-agent" in theme
     assert ".chip.obs-evaluator" in theme
     assert ".chip.obs-retriever" in theme

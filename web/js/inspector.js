@@ -75,6 +75,31 @@ const Inspector = (() => {
     return [];
   }
 
+  const SUITE_EXTRA_SCORES = new Set([
+    "content_topic_accuracy",
+    "content_topic_f1_macro",
+    "sentiment_accuracy",
+    "sentiment_f1_macro",
+    "maud_question_accuracy",
+    "maud_question_macro_accuracy",
+    "maud_clause_presence",
+    "maud_valid_class_rate",
+    "maud_category_accuracy",
+  ]);
+  const SCORE_ALIASES = {
+    extraction_overall_verified_precision: "extraction_verified_precision",
+  };
+
+  function dedupeScoreAliases(entries) {
+    const names = new Set(entries.map(([k]) => k));
+    return entries.filter(([k]) => {
+      for (const [canon, alias] of Object.entries(SCORE_ALIASES)) {
+        if (k === alias && names.has(canon)) return false;
+      }
+      return true;
+    });
+  }
+
   function render(run) {
     const title = run.filename || run.trace_id;
     titleEl.textContent = `${Mailroom.fmt.short(title, 60)} — ${run.stage || "unknown"}`;
@@ -84,6 +109,19 @@ const Inspector = (() => {
     parts.push(stageChip(run.stage));
     parts.push(`<span class="chip">PHASE ${Mailroom.esc((run.phase || "").toUpperCase())}</span>`);
     if (doc) parts.push(`<span class="chip">${Mailroom.esc(doc)}</span>`);
+    if (run.doc_subclass) {
+      parts.push(`<span class="chip">SUBCLASS ${Mailroom.esc(run.doc_subclass)}</span>`);
+    } else if (run.contract_subtype) {
+      parts.push(`<span class="chip">SUBTYPE ${Mailroom.esc(run.contract_subtype)}</span>`);
+    }
+    if (run.expected_subclass) {
+      parts.push(`<span class="chip">EXPECTED SUBCLASS ${Mailroom.esc(run.expected_subclass)}</span>`);
+    }
+    if (run.expected_hf_class) {
+      parts.push(`<span class="chip">EXPECTED ${Mailroom.esc(run.expected_hf_class)}</span>`);
+    }
+    if (run.intake_messy) parts.push(`<span class="chip">INTAKE MESSY</span>`);
+    if (run.intake_changed) parts.push(`<span class="chip">INTAKE CHANGED</span>`);
     if (run.environment) parts.push(`<span class="chip">ENV ${Mailroom.esc(run.environment)}</span>`);
     if (run.release) parts.push(`<span class="chip">REL ${Mailroom.esc(run.release)}</span>`);
     if (run.user_id) parts.push(`<span class="chip">USER ${Mailroom.esc(run.user_id)}</span>`);
@@ -109,6 +147,10 @@ const Inspector = (() => {
       ["user", run.user_id || "—"],
       ["release", run.release || "—"],
       ["filename", run.filename || "—"],
+      ["doc type", run.doc_type || "—"],
+      ["subclass", run.doc_subclass || run.contract_subtype || "—"],
+      ["expected class", run.expected_hf_class || "—"],
+      ["expected subclass", run.expected_subclass || "—"],
       ["classification conf.", Mailroom.fmt.conf(run.classification_confidence)],
       ["extraction conf.", Mailroom.fmt.conf(run.extraction_confidence)],
       ["latency", Mailroom.fmt.latency(run.latency)],
@@ -119,6 +161,16 @@ const Inspector = (() => {
     ];
     if (run.review_decision) rows.push(["review decision", run.review_decision]);
     if (run.escalation_reason) rows.push(["escalation", run.escalation_reason]);
+    if (run.intake_method || run.intake_messy != null || run.intake_changed != null) {
+      const flags = [];
+      if (run.intake_messy) flags.push("messy");
+      if (run.intake_changed) flags.push("changed");
+      rows.push(["intake", [
+        run.intake_method || "",
+        flags.join("+"),
+        run.intake_chars != null ? `${run.intake_chars} chars` : "",
+      ].filter(Boolean).join(" · ") || "—"]);
+    }
 
     const kv = rows.map(([k, v]) => `<div class="k">${Mailroom.esc(k)}</div><div class="v">${Mailroom.esc(v)}</div>`).join("");
 
@@ -158,13 +210,22 @@ const Inspector = (() => {
         </div>`).join("")
       : `<div style="color:var(--gray-dim)">no generations on this trace</div>`;
 
-    const scores = scoreEntries(run.scores);
-    const scoresHtml = scores.length
-      ? scores.map(([k, v]) => `<div class="score-row">
+    const scores = dedupeScoreAliases(scoreEntries(run.scores));
+    const suiteScores = scores.filter(([k]) => SUITE_EXTRA_SCORES.has(k));
+    const otherScores = scores.filter(([k]) => !SUITE_EXTRA_SCORES.has(k));
+    const scoreRows = (entries) => entries.map(([k, v]) => `<div class="score-row">
           <span class="score-name">${Mailroom.esc(k)}</span>
           <span class="score-val">${Mailroom.esc(fmtScore(v))}</span>
-        </div>`).join("")
-      : `<div style="color:var(--gray-dim)">no scores attached to this trace</div>`;
+        </div>`).join("");
+    const scoresHtml = otherScores.length
+      ? scoreRows(otherScores)
+      : (suiteScores.length ? "" : `<div style="color:var(--gray-dim)">no scores attached to this trace</div>`);
+    const suiteHtml = suiteScores.length
+      ? `<div class="insp-section">
+        <h3>SUITE EXTRAS</h3>
+        ${scoreRows(suiteScores)}
+      </div>`
+      : "";
 
     bodyEl.innerHTML = `
       <div class="insp-chips">${parts.join("")} ${verdictChip} ${quality}</div>
@@ -181,10 +242,11 @@ const Inspector = (() => {
         <h3>LLM GENERATIONS</h3>
         ${gensHtml}
       </div>
-      <div class="insp-section">
+      ${scoresHtml ? `<div class="insp-section">
         <h3>SCORES</h3>
         ${scoresHtml}
-      </div>`;
+      </div>` : ""}
+      ${suiteHtml}`;
   }
 
   function open(traceId) {

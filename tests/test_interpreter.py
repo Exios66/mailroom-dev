@@ -474,8 +474,25 @@ def test_schema_mirror_covers_upstream_contract():
     assert "normalize-intake" in ps.SPAN_STAGE_MAP
     assert ps.SPAN_STAGE_MAP["normalize-intake"] == Stage.INGEST
     assert "image-extractor" not in ps.AGENTS
+    assert "compliance_specialist" in ps.AGENTS
+    assert "compliance_filing" in ps.LIVE_DOC_TYPES
+    assert "compliance_filing" in ps.DOC_CLASSES
+    assert "court_opinion" not in ps.DOC_CLASSES
+    assert "due_diligence" not in ps.DOC_CLASSES
+    assert ps.EXTRACT_CLASS_ALIASES["merger_agreement"] == "contract"
+    assert ps.resolve_extract_class("merger_agreement") == "contract"
+    assert ps.resolve_extract_class("unknown") is None
+    assert ps.resolve_extract_class("court_opinion") is None
     assert ps.DOC_CLASSES["insurance_claim"] == "Insurance Claim"
+    assert ps.DOC_CLASSES["compliance_filing"] == "Compliance Filing"
     assert ps.SPECIALIST_BY_DOC_CLASS["insurance_claim"] == "insurance_claims_specialist"
+    assert ps.SPECIALIST_BY_DOC_CLASS["compliance_filing"] == "compliance_specialist"
+    assert "license" in ps.DOC_SUBCLASS_BY_CLASS["contract"]
+    assert "10-K" in ps.DOC_SUBCLASS_BY_CLASS["compliance_filing"]
+    assert ps.langfuse_score_name("extraction_overall_verified_precision") == "extraction_verified_precision"
+    assert ps.canonical_score_name("extraction_verified_precision") == "extraction_overall_verified_precision"
+    assert "content_topic_accuracy" in ps.SUITE_EXTRA_SCORES
+    assert "maud_question_accuracy" in ps.SUITE_EXTRA_SCORES
     schema = ps.PipelineSchema.load()
     assert schema.judge_band_high == 0.85
     assert ps.NODE_OBSERVATION_TYPES["document-pipeline"] == "chain"
@@ -619,6 +636,92 @@ def test_docclass_eval_trace_maps_to_classify_station():
     assert run.doc_type == "contract"
     assert abs(run.classification_confidence - 0.93) < 1e-9
     assert run.filename == "sample.pdf"
+    assert run.contract_subtype == "license"
+    assert run.doc_subclass == "license"
+    assert run.expected_hf_class == "contract"
+
+
+def test_compliance_filing_subclass_gt_intake_and_score_alias():
+    """dojo 0.9.0 / mailroom #30: live compliance_filing, Hub subclass,
+    HF GT metadata, normalize-intake span stats, and the 35-char
+    verified-precision alias all land on PipelineRun (snake_case)."""
+    intake = {
+        "messy": True,
+        "changed": True,
+        "method": "deterministic",
+        "chars": 412,
+        "hyphen_unwraps": 2,
+        "collapsed_blank_runs": 1,
+    }
+    trace = make_trace(
+        "t-compliance",
+        doc_type="compliance_filing",
+        doc_subclass="10-K",
+        extra_scores={
+            "extraction_verified_precision": 0.81,
+            "maud_question_accuracy": 0.7,
+            "content_topic_accuracy": 0.9,
+        },
+        extra_metadata={"expected_hf_class": "compliance_filing",
+                        "expected_subclass": "10-K"},
+        extra_input={"ground_truth": {
+            "expected_hf_class": "compliance_filing",
+            "expected_subclass": "10-K",
+        }},
+        intake_output=intake,
+    )
+    run = _run(trace)
+    assert run.doc_type == "compliance_filing"
+    assert run.doc_subclass == "10-K"
+    assert run.expected_hf_class == "compliance_filing"
+    assert run.expected_subclass == "10-K"
+    assert run.intake_messy is True
+    assert run.intake_changed is True
+    assert run.intake_method == "deterministic"
+    assert run.intake_chars == 412
+    assert run.scores["extraction_verified_precision"] == 0.81
+    assert run.scores["extraction_overall_verified_precision"] == 0.81
+    assert run.scores["maud_question_accuracy"] == 0.7
+
+
+def test_v4_compliance_filing_subclass_and_intake():
+    """Same contract on v4 camelCase observations."""
+    trace = make_trace_v4(
+        "t-v4-compliance",
+        doc_type="compliance_filing",
+        doc_subclass="8-K",
+        extra_metadata={"expected_subclass": "8-K", "expected_hf_class": "compliance_filing"},
+        extra_scores={"extraction_overall_verified_precision": 0.66,
+                      "sentiment_accuracy": 0.55},
+        intake_output={"messy": False, "changed": True, "method": "deterministic",
+                       "chars": 88, "cleaned_chars": 88},
+        classify_generation_output='{"doc_type": "compliance_filing", "doc_subclass": "8-K"}',
+    )
+    run = _run(trace)
+    assert run.doc_type == "compliance_filing"
+    assert run.doc_subclass == "8-K"
+    assert run.expected_subclass == "8-K"
+    assert run.expected_hf_class == "compliance_filing"
+    assert run.intake_changed is True
+    assert run.intake_messy is False
+    assert run.intake_chars == 88
+    assert run.scores["extraction_verified_precision"] == 0.66
+    assert run.scores["extraction_overall_verified_precision"] == 0.66
+
+
+def test_classify_generation_json_fills_subclass_when_span_summary_omits_it():
+    """llm-mailroom _result_summary omits doc_subclass; mine classify JSON."""
+    trace = make_trace("t-gen-sub", doc_type="contract")
+    # Node-span output stays the curated summary (no subclass).
+    for obs in trace["observations"]:
+        if getattr(obs, "name", None) == "classify-document" and getattr(obs, "type", "") != "GENERATION":
+            obs.output = {"stage": "ok", "doc_type": "contract"}
+        if getattr(obs, "name", None) == "classify-document" and getattr(obs, "type", "") == "GENERATION":
+            obs.output = '{"doc_type": "contract", "doc_subclass": "license", "contract_subtype": "license"}'
+    trace["output"] = {"stage": "archived", "doc_type": "contract"}
+    run = _run(trace)
+    assert run.doc_subclass == "license"
+    assert run.contract_subtype == "license"
 
 
 def test_list_recent_runs_honors_trace_names_env(monkeypatch):

@@ -101,6 +101,24 @@ def test_inspect_panels_build():
     assert "mailroom-pipeline-judge" in text
 
 
+def test_inspect_panels_show_subclass_and_intake():
+    run = dict(
+        RUN,
+        doc_subclass="license",
+        expected_subclass="license",
+        intake_messy=True,
+        intake_changed=True,
+        intake_method="deterministic",
+        intake_chars=120,
+        scores={"maud_question_accuracy": 0.8},
+    )
+    text = "\n".join(render(p) for p in inspect_panels(run))
+    assert "SUBCLASS" in text
+    assert "license" in text
+    assert "INTAKE MESSY" in text
+    assert "deterministic" in text
+
+
 def test_station_map_covers_stages():
     for stage in ("ingest", "classify", "retry_classify", "review_classify",
                   "extract", "judge_verify", "arbiter", "boss", "review",

@@ -29,7 +29,7 @@ const ReviewView = (() => {
           <span class="ses-count">${Mailroom.fmt.time(r.created_at)}</span>
         </div>
         <div class="session-runs" style="padding:8px 10px">
-          <div style="color:var(--paper-dim)">doc: <span style="color:var(--paper)">${Mailroom.esc(r.doc_type || "—")}</span></div>
+          <div style="color:var(--paper-dim)">doc: <span style="color:var(--paper)">${Mailroom.esc(r.doc_type || "—")}${r.doc_subclass || r.contract_subtype ? ` / ${Mailroom.esc(r.doc_subclass || r.contract_subtype)}` : ""}</span></div>
           ${
             r.escalation_reason
               ? `<div style="color:var(--amber);margin-top:4px">why: ${Mailroom.esc(r.escalation_reason)}</div>`
