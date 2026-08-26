@@ -79,7 +79,12 @@ def test_metrics_table_renders():
 def test_inspect_panels_build():
     run = dict(
         RUN,
-        spans=[{"name": "ingest-document", "status": "SUCCESS", "latency": 3.2}],
+        spans=[{"name": "ingest-document", "status": "SUCCESS", "latency": 3.2,
+                "observation_type": "SPAN"},
+               {"name": "classify-document", "status": "SUCCESS", "latency": 4.1,
+                "observation_type": "AGENT"},
+               {"name": "judge-verify", "status": "SUCCESS", "latency": 1.0,
+                "observation_type": "EVALUATOR"}],
         generations=[{"name": "classify-document", "model": "gpt-4o-mini",
                       "usage_input_tokens": 400, "usage_output_tokens": 700,
                       "cost_usd": 0.0005, "latency": 6.1}],
@@ -89,6 +94,9 @@ def test_inspect_panels_build():
     assert len(panels) == 4
     text = "\n".join(render(p) for p in panels)
     assert "ingest-document" in text
+    assert "AGENT" in text
+    assert "EVALUATOR" in text
+    assert "OBSERVATIONS" in text
     assert "gpt-4o-mini" in text
     assert "mailroom-pipeline-judge" in text
 

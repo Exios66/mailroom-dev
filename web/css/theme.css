@@ -260,7 +260,14 @@ main { min-height: 520px; }
 
 .chip.verdict-CORRECT { background: #22301f; color: var(--green-light); }
 .chip.verdict-PARTIAL { background: #3a2f1e; color: var(--gold); }
-.chip.verdict-MISS    { background: #33201f; color: var(--red-light); }
+.chip.obs-chain      { background: #24303a; color: var(--blue-light); }
+.chip.obs-agent      { background: #2a2436; color: #b9a3dc; }
+.chip.obs-evaluator  { background: #3a2f1e; color: var(--gold); }
+.chip.obs-retriever  { background: #22301f; color: var(--green-light); }
+.chip.obs-span       { background: #2c2c30; color: var(--paper-dim); }
+.chip.obs-generation { background: #1e2a3a; color: var(--blue-light); }
+
+.span-row.span-root { border-color: #3a4a5a; }
 
 .dot {
   display: inline-block;

@@ -148,3 +148,5 @@ def test_judge_gate_run_flows_through_display_api():
     assert run["doc_type"] == "insurance_claim"
     assert "judge_verify" in run["routing_path"]
     assert any(s["name"] == "judge-verify" for s in detail["spans"])
+    judge = next(s for s in detail["spans"] if s["name"] == "judge-verify")
+    assert judge["observation_type"] == "EVALUATOR"

@@ -269,7 +269,7 @@ def inspect_panels(run: dict) -> list[Panel]:
     kv = Table(box=None, pad_edge=False)
     kv.add_column("FIELD", style="dim")
     kv.add_column("VALUE")
-    for key in ("session_id", "matter_id", "attempt", "environment",
+    for key in ("session_id", "matter_id", "user_id", "release", "attempt", "environment",
                 "classification_confidence", "extraction_confidence", "latency",
                 "llm_call_count", "total_tokens", "cost_usd", "created_at",
                 "escalation_reason", "error_message"):
@@ -281,6 +281,7 @@ def inspect_panels(run: dict) -> list[Panel]:
     spans = run.get("spans") or []
     st = Table(box=None, pad_edge=False)
     st.add_column("SPAN", style="bold")
+    st.add_column("TYPE", style="cyan")
     st.add_column("STATUS")
     st.add_column("LATENCY", justify="right")
     st.add_column("ERROR", style="red", max_width=40)
@@ -288,10 +289,14 @@ def inspect_panels(run: dict) -> list[Panel]:
         status = s.get("status") or "?"
         style = "bright_green" if status == "SUCCESS" else (
             "bright_red" if status == "ERROR" else "yellow")
-        st.add_row(s.get("name") or "?", Text(status, style=style),
+        label = s.get("name") or "?"
+        if s.get("is_root"):
+            label = f"{label} [root]"
+        st.add_row(label, (s.get("observation_type") or "SPAN"),
+                   Text(status, style=style),
                    _fmt(s.get("latency"), "{:.1f}s"),
                    (s.get("error_message") or "")[:40])
-    panels.append(Panel(st, title=f"NODE SPANS ({len(spans)})", border_style="blue"))
+    panels.append(Panel(st, title=f"OBSERVATIONS ({len(spans)})", border_style="blue"))
 
     gens = run.get("generations") or []
     gt = Table(box=None, pad_edge=False)

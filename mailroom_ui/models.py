@@ -41,7 +41,13 @@ class Phase(str, Enum):
 
 
 class NodeSpan(BaseModel):
-    """One node span from the Langfuse trace (verb-first names)."""
+    """One node observation from the Langfuse trace (verb-first names).
+
+    `observation_type` is the Langfuse data-model type (SPAN / AGENT /
+    EVALUATOR / RETRIEVER / CHAIN / EVENT). The root `document-pipeline`
+    chain is retained for the inspector but skipped when building the
+    floor routing path.
+    """
 
     name: str
     start_time: Optional[datetime] = None
@@ -51,6 +57,8 @@ class NodeSpan(BaseModel):
     error_message: Optional[str] = None
     input: Optional[dict[str, Any]] = None
     output: Optional[dict[str, Any]] = None
+    observation_type: str = "SPAN"
+    is_root: bool = False
 
 
 class Generation(BaseModel):
@@ -59,6 +67,7 @@ class Generation(BaseModel):
     name: Optional[str] = None
     agent: Optional[str] = None              # inferred from span name
     model: Optional[str] = None
+    observation_type: str = "GENERATION"
     latency: Optional[float] = None
     input: Optional[Any] = None
     output: Optional[Any] = None
@@ -90,6 +99,8 @@ class PipelineRun(BaseModel):
     matter_id: Optional[str] = None
     session_id: Optional[str] = None
     environment: Optional[str] = None
+    user_id: Optional[str] = None            # MAILROOM_TRACE_USER_ID on producer
+    release: Optional[str] = None            # LANGFUSE_RELEASE / mailroom@version
     tags: list[str] = Field(default_factory=list)
     attempt: Optional[int] = None
     created_at: Optional[datetime] = None

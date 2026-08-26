@@ -30,6 +30,56 @@ SPAN_STAGE_MAP: dict[str, Stage] = {
     "archive-document": Stage.ARCHIVE,
 }
 
+# Langfuse observation types (llm-mailroom observability/tracing.py
+# NODE_OBSERVATION_TYPES). The data-model docs require the most specific
+# type: chain = one document run; agent = specialist orchestration;
+# evaluator = judge gate; retriever = document reads; generation = LLM
+# result / LegalBench answer; span = remaining units of work.
+NODE_OBSERVATION_TYPES: dict[str, str] = {
+    "document-pipeline": "chain",
+    "ingest-document": "span",
+    "normalize-intake": "span",
+    "extract-image-text": "retriever",
+    "transcribe-pdf": "retriever",
+    "classify-document": "agent",
+    "extract-fields": "agent",
+    "judge-verify": "evaluator",
+    "arbitrate-verdict": "agent",
+    "route-for-review": "span",
+    "adjudicate-conflict": "agent",
+    "compile-report": "agent",
+    "write-catalog": "span",
+    "archive-document": "span",
+    "pipeline-result": "generation",
+    "answer-question": "generation",
+}
+
+# Graph node names (underscored) that can appear as observation names
+# when a trace is recorded from LangGraph rather than traced_node().
+_NODE_TYPE_ALIASES: dict[str, str] = {
+    "classify": "agent",
+    "retry_classify": "agent",
+    "review_classify": "agent",
+    "extract": "agent",
+    "retry_extract": "agent",
+    "judge_verify": "evaluator",
+}
+
+
+def observation_type_for(name: str, default: str = "span") -> str:
+    """Most-specific Langfuse observation type for a verb-first span name."""
+    key = (name or "").strip()
+    if key in NODE_OBSERVATION_TYPES:
+        return NODE_OBSERVATION_TYPES[key]
+    lower = key.lower()
+    if lower in NODE_OBSERVATION_TYPES:
+        return NODE_OBSERVATION_TYPES[lower]
+    if lower in _NODE_TYPE_ALIASES:
+        return _NODE_TYPE_ALIASES[lower]
+    if lower.startswith("answer-question"):
+        return "generation"
+    return default
+
 STAGE_PHASE: dict[Stage, Phase] = {
     Stage.INBOX: Phase.INTAKE_SORT,
     Stage.INGEST: Phase.INTAKE_SORT,

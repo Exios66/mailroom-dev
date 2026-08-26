@@ -352,6 +352,8 @@ const App = (() => {
         ["Phase", run.phase],
         ["Type", run.doc_type],
         ["Matter", run.session_id || run.matter_id],
+        ["User", run.user_id || "—"],
+        ["Release", run.release || "—"],
         ["Classification", Obs.fmt.conf(run.classification_confidence)],
         ["Extraction", Obs.fmt.conf(run.extraction_confidence)],
         ["Verdict", run.verdict || "—"],
@@ -364,11 +366,15 @@ const App = (() => {
       if (run.escalation_reason) rows.push(["Escalation", run.escalation_reason]);
       if (run.error_message) rows.push(["Error", run.error_message]);
       const spans = (run.spans || []).map((s) =>
-        `<div class="span"><strong>${Obs.esc(s.name)}</strong> — ${Obs.esc(s.status || "")} · ${Obs.fmt.latency(s.latency)}
+        `<div class="span"><strong>${Obs.esc(s.name)}</strong>
+         ${s.observation_type ? `<span class="obs-type">${Obs.esc(s.observation_type)}</span>` : ""}
+         ${s.is_root ? `<span class="obs-type">ROOT</span>` : ""}
+         — ${Obs.esc(s.status || "")} · ${Obs.fmt.latency(s.latency)}
          ${s.error_message ? `<div>${Obs.esc(s.error_message)}</div>` : ""}</div>`).join("")
-        || `<p class="empty">No span detail on this trace</p>`;
+        || `<p class="empty">No observation detail on this trace</p>`;
       const gens = (run.generations || []).map((g) =>
-        `<div class="gen"><strong>${Obs.esc(g.model || g.agent || "generation")}</strong>
+        `<div class="gen"><strong>${Obs.esc(g.name || g.model || g.agent || "generation")}</strong>
+         ${g.observation_type ? `<span class="obs-type">${Obs.esc(g.observation_type)}</span>` : ""}
          · ${Obs.fmt.latency(g.latency)}
          ${g.usage_total_tokens != null ? ` · ${Obs.fmt.tokens(g.usage_total_tokens)} tok` : ""}
          ${g.cost_usd ? ` · ${Obs.fmt.cost(g.cost_usd)}` : ""}</div>`).join("")
@@ -378,7 +384,7 @@ const App = (() => {
         || `<p class="empty">No scores attached</p>`;
       body.innerHTML = `
         <dl class="kv">${rows.map(([k, v]) => `<dt>${Obs.esc(k)}</dt><dd>${Obs.esc(v == null ? "—" : v)}</dd>`).join("")}</dl>
-        <h3>Node spans</h3><div class="stack">${spans}</div>
+        <h3>Observations</h3><div class="stack">${spans}</div>
         <h3>LLM generations</h3><div class="stack">${gens}</div>
         <h3>Scores</h3><div class="stack">${scores}</div>`;
       dbg("traces", { where: "inspect", id: traceId, spans: (run.spans || []).length });

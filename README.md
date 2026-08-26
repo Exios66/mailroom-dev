@@ -352,18 +352,20 @@ optional tag/env filters, `MAILROOM_PORT` (default `8001`), and
 
 The-Mailroom does not own the trace contract it renders — it **mirrors** it
 from the upstream pipeline. This is the repo's #1 maintenance duty: when
-`llm-mailroom` changes span names, node order, the agent roster (15 agents),
-doc classes (7 classes), confidence thresholds, or judge score names
-(`mailroom-pipeline-judge`, `mailroom-pipeline-quality`), this repo must
-update `mailroom_ui/pipeline_schema.py` and `mailroom_ui/trace_interpreter.py`
-in the same change window.
+`llm-mailroom` changes span names, observation types (`NODE_OBSERVATION_TYPES`:
+chain / agent / evaluator / retriever / generation / span), node order, the
+agent roster (15 agents), doc classes (7 classes), confidence thresholds, or
+judge score names (`mailroom-pipeline-judge`, `mailroom-pipeline-quality`),
+this repo must update `mailroom_ui/pipeline_schema.py` and
+`mailroom_ui/trace_interpreter.py` in the same change window.
 
 Until mirrored, breakage is visible by design: new spans render as an
-`unknown` stage, new doc classes fall back to the gray default stamp color,
+`unknown` stage, new observation types can hide a node or mis-file a
+generation, new doc classes fall back to the gray default stamp color,
 renamed judge scores vanish from runs. The full contract — span inventory,
-score names, metadata/tags, and the complete breakage map — lives in
-[`AGENTS.md`](AGENTS.md) ("Sister repo" section), which is authoritative for
-pipeline internals alongside the pipeline's own `AGENTS.md`.
+observation types, score names, metadata/tags, and the complete breakage map
+— lives in [`AGENTS.md`](AGENTS.md) ("Sister repo" section), which is
+authoritative for pipeline internals alongside the pipeline's own `AGENTS.md`.
 
 </details>
 

@@ -34,8 +34,9 @@ def test_live_assets_are_mounted():
         js = c.get("/live/static/js/app.js")
         client = c.get("/live/static/js/client.js")
         debug = c.get("/live/static/js/debug.js")
-    assert css.status_code == 200 and "skip-link" in css.text
     assert js.status_code == 200 and "startReplay" in js.text
+    assert "Observations" in js.text and "observation_type" in js.text
+    assert css.status_code == 200 and "skip-link" in css.text and ".obs-type" in css.text
     assert client.status_code == 200 and "reviewQueue" in client.text
     assert debug.status_code == 200 and "__OBSERVATORY_DEBUG__" in debug.text
 

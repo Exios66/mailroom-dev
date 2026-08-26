@@ -6,6 +6,21 @@ All notable changes to The-Mailroom are documented here, following
 
 ## [Unreleased]
 
+### Added
+
+- **Langfuse data-model + batching mirror (llm-mailroom #29).** The interpreter
+  reads v4 `observationType` as well as `type` and treats `CHAIN` / `AGENT` /
+  `EVALUATOR` / `RETRIEVER` (plus SPAN/EVENT) as node observations, so
+  classify/extract/judge no longer depend on the generic-SPAN fallback.
+  `pipeline_schema.NODE_OBSERVATION_TYPES` matches the pipeline map; the
+  root `document-pipeline` chain is kept for the inspector (`is_root`) and
+  omitted from the floor routing path. `pipeline-result` and LegalBench
+  `answer-question` stay generations. Trace `user_id` / `release` (producer
+  `MAILROOM_TRACE_USER_ID` / `LANGFUSE_RELEASE`) surface on the pixel
+  inspector, Observatory inspect dialog, and TUI. Phoenix remaps known
+  mailroom names to the same types. Flush/batch knobs stay on the pipeline
+  (`LANGFUSE_FLUSH_AT` / `FLUSH_INTERVAL`); this viewer is read-only.
+
 ### Fixed
 
 - Pixel SESSIONS / REVIEW / METRICS no longer re-walk hundreds of Langfuse

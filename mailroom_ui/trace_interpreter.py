@@ -1,9 +1,12 @@
 """Trace interpreter: Langfuse trace + observations + scores -> PipelineRun.
 
 The mapping mirrors llm-mailroom's graph topology (see pipeline_schema.py).
-The trace structure is: one `document-pipeline` trace per document, verb-first
-node spans (`classify-document`, `extract-fields`, ...), auto-traced LLM
-generations, and scores (confidences, run metrics, judge verdicts).
+The trace structure is: one `document-pipeline` CHAIN per document, verb-first
+child observations typed to the Langfuse data model (AGENT / EVALUATOR /
+RETRIEVER / SPAN), auto-traced LLM generations plus `pipeline-result` /
+`answer-question` GENERATIONs, and scores (confidences, run metrics, judge
+verdicts). v4 SDK payloads use `observationType` (camelCase) as well as
+`type`.
 """
 
 from __future__ import annotations
@@ -17,6 +20,7 @@ from .pipeline_schema import (
     SPAN_STAGE_MAP,
     STAGE_PHASE,
     PipelineSchema,
+    observation_type_for,
 )
 
 # Score names produced by observability/scores.py + Langfuse evaluators.
@@ -189,6 +193,8 @@ def build_routing_path(spans: list[NodeSpan]) -> list[str]:
     staged: list[Stage] = []
     prev: Optional[Stage] = None
     for span in spans:
+        if getattr(span, "is_root", False):
+            continue
         stage = SPAN_STAGE_MAP.get(span.name)
         if stage is None:
             continue
@@ -211,7 +217,119 @@ def _observation_name(obs: dict[str, Any]) -> Optional[str]:
     name = _clean(obs.get("name"))
     if name:
         return name
-    return _clean(obs.get("type"))
+    return _clean(_both(obs, "type", "observationType"))
+
+
+# Langfuse data-model types used as node observations (not LLM generations).
+# llm-mailroom #29 types classify/extract as AGENT, judge-verify as
+# EVALUATOR, ingest OCR as RETRIEVER, and the document run as CHAIN.
+_NODE_OBSERVATION_TYPES = frozenset({
+    "SPAN",
+    "EVENT",
+    "AGENT",
+    "EVALUATOR",
+    "RETRIEVER",
+    "CHAIN",
+    "TOOL",
+    "GUARDRAIL",
+    "EMBEDDING",
+})
+_GENERATION_OBSERVATION_TYPES = frozenset({"GENERATION"})
+
+
+def _declared_observation_type(obs: dict[str, Any]) -> str:
+    raw = _both(obs, "type", "observationType")
+    if raw is None:
+        return ""
+    return str(raw).strip().upper()
+
+
+def _resolve_observation_type(obs: dict[str, Any]) -> str:
+    """Prefer the SDK type; fall back to model/usage then the schema map."""
+    declared = _declared_observation_type(obs)
+    if declared:
+        return declared
+    if (
+        _pick(obs, "model", "modelId") is not None
+        or "usage" in obs
+        or obs.get("totalTokens") is not None
+        or obs.get("total_tokens") is not None
+    ):
+        return "GENERATION"
+    name = _observation_name(obs) or ""
+    return observation_type_for(name).upper()
+
+
+def _is_root_observation(obs: dict[str, Any], *, name: str, obs_type: str) -> bool:
+    flag = _both(obs, "is_root_observation", "isRootObservation")
+    if flag is True or str(flag).strip().lower() in ("true", "1"):
+        return True
+    return obs_type == "CHAIN" and name == "document-pipeline"
+
+
+def _span_error_message(obs: dict[str, Any]) -> Optional[str]:
+    meta = _as_dict(obs.get("metadata"))
+    return _clean(
+        obs.get("error")
+        or _as_dict(obs.get("output")).get("error")
+        or meta.get("error")
+    )
+
+
+def _generation_from_obs(
+    obs: dict[str, Any],
+    *,
+    start: Optional[datetime],
+    end: Optional[datetime],
+    latency: Optional[float],
+    obs_type: str,
+) -> Generation:
+    usage_in, usage_out = _usage_tokens(obs.get("usage"))[1:]
+    total = _usage_tokens(obs.get("usage"))[0]
+    meta = _as_dict(obs.get("metadata"))
+    return Generation(
+        name=_observation_name(obs),
+        agent=_clean(meta.get("agent")),
+        model=_clean(_both(obs, "model", "modelId")),
+        observation_type=obs_type or "GENERATION",
+        latency=latency,
+        input=obs.get("input"),
+        output=obs.get("output"),
+        usage_total_tokens=total or _int(obs.get("totalTokens")),
+        usage_input_tokens=usage_in or _int(obs.get("inputTokens")),
+        usage_output_tokens=usage_out or _int(obs.get("outputTokens")),
+        cost_usd=_cost_details(_both(obs, "cost_details", "costDetails"))
+        or _float(_pick(obs, "totalCost", "totalPrice", "total_cost")),
+        prompt_version=_clean(
+            _pick(meta, "langfuse_prompt", "prompt_id", "prompt_version")
+        ),
+        start_time=start,
+        end_time=end,
+    )
+
+
+def _node_span_from_obs(
+    obs: dict[str, Any],
+    *,
+    start: Optional[datetime],
+    end: Optional[datetime],
+    latency: Optional[float],
+    is_error: bool,
+    obs_type: str,
+) -> NodeSpan:
+    name = _observation_name(obs) or "observation"
+    return NodeSpan(
+        name=name,
+        start_time=start,
+        end_time=end,
+        latency=latency,
+        status="ERROR" if is_error else "SUCCESS",
+        error_message=_span_error_message(obs),
+        input=_as_dict(obs.get("input")) or None,
+        output=_as_dict(obs.get("output")) or None,
+        observation_type=obs_type or "SPAN",
+        is_root=_is_root_observation(obs, name=name, obs_type=obs_type),
+    )
 
 
 # Pilot/attempt re-runs reuse the deterministic trace id, so a trace can carry
@@ -286,7 +404,7 @@ def interpret_trace(
     generations: list[Generation] = []
     for raw in observations:
         obs = _as_dict(raw)
-        obs_type = str(obs.get("type") or "").upper()
+        obs_type = _resolve_observation_type(obs)
         start = parse_dt(_both(obs, "start_time", "startTime"))
         end = parse_dt(_both(obs, "end_time", "endTime"))
         obs_latency = obs.get("latency")
@@ -297,103 +415,31 @@ def interpret_trace(
         is_error = str(obs.get("level") or "").upper() in ("ERROR", "WARNING") or bool(
             obs.get("error") or _as_dict(obs.get("output")).get("error")
         )
-        if obs_type == "GENERATION":
-            name = _observation_name(obs)
-            usage_in, usage_out = _usage_tokens(obs.get("usage"))[1:]
-            total = _usage_tokens(obs.get("usage"))[0]
-            generations.append(
-                Generation(
-                    name=name,
-                    agent=_clean(obs.get("metadata", {}).get("agent"))
-                    if isinstance(obs.get("metadata"), dict)
-                    else None,
-                    model=_clean(_both(obs, "model", "modelId")),
-                    latency=obs_latency,
-                    input=obs.get("input"),
-                    output=obs.get("output"),
-                    usage_total_tokens=total or _int(obs.get("totalTokens")),
-                    usage_input_tokens=usage_in or _int(obs.get("inputTokens")),
-                    usage_output_tokens=usage_out or _int(obs.get("outputTokens")),
-                    cost_usd=_cost_details(_both(obs, "cost_details", "costDetails"))
-                    or _float(_pick(obs, "totalCost", "totalPrice", "total_cost")),
-                    prompt_version=_clean(
-                        _pick(
-                            _as_dict(obs.get("metadata")),
-                            "langfuse_prompt",
-                            "prompt_id",
-                            "prompt_version",
-                        )
-                    ),
-                    start_time=start,
-                    end_time=end,
-                )
-            )
-        elif obs_type in ("SPAN", "EVENT"):
+        gen_kwargs = dict(start=start, end=end, latency=obs_latency, obs_type=obs_type)
+        if obs_type in _GENERATION_OBSERVATION_TYPES:
+            generations.append(_generation_from_obs(obs, **gen_kwargs))
+        elif obs_type in _NODE_OBSERVATION_TYPES:
             spans.append(
-                NodeSpan(
-                    name=_observation_name(obs) or "observation",
-                    start_time=start,
-                    end_time=end,
-                    latency=obs_latency,
-                    status="ERROR" if is_error else "SUCCESS",
-                    error_message=_clean(
-                        obs.get("error")
-                        or _as_dict(obs.get("output")).get("error")
-                        or (
-                            obs.get("metadata", {}).get("error")
-                            if isinstance(obs.get("metadata"), dict)
-                            else None
-                        )
-                    ),
-                    input=_as_dict(obs.get("input")) or None,
-                    output=_as_dict(obs.get("output")) or None,
+                _node_span_from_obs(
+                    obs, start=start, end=end, latency=obs_latency,
+                    is_error=is_error, obs_type=obs_type,
                 )
             )
         else:
             # `OBSERVATION` type or no type at all: the pipeline's auto-traced
             # generations arrive as OBSERVATION + model; classify by
             # model/usage presence. v4 SPANs (zeroed `usage`) never get here.
-            if obs.get("model") is not None or "usage" in obs:
-                usage_in, usage_out = _usage_tokens(obs.get("usage"))[1:]
-                total = _usage_tokens(obs.get("usage"))[0]
-                generations.append(
-                    Generation(
-                        name=_observation_name(obs),
-                        agent=_clean(obs.get("metadata", {}).get("agent"))
-                        if isinstance(obs.get("metadata"), dict)
-                        else None,
-                        model=_clean(_both(obs, "model", "modelId")),
-                        latency=obs_latency,
-                        input=obs.get("input"),
-                        output=obs.get("output"),
-                        usage_total_tokens=total or _int(obs.get("totalTokens")),
-                        usage_input_tokens=usage_in or _int(obs.get("inputTokens")),
-                        usage_output_tokens=usage_out or _int(obs.get("outputTokens")),
-                        cost_usd=_cost_details(_both(obs, "cost_details", "costDetails"))
-                        or _float(_pick(obs, "totalCost", "totalPrice", "total_cost")),
-                        prompt_version=_clean(
-                            _pick(
-                                _as_dict(obs.get("metadata")),
-                                "langfuse_prompt",
-                                "prompt_id",
-                                "prompt_version",
-                            )
-                        ),
-                        start_time=start,
-                        end_time=end,
-                    )
-                )
+            if (
+                _pick(obs, "model", "modelId") is not None
+                or "usage" in obs
+                or obs.get("totalTokens") is not None
+            ):
+                generations.append(_generation_from_obs(obs, **gen_kwargs))
             else:
                 spans.append(
-                    NodeSpan(
-                        name=_observation_name(obs) or "observation",
-                        start_time=start,
-                        end_time=end,
-                        latency=obs_latency,
-                        status="ERROR" if is_error else "SUCCESS",
-                        error_message=_clean(obs.get("error")),
-                        input=_as_dict(obs.get("input")) or None,
-                        output=_as_dict(obs.get("output")) or None,
+                    _node_span_from_obs(
+                        obs, start=start, end=end, latency=obs_latency,
+                        is_error=is_error, obs_type=obs_type or "SPAN",
                     )
                 )
 
@@ -421,7 +467,7 @@ def interpret_trace(
                 value=value,
                 data_type=data_type,
                 comment=_clean(s.get("comment")),
-                observation_id=_clean(s.get("observation_id")),
+                observation_id=_clean(_both(s, "observation_id", "observationId")),
             )
         )
         # CATEGORICAL scores (judge verdicts) are stored as a numeric index
@@ -462,6 +508,16 @@ def interpret_trace(
     session_id = _clean(_both(trace, "session_id", "sessionId"))
     if matter_id is None:
         matter_id = session_id
+    user_id = (
+        _clean(_both(trace, "user_id", "userId"))
+        or _clean(metadata.get("user_id"))
+        or _clean(metadata.get("userId"))
+    )
+    release = (
+        _clean(_pick(trace, "release", "version"))
+        or _clean(metadata.get("release"))
+        or _clean(metadata.get("langfuse_release"))
+    )
 
     verdict: Optional[str] = None
     quality: Optional[float] = None
@@ -510,6 +566,8 @@ def interpret_trace(
         matter_id=matter_id,
         session_id=session_id,
         environment=environment,
+        user_id=user_id,
+        release=release,
         tags=tags,
         attempt=int(attempt) if attempt is not None else None,
         created_at=created,

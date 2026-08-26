@@ -5,6 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
+from mailroom_ui.pipeline_schema import observation_type_for
+
+
+def _node_type(name: str) -> str:
+    return observation_type_for(name).upper()
+
 
 @dataclass
 class Obj:
@@ -41,6 +47,9 @@ def make_trace(
     error_spans: bool = False,
     output_extra: dict | None = None,
     extra_observations: list | None = None,
+    user_id: str | None = None,
+    release: str | None = None,
+    include_root: bool = False,
 ) -> dict:
     base_time = base_time or datetime(2026, 1, 1, 12, 0, 0)
     span_names = span_names or [
@@ -52,11 +61,26 @@ def make_trace(
         "archive-document",
     ]
     obs = []
+    if include_root:
+        obs.append(
+            Obj(
+                id=f"chain-{trace_id}",
+                type="CHAIN",
+                name="document-pipeline",
+                isRootObservation=True,
+                start_time=base_time,
+                end_time=base_time + timedelta(seconds=80),
+                latency=80.0,
+                level="DEFAULT",
+                input={"filename": filename},
+                output={"stage": stage},
+            )
+        )
     for i, name in enumerate(span_names):
         obs.append(
             Obj(
                 id=f"span-{trace_id}-{i}",
-                type="SPAN",
+                type=_node_type(name),
                 name=name,
                 start_time=base_time + timedelta(seconds=10 * i),
                 end_time=base_time + timedelta(seconds=10 * i + 8),
@@ -125,6 +149,8 @@ def make_trace(
         "latency": latency,
         "session_id": session_id or matter_id,
         "environment": environment,
+        "user_id": user_id,
+        "release": release,
         "tags": tags or ["mailroom", environment],
         "metadata": {"pipeline": "mailroom", "attempt": attempt},
         "input": {"filename": filename, "matter_id": matter_id, "attempt": attempt},
@@ -148,18 +174,31 @@ def make_trace_v4(
     """A trace shaped like the Langfuse v4 SDK (camelCase observations).
 
     v4 returns camelCase at the observation level (`startTime`, `modelId`,
-    `totalTokens`, `totalCost`); trace-level fields stay snake_case in the
-    API responses. The interpreter must accept both shapes.
+    `totalTokens`, `totalCost`, `observationType`); trace-level fields stay
+    snake_case in the API responses. The interpreter must accept both shapes.
+    Observation types follow llm-mailroom NODE_OBSERVATION_TYPES (AGENT /
+    EVALUATOR / RETRIEVER / CHAIN), not a blanket SPAN.
     """
     base_time = datetime(2026, 3, 3, 9, 0, 0)
-    obs = []
+    obs = [
+        Obj(
+            id=f"v4-chain-{trace_id}",
+            observationType="CHAIN",
+            name="document-pipeline",
+            isRootObservation=True,
+            startTime=base_time,
+            endTime=base_time + timedelta(seconds=80),
+            latency=80.0,
+            level="DEFAULT",
+        )
+    ]
     for i, name in enumerate(
         ["ingest-document", "classify-document", "extract-fields", "archive-document"]
     ):
         obs.append(
             Obj(
                 id=f"v4-span-{trace_id}-{i}",
-                type="SPAN",
+                observationType=_node_type(name),
                 name=name,
                 startTime=base_time + timedelta(seconds=10 * i),
                 endTime=base_time + timedelta(seconds=10 * i + 8),
@@ -170,7 +209,7 @@ def make_trace_v4(
     obs.append(
         Obj(
             id=f"v4-gen-{trace_id}-0",
-            type="GENERATION",
+            observationType="GENERATION",
             name="classify-document",
             modelId="deepseek/deepseek-v4-flash",
             startTime=base_time + timedelta(seconds=11),
@@ -192,6 +231,8 @@ def make_trace_v4(
         "latency": 12.5,
         "session_id": matter_id,
         "environment": "pilot",
+        "userId": "pilot-operator",
+        "release": "mailroom@test",
         "tags": ["mailroom", "pilot"],
         "metadata": {"pipeline": "mailroom", "attempt": 0},
         "input": {"filename": filename, "matter_id": matter_id, "attempt": 0},

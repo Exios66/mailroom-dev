@@ -101,3 +101,18 @@ def test_desk_tabs_show_loading_placeholder():
     assert "LOADING SESSIONS FROM LANGFUSE" in sessions
     assert "LOADING METRICS FROM LANGFUSE" in metrics
     assert "LOADING RUN HISTORY FROM LANGFUSE" in history
+
+
+def test_inspector_renders_typed_observations():
+    """llm-mailroom #29 types nodes as AGENT/EVALUATOR/RETRIEVER/CHAIN.
+    The pixel inspector must surface those types (and user/release)."""
+    inspector = (ROOT / "web" / "js" / "inspector.js").read_text()
+    theme = (ROOT / "web" / "css" / "theme.css").read_text()
+    assert "<h3>OBSERVATIONS</h3>" in inspector
+    assert "observation_type" in inspector
+    assert "obsTypeChip" in inspector
+    assert "run.user_id" in inspector and "run.release" in inspector
+    assert ".chip.obs-agent" in theme
+    assert ".chip.obs-evaluator" in theme
+    assert ".chip.obs-retriever" in theme
+    assert ".chip.obs-chain" in theme

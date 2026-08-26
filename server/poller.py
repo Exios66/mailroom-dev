@@ -24,6 +24,8 @@ def floor_payload(run: PipelineRun) -> dict[str, Any]:
         "matter_id": run.matter_id,
         "session_id": run.session_id,
         "environment": run.environment,
+        "user_id": run.user_id,
+        "release": run.release,
         "tags": run.tags,
         "attempt": run.attempt,
         "stage": run.stage.value,

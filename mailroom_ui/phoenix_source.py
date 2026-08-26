@@ -19,7 +19,9 @@ Mapping (Phoenix -> Mailroom):
         input.value / output.value  -> input/output ({...} when JSON)
     child span                      -> observation dict
         span_kind "LLM"             -> type GENERATION (+model, usage, cost)
-        any other kind              -> type SPAN (node spans)
+        known mailroom names        -> NODE_OBSERVATION_TYPES (AGENT /
+                                       EVALUATOR / RETRIEVER / CHAIN / SPAN)
+        anything else               -> type SPAN
         name                        -> name (verb-first node names pass through)
         status_code ERROR + events  -> error message
     span annotations                -> scores ({name, value})
@@ -37,6 +39,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from .models import PipelineRun
+from .pipeline_schema import observation_type_for
 from .sources import TraceSourceUnavailable
 from .trace_interpreter import interpret_trace
 
@@ -243,10 +246,15 @@ class PhoenixSource:
     def _observation_dict(span: dict[str, Any]) -> dict[str, Any]:
         kind = str(span.get("span_kind") or _attr(span, "openinference.span.kind") or "").upper()
         is_llm = kind == "LLM"
+        name = span.get("name") or ""
+        if is_llm:
+            o_type = "GENERATION"
+        else:
+            o_type = observation_type_for(name).upper()
         obs_id = (_to_dict(span.get("context")) or {}).get("span_id") or span.get("span_id")
         obs = {
             "id": str(obs_id or ""),
-            "type": "GENERATION" if is_llm else "SPAN",
+            "type": o_type,
             "name": span.get("name"),
             "start_time": _iso(span.get("start_time")),
             "end_time": _iso(span.get("end_time")),

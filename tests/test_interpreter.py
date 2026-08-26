@@ -29,10 +29,16 @@ def test_v4_camelcase_observations():
     assert run.matter_id == "MATTER-V4"
     assert run.classification_confidence == 0.97
     assert run.extraction_confidence == 0.88
-    assert len(run.spans) == 4
+    assert len(run.spans) == 5
+    by_name = {s.name: s for s in run.spans}
+    assert by_name["document-pipeline"].observation_type == "CHAIN"
+    assert by_name["document-pipeline"].is_root is True
+    assert by_name["classify-document"].observation_type == "AGENT"
+    assert by_name["ingest-document"].observation_type == "SPAN"
     assert [s.name for s in run.spans][-1] == "archive-document"
     gen = run.generations[0]
     assert gen.model == "deepseek/deepseek-v4-flash"
+    assert gen.observation_type == "GENERATION"
     assert gen.usage_total_tokens == 1200
     assert gen.usage_input_tokens == 1000
     assert gen.usage_output_tokens == 200
@@ -40,6 +46,8 @@ def test_v4_camelcase_observations():
     assert run.total_tokens == 1200
     assert run.cost_usd == 0.00015
     assert run.session_id == "MATTER-V4"
+    assert run.user_id == "pilot-operator"
+    assert run.release == "mailroom@test"
 
 
 def test_archived_run_full():
@@ -59,6 +67,14 @@ def test_archived_run_full():
     assert run.total_tokens == 4600
     assert run.cost_usd == 0.00055
     assert len(run.spans) == 6
+    assert {s.name: s.observation_type for s in run.spans} == {
+        "ingest-document": "SPAN",
+        "classify-document": "AGENT",
+        "extract-fields": "AGENT",
+        "compile-report": "AGENT",
+        "write-catalog": "SPAN",
+        "archive-document": "SPAN",
+    }
     assert run.routing_path == [
         "ingest",
         "classify",
@@ -462,6 +478,123 @@ def test_schema_mirror_covers_upstream_contract():
     assert ps.SPECIALIST_BY_DOC_CLASS["insurance_claim"] == "insurance_claims_specialist"
     schema = ps.PipelineSchema.load()
     assert schema.judge_band_high == 0.85
+    assert ps.NODE_OBSERVATION_TYPES["document-pipeline"] == "chain"
+    assert ps.NODE_OBSERVATION_TYPES["classify-document"] == "agent"
+    assert ps.NODE_OBSERVATION_TYPES["judge-verify"] == "evaluator"
+    assert ps.NODE_OBSERVATION_TYPES["transcribe-pdf"] == "retriever"
+    assert ps.NODE_OBSERVATION_TYPES["pipeline-result"] == "generation"
+    assert ps.NODE_OBSERVATION_TYPES["answer-question"] == "generation"
+    assert ps.observation_type_for("retry_classify") == "agent"
+    assert ps.observation_type_for("judge_verify") == "evaluator"
+
+
+def test_typed_datamodel_observations_keep_routing_and_generations():
+    """llm-mailroom #29 types nodes as AGENT/EVALUATOR/RETRIEVER/CHAIN.
+    Those must still build a routing path, keep judge-verify, and leave
+    pipeline-result / answer-question as generations — not floor stations.
+    """
+    base = datetime(2026, 8, 26, 2, 42, 6)
+    trace = make_trace(
+        "t-datamodel",
+        base_time=base,
+        span_names=[
+            "ingest-document",
+            "normalize-intake",
+            "transcribe-pdf",
+            "classify-document",
+            "extract-fields",
+            "judge-verify",
+            "arbitrate-verdict",
+            "compile-report",
+            "write-catalog",
+            "archive-document",
+        ],
+        include_root=True,
+        user_id="mailroom-pilot",
+        release="mailroom@0.9.0",
+        extra_observations=[
+            Obj(
+                id="gen-result",
+                type="GENERATION",
+                name="pipeline-result",
+                model="qwen/qwen3.7-flash",
+                start_time=base + timedelta(seconds=70),
+                end_time=base + timedelta(seconds=72),
+                latency=2.0,
+                usage={"total": 80, "input": 50, "output": 30},
+                level="DEFAULT",
+            ),
+            Obj(
+                id="gen-lb",
+                type="GENERATION",
+                name="answer-question",
+                metadata={"task_id": "cuad_q1", "index": 0},
+                model="qwen/qwen3.7-flash",
+                start_time=base + timedelta(seconds=73),
+                end_time=base + timedelta(seconds=74),
+                latency=1.0,
+                usage={"total": 40, "input": 30, "output": 10},
+                level="DEFAULT",
+            ),
+        ],
+    )
+    run = _run(trace)
+    by_name = {s.name: s for s in run.spans}
+    assert by_name["document-pipeline"].observation_type == "CHAIN"
+    assert by_name["document-pipeline"].is_root is True
+    assert by_name["classify-document"].observation_type == "AGENT"
+    assert by_name["extract-fields"].observation_type == "AGENT"
+    assert by_name["judge-verify"].observation_type == "EVALUATOR"
+    assert by_name["transcribe-pdf"].observation_type == "RETRIEVER"
+    assert by_name["arbitrate-verdict"].observation_type == "AGENT"
+    assert "document-pipeline" not in run.routing_path
+    assert "judge_verify" in run.routing_path
+    assert "arbiter" in run.routing_path
+    assert run.user_id == "mailroom-pilot"
+    assert run.release == "mailroom@0.9.0"
+    gen_names = [g.name for g in run.generations]
+    assert "pipeline-result" in gen_names
+    assert "answer-question" in gen_names
+    assert all(g.observation_type == "GENERATION" for g in run.generations
+               if g.name in ("pipeline-result", "answer-question"))
+
+
+def test_agent_type_without_model_is_not_dropped():
+    """Pre-#29 interpreter only treated SPAN/EVENT as nodes; AGENT would
+    fall through and, without model/usage, luckily become a span. Pin the
+    explicit type path so a future fallback change cannot hide judge-verify.
+    """
+    now = datetime(2026, 8, 26, 3, 0, 0)
+    run = interpret_trace(
+        {
+            "id": "t-agent-only",
+            "name": "document-pipeline",
+            "timestamp": now,
+            "output": {"stage": "processing"},
+            "observations": [
+                {
+                    "id": "o1",
+                    "observationType": "AGENT",
+                    "name": "classify-document",
+                    "startTime": now.isoformat(),
+                    "endTime": (now + timedelta(seconds=2)).isoformat(),
+                    "latency": 2.0,
+                },
+                {
+                    "id": "o2",
+                    "observationType": "EVALUATOR",
+                    "name": "judge-verify",
+                    "startTime": (now + timedelta(seconds=3)).isoformat(),
+                    "endTime": (now + timedelta(seconds=4)).isoformat(),
+                    "latency": 1.0,
+                },
+            ],
+        }
+    )
+    assert [s.name for s in run.spans] == ["classify-document", "judge-verify"]
+    assert run.routing_path == ["classify", "judge_verify"]
+    assert run.stage == Stage.JUDGE_VERIFY
+    assert run.generations == []
 
 
 def test_docclass_eval_trace_maps_to_classify_station():

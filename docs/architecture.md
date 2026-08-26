@@ -55,20 +55,34 @@ A `document-pipeline` trace carries:
 
 - **Trace fields**: `id` (deterministic, seeded from filename), `name`,
   `timestamp`, `latency`, `session_id` (= matter_id, or a run-scoped session
-  for pilots), `environment`, `tags` (`[mailroom, <env>, run-<n>, ...]`),
-  `metadata` (`{attempt, run_id, run_deadline}`), curated `input`/`output`.
-- **Node spans**: verb-first names mapped to stages by
+  for pilots), `environment`, optional `user_id` / `release`, `tags`
+  (`[mailroom, <env>, run-<n>, ...]`), `metadata` (`{attempt, run_id,
+  run_deadline}`), curated `input`/`output`.
+- **Typed observations** (Langfuse data model; v2/v3 `type` or v4
+  `observationType`): the root is a **CHAIN** named `document-pipeline`.
+  Children use the most specific type — **AGENT** (classify / extract /
+  arbiter / boss / report), **EVALUATOR** (`judge-verify`), **RETRIEVER**
+  (PDF/image ingest), **SPAN** (intake, catalog, archive, review route),
+  **GENERATION** (`pipeline-result`, LegalBench `answer-question`, and
+  auto-traced LLM calls). Verb-first names map to stages by
   `pipeline_schema.SPAN_STAGE_MAP` (`ingest-document`, `classify-document`,
   `judge-verify`, `arbitrate-verdict`, `extract-fields`, `route-for-review`,
   `adjudicate-conflict`, `compile-report`, `write-catalog`,
-  `archive-document`, …). The KANBAN-063 quality gate: `judge-verify` runs on
-  the ambiguous extraction band and a partial verdict detours through the
-  arbiter before reporting.
+  `archive-document`, …). The root chain is shown in the inspector and
+  omitted from the floor routing path. The KANBAN-063 quality gate:
+  `judge-verify` runs on the ambiguous extraction band and a partial
+  verdict detours through the arbiter before reporting.
 - **Generations**: auto-traced LLM calls (model, usage, latency,
-  `cost_details`).
+  `cost_details`) plus the typed `pipeline-result` / `answer-question`
+  generations.
 - **Scores**: confidences, run metrics, judge verdict
   (`mailroom-pipeline-judge` CORRECT/PARTIAL/MISS) and quality
   (`mailroom-pipeline-quality` 0–1).
+
+The pipeline (not this viewer) batches events with the Langfuse SDK
+(`LANGFUSE_FLUSH_AT` / `LANGFUSE_FLUSH_INTERVAL`, defaults 512 / 5s) and
+calls `flush()` then `shutdown()` on process exit so short-lived jobs drain
+the queue. The visualizer is read-only.
 
 Because pilot/attempt re-runs reuse the deterministic trace id, a single
 trace can carry several full runs. The interpreter clusters observations by
@@ -78,12 +92,14 @@ trace, showing the latest run.
 ## Pipeline topology mirror
 
 `pipeline_schema.py` bundles a mirror of the pipeline's graph
-(`src/graph/routing.py` + `src/config/taxonomy.yaml`): node/span names
-(including `normalize-intake` → INGEST), stage→phase mapping, node order,
-agent roster (16 agents incl. `intake`), doc classes
-(7, incl. `court_opinion` and `insurance_claim`), specialist dispatch, and
-confidence thresholds (incl. `judge_band_high`). The `MAILROOM_TAXONOMY` env
-var can point at the live
+(`src/graph/routing.py` + `src/config/taxonomy.yaml`) and its Langfuse
+observation-type map (`src/observability/tracing.py`
+`NODE_OBSERVATION_TYPES`): node/span names (including `normalize-intake` →
+INGEST), typed observations (chain/agent/evaluator/retriever/generation/span),
+stage→phase mapping, node order, agent roster (16 agents incl. `intake`), doc
+classes (7, incl. `court_opinion` and `insurance_claim`), specialist dispatch,
+and confidence thresholds (incl. `judge_band_high`). The `MAILROOM_TAXONOMY`
+env var can point at the live
 `taxonomy.yaml` so thresholds/doc classes come straight from the pipeline
 config instead of the mirror (cached at process level — restart to reload).
 

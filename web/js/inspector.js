@@ -34,6 +34,21 @@ const Inspector = (() => {
     return classes[docType] || docType;
   }
 
+  function obsTypeChip(t) {
+    if (!t) return "";
+    const kind = String(t).toUpperCase();
+    const cls = {
+      CHAIN: "obs-chain",
+      AGENT: "obs-agent",
+      EVALUATOR: "obs-evaluator",
+      RETRIEVER: "obs-retriever",
+      SPAN: "obs-span",
+      EVENT: "obs-span",
+      GENERATION: "obs-generation",
+    }[kind] || "obs-span";
+    return `<span class="chip ${cls}">${Mailroom.esc(kind)}</span>`;
+  }
+
   function spanStatusDot(status) {
     const cls = status === "SUCCESS" ? "ok" : status === "ERROR" ? "bad" : status === "PENDING" ? "warn" : "idle";
     return `<span class="dot ${cls}"></span>`;
@@ -70,6 +85,8 @@ const Inspector = (() => {
     parts.push(`<span class="chip">PHASE ${Mailroom.esc((run.phase || "").toUpperCase())}</span>`);
     if (doc) parts.push(`<span class="chip">${Mailroom.esc(doc)}</span>`);
     if (run.environment) parts.push(`<span class="chip">ENV ${Mailroom.esc(run.environment)}</span>`);
+    if (run.release) parts.push(`<span class="chip">REL ${Mailroom.esc(run.release)}</span>`);
+    if (run.user_id) parts.push(`<span class="chip">USER ${Mailroom.esc(run.user_id)}</span>`);
     if (run.attempt != null) parts.push(`<span class="chip">ATTEMPT ${run.attempt}</span>`);
     if (run.retried) parts.push(`<span class="chip">RETRIED</span>`);
 
@@ -89,6 +106,8 @@ const Inspector = (() => {
     const rows = [
       ["trace id", run.trace_id],
       ["session / matter", run.session_id || run.matter_id || "—"],
+      ["user", run.user_id || "—"],
+      ["release", run.release || "—"],
       ["filename", run.filename || "—"],
       ["classification conf.", Mailroom.fmt.conf(run.classification_confidence)],
       ["extraction conf.", Mailroom.fmt.conf(run.extraction_confidence)],
@@ -112,9 +131,12 @@ const Inspector = (() => {
     const spansHtml = spans.length
       ? spans.map((s) => {
           const err = s.error_message ? `<div class="span-meta">${Mailroom.esc(s.error_message)}</div>` : "";
-          return `<div class="span-row ${s.status === "ERROR" ? "span-err" : ""}">
+          const typeChip = obsTypeChip(s.observation_type);
+          const rootMark = s.is_root ? `<span class="chip obs-chain">ROOT</span>` : "";
+          return `<div class="span-row ${s.status === "ERROR" ? "span-err" : ""} ${s.is_root ? "span-root" : ""}">
             ${spanStatusDot(s.status)}
             <span class="span-name">${Mailroom.esc(s.name)}</span>
+            ${typeChip}${rootMark}
             <div class="span-meta">${Mailroom.esc(s.status || "")} · ${Mailroom.fmt.latency(s.latency)}</div>
             ${err}
           </div>`;
@@ -124,7 +146,7 @@ const Inspector = (() => {
     const gens = Array.isArray(run.generations) ? run.generations : [];
     const gensHtml = gens.length
       ? gens.map((g) => `<div class="gen-row">
-          <div class="gen-model">${Mailroom.esc(g.model || g.agent || "generation")}</div>
+          <div class="gen-model">${Mailroom.esc(g.name || g.model || g.agent || "generation")} ${obsTypeChip(g.observation_type || "GENERATION")}</div>
           <div class="gen-meta">
             ${Mailroom.esc(g.agent || "")}${g.agent ? " · " : ""}
             ${Mailroom.fmt.latency(g.latency)}
@@ -152,7 +174,7 @@ const Inspector = (() => {
       </div>
       ${errorBlock}
       <div class="insp-section">
-        <h3>NODE SPANS</h3>
+        <h3>OBSERVATIONS</h3>
         <div class="insp-spans">${spansHtml}</div>
       </div>
       <div class="insp-section">

@@ -573,6 +573,17 @@ dialog::backdrop { background: rgba(20, 16, 12, 0.55); }
   background: var(--bg);
 }
 
+.obs-type {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--rule);
+  color: var(--ink-soft);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .card, .view-nav a, .btn { transition: none; }

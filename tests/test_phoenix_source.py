@@ -46,9 +46,18 @@ def test_get_run_full_interpretation():
     assert run.total_tokens == 1200
     assert abs(run.cost_usd - 0.0021) < 1e-9
     assert any(g.model == "qwen2.5:7b" for g in run.generations)
-    # node spans mapped through SPAN_STAGE_MAP
+    # node observations mapped through SPAN_STAGE_MAP + NODE_OBSERVATION_TYPES
     names = [s.name for s in run.spans]
     assert "ingest-document" in names and "archive-document" in names
+    by_name = {s.name: s.observation_type for s in run.spans}
+    assert by_name["ingest-document"] == "SPAN"
+    # index 1 of the fixture is the LLM child (same name as classify-document
+    # in some traces, but here it is a GENERATION — nodes stay typed).
+    assert by_name["extract-fields"] == "AGENT"
+    assert by_name["compile-report"] == "AGENT"
+    assert by_name["write-catalog"] == "SPAN"
+    assert by_name["archive-document"] == "SPAN"
+    assert all(s.observation_type != "GENERATION" for s in run.spans)
     # annotations -> scores -> verdict/quality
     assert run.verdict == "CORRECT"
     assert run.quality == 0.88
