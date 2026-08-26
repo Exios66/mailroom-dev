@@ -38,6 +38,13 @@ All notable changes to The-Mailroom are documented here, following
   mailroom names to the same types. Flush/batch knobs stay on the pipeline
   (`LANGFUSE_FLUSH_AT` / `FLUSH_INTERVAL`); this viewer is read-only.
 
+### Changed
+
+- **Dojo scoring pin documented as `@v0.9.0`.** The constellation table and
+  wiki Home now cite the [released tag](https://github.com/Exios66/llm-dojo-scoring/releases/tag/v0.9.0)
+  dependents should pin instead of `@v0.7.0`. This visualizer still does not
+  install `llm-dojo-scoring` at runtime; catalogs remain copied constants.
+
 ### Fixed
 
 - Pixel SESSIONS / REVIEW / METRICS no longer re-walk hundreds of Langfuse
