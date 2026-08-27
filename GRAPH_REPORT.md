@@ -1,118 +1,120 @@
-# Graph Report - llm-mailroom  (2026-08-26)
+# Graph Report - llm-mailroom  (2026-08-27)
 
 ## Corpus Check
 - code-only production src/ — tests, notebooks, and .opencode/skills excluded
 
 ## Summary
-- 1422 nodes · 3346 edges · 92 communities (80 shown, 12 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 106 edges (avg confidence: 0.9)
+- 1511 nodes · 3587 edges · 94 communities (82 shown, 12 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 107 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `30ff6874`
+- Built from commit: `13346a92`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- Catalog & audit trail
-- PDF & image transcription
-- Run limits & budgets
-- LangChain BaseAgent
-- Watcher ingest
-- base
-- LegalBench runner
-- ops monitor
-- providers
 - Graph nodes & state
-- agent
-- LangChain specialists
-- Sorter classification
-- langfuse setup
-- judge
-- sync dashboards
-- Extraction schemas
-- logging
-- mock
+- LangChain BaseAgent
+- Run limits & budgets
+- PDF & image transcription
+- LegalBench runner
 - Eval mocks & validation
-- Contracts specialist
+- Watcher ingest
+- LLM providers
+- config
+- LegalBench data
+- ops monitor
 - audit
-- data
-- Managed prompts & judges
-- sorter reviewer
+- LegalBench agent
 - Agent toolkit & memory
-- Hugging Face pilot
-- build graph
+- Tracing backends
+- Arbiter & Boss
+- Mailroom BaseAgent
+- Extraction schemas
+- Dashboard sync
+- logging
+- Quality judges
+- mock
+- PDF & image transcription (57)
+- tasks
+- Sorter classification
+- Catalog & audit trail
+- Sorter classification (8)
+- LangChain specialists
+- HF pilot & honesty gaps
 - FastAPI intake
-- Quality scores
-- Confidence routing
-- Pipeline execution
+- Hub subclass inventories
+- classifier
 - Vision rendering
-- Inbox bins
-- Vision classifier
+- Quality scores
 - Langfuse evaluator sync
 - Experiment log
-- retry
-- run pilot
-- prompts docclass
-- Langfuse tracing
-- Taxonomy extract aliases
-- sync models
-- guards
-- sync langfuse logs
-- Hub subclass inventories
-- langfuse tracing
-- cuad maud
-- Intake clerk
-- bootstrap
-- fetch external samples
-- cutover
-- env utils
-- db
-- write pilot report
-- sync dataset
-- Docclass prompt arm
-- scoring
-- run pilot (59)
-- phoenix setup
-- braintrust setup
-- prompts
-- Chunked extraction
-- run vision sweep
-- build graph (65)
-- main
-- API bearer auth
-- Review-resume entry
-- base agent
-- Field scoring & metrics
+- Field scoring calibration
 - CUAD corpus loaders
+- Grounded pilot
+- CUAD/MAUD inventories
+- LLM retry
+- Inbox bins
+- Langfuse tracing
+- Specialist scoring suites
+- Langfuse model sync
+- Pipeline guards
+- Dataset sync
+- Langfuse log sync
+- LegalBench scoring
+- Agent toolkit & memory (47)
+- Docclass prompt arm
+- Field scoring & metrics
+- Tracing backends (5)
+- Graph nodes & state (50)
+- bootstrap
+- Quality judges (53)
+- External samples
+- Managed prompts
+- Prompt cutover
+- env utils
+- prompts docclass
+- Routing & reconsideration
+- Pilot reports
+- Grounded pilot (63)
+- prompts
+- compare runs
+- Graph nodes & state (66)
+- Graph nodes & state (67)
+- Field scoring & metrics (68)
+- FastAPI intake (69)
+- FastAPI intake (70)
+- Graph nodes & state (71)
+- LangChain BaseAgent (72)
 -   init  
 - pyproject
-- base agent (78)
-- prompts (80)
-- langfuse setup (81)
-- tracing (82)
-- run pilot (90)
-- run quality judges
+- LangChain BaseAgent (79)
+- Managed prompts (81)
+- Tracing backends (82)
+- Tracing backends (83)
+- Grounded pilot (91)
+- Quality judges (92)
 
 ## God Nodes (most connected - your core abstractions)
 1. `load_config()` - 37 edges
 2. `BaseAgent` - 35 edges
-3. `BaseAgent` - 32 edges
-4. `build_graph()` - 32 edges
+3. `build_graph()` - 33 edges
+4. `BaseAgent` - 32 edges
 5. `get_langfuse_client()` - 31 edges
 6. `get_managed_prompt()` - 28 edges
-7. `ensure_schema()` - 25 edges
-8. `_execute_run()` - 24 edges
+7. `_execute_run()` - 25 edges
+8. `ensure_schema()` - 25 edges
 9. `DocumentState` - 23 edges
-10. `async_session()` - 23 edges
-11. `main()` - 23 edges
-12. `inbox_dir()` - 23 edges
+10. `main()` - 23 edges
+11. `inbox_dir()` - 23 edges
+12. `load_env()` - 23 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `ImageExtractor` --uses--> `BaseAgent`  [INFERRED]
-  src/agents/image_extractor.py → src/agents/base.py
-- `PDFTranscriber` --uses--> `BaseAgent`  [INFERRED]
-  src/agents/pdf_transcriber.py → src/agents/base.py
+- `PipelineStage` --uses--> `resolve_review()`  [INFERRED]
+  src/schemas/manifest.py → src/api/main.py
+- `PipelineStage` --uses--> `_move_rejected_to_failed()`  [INFERRED]
+  src/schemas/manifest.py → src/api/main.py
 - `BaseAgent` --uses--> `SorterAgent`  [INFERRED]
   src/langchain_agents/base_agent.py → src/langchain_agents/sorter_agent.py
 - `BaseAgent` --uses--> `_SpecialistBase`  [INFERRED]
@@ -123,275 +125,283 @@
 ## Import Cycles
 - None detected.
 
-## Communities (92 total, 12 thin omitted)
+## Communities (94 total, 12 thin omitted)
 
-### Community 0 - "Catalog & audit trail"
-Cohesion: 0.16
-Nodes (30): AuditLogRecord, DocumentRecord, MatterRecord, Base, ops_status(), _persist_scores(), _all_chains(), main() (+22 more)
+### Community 0 - "Graph nodes & state"
+Cohesion: 0.06
+Nodes (85): DocumentState, DocumentManifest, PipelineStage, apply_intake(), arbiter_node(), archive_node(), boss_escalation_node(), _build_checkpointer() (+77 more)
 
-### Community 11 - "PDF & image transcription"
-Cohesion: 0.13
-Nodes (19): ImageExtractor, PDFTranscriber, extract_text_from_image(), transcribe_pdf(), compile_matter_record(), retry_chat_completion(), langfuse_call_attrs(), get_run_deadline() (+11 more)
-
-### Community 16 - "Run limits & budgets"
-Cohesion: 0.09
-Nodes (28): RunBudgetExceeded, RunDeadlineExceeded, _bounded(), compute_run_metrics(), load_config(), check_run_deadline(), check_token_budget(), estimate_cost() (+20 more)
-
-### Community 18 - "LangChain BaseAgent"
-Cohesion: 0.11
-Nodes (16): BaseAgent, load_skills(), ChatOpenAI, ABC, Lazily build the LangChain ``ChatOpenAI`` client. Uses the OpenRouter base URL…, Call ``fn()`` retrying transient failures with backoff + jitter. Mirrors…, True when this agent's model accepts image input. Vision capability is config-…, Build the human-message content for a document input. Vision-capable models get… (+8 more)
-
-### Community 20 - "Watcher ingest"
-Cohesion: 0.14
-Nodes (17): InboxHandler, Watcher, inbox_dir(), is_ingestion_paused(), list_inbox_files(), read_inbox_meta(), touch_watcher_heartbeat(), _is_already_processed() (+9 more)
-
-### Community 23 - "base"
-Cohesion: 0.23
-Nodes (5): BaseAgent, ABC, Build the user-message content for a document input. Vision-capable models get…, Truncate document text to the agent's configured input budget, marking the…, True when this agent's model accepts image input and (optionally) page images…
-
-### Community 25 - "LegalBench runner"
-Cohesion: 0.12
-Nodes (23): RunResult, LegalBenchTask, build_parser(), main(), log_run(), _model_name(), print_summary(), run_task() (+15 more)
-
-### Community 26 - "ops monitor"
-Cohesion: 0.19
-Nodes (6): OpsMonitor, _main(), run_ops_monitor(), Event, Pause metadata (actor/reason/expiry) via the TTL-aware helper., Like start(), but exits when ``stop_event`` is set (L-6: signal driven graceful…
-
-### Community 27 - "providers"
-Cohesion: 0.20
-Nodes (16): ProviderConfig, _check_llm_provider(), compile_report_node(), get_llm(), get_llm_client(), get_llm_model(), instrument_client(), _build_providers() (+8 more)
-
-### Community 28 - "Graph nodes & state"
-Cohesion: 0.11
-Nodes (29): DocumentState, arbiter_node(), boss_escalation_node(), _build_handoff_context(), _build_specialist_dispatch(), catalog_write_node(), _clean_fields_for_judge(), _detect_conflict() (+21 more)
-
-### Community 29 - "agent"
-Cohesion: 0.14
-Nodes (11): LegalBenchAgent, build_structured_schema(), Any, BaseAgent, Build a JSON schema dict for structured output. ``title`` is required by…, Model agent for LegalBench runs. Reuses the vendored ``BaseAgent`` machinery —…, One agent instance per task run; answers via structured JSON., LegalBench tasks use the task prompt as-is (no sorter skills). (+3 more)
-
-### Community 34 - "LangChain specialists"
-Cohesion: 0.08
-Nodes (23): ComplianceFilingSpecialist, CorporateRecordsSpecialist, CorrespondenceSpecialist, _SpecialistBase, get_prompt(), get_extraction_schema(), get_specialist(), _merge_reasoning() (+15 more)
-
-### Community 35 - "Sorter classification"
+### Community 10 - "LangChain BaseAgent"
 Cohesion: 0.10
-Nodes (17): SorterAgent, SorterAgent, _doc_classes_for_prompt(), _sorter_schema(), get_doc_class_catalog(), _LangChainSorterAgent, BaseAgent, Sorter agent — LangChain version vendored from llm-entity-extraction. Re-… (+9 more)
+Nodes (17): BaseAgent, load_skills(), ChatOpenAI, Return the agent's system prompt string., System prompt + agent's skill files + tool descriptions + recent outcome…, Lazily build the LangChain ``ChatOpenAI`` client. Uses the OpenRouter base URL…, Call ``fn()`` retrying transient failures with backoff + jitter. Mirrors…, True when this agent's model accepts image input. Vision capability is config-… (+9 more)
 
-### Community 39 - "judge"
+### Community 13 - "Run limits & budgets"
+Cohesion: 0.10
+Nodes (25): RunBudgetExceeded, RunDeadlineExceeded, _bounded(), compute_run_metrics(), check_token_budget(), estimate_cost(), get_call_timeout_seconds(), get_deadline_seconds() (+17 more)
+
+### Community 17 - "PDF & image transcription"
 Cohesion: 0.19
-Nodes (7): CompletenessJudge, judge_one(), _raw_text_for(), BaseAgent, Render the task specification (taxonomy doc classes) for the judge., Judge whether the sorter's assigned class matches the taxonomy task…, Judge whether the extracted field values are factually accurate (no…
+Nodes (14): ImageExtractor, extract_text_from_image(), compile_matter_record(), retry_chat_completion(), langfuse_call_attrs(), get_run_deadline(), record_usage(), BaseAgent (+6 more)
 
-### Community 41 - "sync dashboards"
-Cohesion: 0.29
-Nodes (13): WidgetSpec, _client(), _existing_placements(), json_dumps(), main(), _placement_kwargs(), _score_widget(), _spec_to_request() (+5 more)
+### Community 18 - "LegalBench runner"
+Cohesion: 0.18
+Nodes (19): RunResult, build_parser(), main(), log_run(), _model_name(), print_summary(), run_task(), _tokens_summary() (+11 more)
 
-### Community 42 - "Extraction schemas"
-Cohesion: 0.16
-Nodes (17): ComplianceFilingExtraction, ContractExtraction, CorporateRecordExtraction, CorrespondenceExtraction, InsuranceClaimExtraction, DocumentManifest, PipelineStage, Matter (+9 more)
-
-### Community 43 - "logging"
-Cohesion: 0.21
-Nodes (11): _RotatingFileSink, setup_logging(), _aggregate(), _cell(), main(), _print_table(), _scores_of(), list_documents() (+3 more)
-
-### Community 46 - "mock"
-Cohesion: 0.27
-Nodes (5): MockLegalBenchModel, _hash(), Any, Deterministic mock model for LegalBench runs (no network, no OpenAI). Answers…, Implements the LegalBenchAgent interface deterministically.
-
-### Community 5 - "Eval mocks & validation"
+### Community 2 - "Eval mocks & validation"
 Cohesion: 0.05
-Nodes (38): FakeLangChainLLM, _FakeStructuredRunner, chat, _Choices, completions, _EvalLangChainLLM, _HintedEvalLangChainLLM, _MockClient (+30 more)
+Nodes (39): FakeLangChainLLM, _FakeStructuredRunner, chat, _Choices, completions, _EvalLangChainLLM, _HintedEvalLangChainLLM, _MockClient (+31 more)
 
-### Community 50 - "Contracts specialist"
-Cohesion: 0.25
-Nodes (5): ContractsSpecialist, ContractsSpecialist, _LangChainContractsSpecialist, Contracts specialist — LangChain version vendored from llm-entity-extraction.…, Mailroom-configured contracts specialist. - Model/budget defaults come from…
+### Community 24 - "Watcher ingest"
+Cohesion: 0.20
+Nodes (10): InboxHandler, Watcher, claim_file(), _is_already_processed(), _mark_active(), _unmark_active(), FileSystemEventHandler, Path (+2 more)
 
-### Community 52 - "audit"
-Cohesion: 0.19
-Nodes (17): AuditLogEntry, archive_document(), _file_sha256(), get_audit_trail(), move_to_archive(), build_audit_entry(), compute_audit_hash(), compute_audit_hash_v1() (+9 more)
+### Community 25 - "LLM providers"
+Cohesion: 0.22
+Nodes (15): ProviderConfig, _check_llm_provider(), get_llm(), get_llm_client(), get_llm_model(), instrument_client(), _build_providers(), get_provider() (+7 more)
 
-### Community 55 - "data"
+### Community 27 - "config"
+Cohesion: 0.15
+Nodes (12): ContractsSpecialist, ContractsSpecialist, get_extraction_schema(), get_all_doc_types(), get_doc_class(), get_extraction_schema_name(), resolve_extract_class(), _LangChainContractsSpecialist (+4 more)
+
+### Community 29 - "LegalBench data"
 Cohesion: 0.16
 Nodes (16): CorpusUnavailable, Sample, _fingerprint(), load_cuad_qa(), load_family_rows(), _normalize_prediction(), _extract_binary(), Any (+8 more)
 
-### Community 6 - "Managed prompts & judges"
+### Community 30 - "ops monitor"
+Cohesion: 0.17
+Nodes (6): OpsMonitor, _main(), run_ops_monitor(), Event, Pause metadata (actor/reason/expiry) via the TTL-aware helper., Like start(), but exits when ``stop_event`` is set (L-6: signal driven graceful…
+
+### Community 31 - "audit"
+Cohesion: 0.23
+Nodes (14): AuditLogEntry, archive_document(), _file_sha256(), build_audit_entry(), compute_audit_hash(), compute_audit_hash_v1(), verify_chain(), _verify() (+6 more)
+
+### Community 32 - "LegalBench agent"
+Cohesion: 0.14
+Nodes (9): LegalBenchAgent, Any, BaseAgent, Model agent for LegalBench runs. Reuses the vendored ``BaseAgent`` machinery —…, One agent instance per task run; answers via structured JSON., LegalBench tasks use the task prompt as-is (no sorter skills)., Yes/no answer with evidence + confidence., One-of-N family classification with confidence. (+1 more)
+
+### Community 34 - "Agent toolkit & memory"
+Cohesion: 0.21
+Nodes (11): AgentTool, _build_toolkit(), get_tools(), render_tools(), _tool_field_types(), _tool_schema(), _tool_subtypes(), _tool_taxonomy() (+3 more)
+
+### Community 4 - "Arbiter & Boss"
 Cohesion: 0.06
-Nodes (36): ArbiterAgent, BossAgent, ComplianceSpecialist, CorporateRecordsSpecialist, CorrespondenceSpecialist, InsuranceClaimsSpecialist, build_structured_schema(), _extract_compliance() (+28 more)
+Nodes (35): ArbiterAgent, BossAgent, ComplianceSpecialist, CorporateRecordsSpecialist, CorrespondenceSpecialist, InsuranceClaimsSpecialist, build_structured_schema(), _extract_compliance() (+27 more)
 
-### Community 66 - "sorter reviewer"
+### Community 41 - "Mailroom BaseAgent"
+Cohesion: 0.23
+Nodes (5): BaseAgent, ABC, Build the user-message content for a document input. Vision-capable models get…, Truncate document text to the agent's configured input budget, marking the…, True when this agent's model accepts image input and (optionally) page images…
+
+### Community 42 - "Extraction schemas"
+Cohesion: 0.29
+Nodes (10): ComplianceFilingExtraction, ContractExtraction, CorporateRecordExtraction, CorrespondenceExtraction, InsuranceClaimExtraction, Matter, get_extraction_schema(), BaseModel (+2 more)
+
+### Community 44 - "Dashboard sync"
+Cohesion: 0.29
+Nodes (13): WidgetSpec, _client(), _existing_placements(), json_dumps(), main(), _placement_kwargs(), _score_widget(), _spec_to_request() (+5 more)
+
+### Community 45 - "logging"
+Cohesion: 0.24
+Nodes (8): _RotatingFileSink, setup_logging(), _base_env(), main(), run_config(), RotatingFileHandler, Structured logging setup for Mailroom entrypoints. Configures `structlog` once…, Structlog processor that emits the rendered event dict to a rotating stdlib…
+
+### Community 46 - "Quality judges"
+Cohesion: 0.23
+Nodes (5): CompletenessJudge, BaseAgent, Render the task specification (taxonomy doc classes) for the judge., Judge whether the sorter's assigned class matches the taxonomy task…, Judge whether the extracted field values are factually accurate (no…
+
+### Community 51 - "mock"
+Cohesion: 0.27
+Nodes (5): MockLegalBenchModel, _hash(), Any, Deterministic mock model for LegalBench runs (no network, no OpenAI). Answers…, Implements the LegalBenchAgent interface deterministically.
+
+### Community 57 - "PDF & image transcription (57)"
 Cohesion: 0.33
-Nodes (4): SorterReviewerAgent, BaseAgent, Independent second-opinion classifier (blind re-classification)., Independently classify the document. Returns ``{doc_type, contract_subtype,…
+Nodes (5): PDFTranscriber, transcribe_pdf(), BaseAgent, Path, Heuristic: if a PDF yields a dense, clean text extraction, the LLM reformat…
 
-### Community 7 - "Agent toolkit & memory"
+### Community 60 - "tasks"
+Cohesion: 0.25
+Nodes (4): LegalBenchTask, _extract_family(), _family_labels(), LegalBench task registry. Two task families, per the LegalBench taxonomy: -…
+
+### Community 62 - "Sorter classification"
+Cohesion: 0.29
+Nodes (5): SorterAgent, _LangChainSorterAgent, Mailroom-configured sorter. - Model/budget defaults come from ``taxonomy.yaml``…, Classify a document, optionally with page images attached. Returns ``(doc_type,…, Structured classify used by the graph (includes ``doc_subclass``).
+
+### Community 7 - "Catalog & audit trail"
 Cohesion: 0.10
-Nodes (24): AgentTool, _memory_dir(), _memory_path(), recent_context(), record_outcome(), stats(), _build_toolkit(), get_tools() (+16 more)
+Nodes (45): AuditLogRecord, DocumentRecord, MatterRecord, Base, _all_chains(), main(), get_audit_chain(), get_latest_audit_hash() (+37 more)
 
-### Community 1 - "Hugging Face pilot"
-Cohesion: 0.10
-Nodes (44): _catalog_by_trace(), completed_filenames(), enrich_sample_row(), finalize_report(), find_sample_text(), hf_samples_from_report(), _inbox_filename(), latest_hf_reports() (+36 more)
+### Community 8 - "Sorter classification (8)"
+Cohesion: 0.07
+Nodes (31): SorterReviewerAgent, SorterAgent, build_structured_schema(), format_sorter_subclass_catalogs(), sorter_subclass_catalog(), valid_sorter_subclasses(), _classification_user_message(), _doc_classes_for_prompt() (+23 more)
 
-### Community 10 - "build graph"
-Cohesion: 0.19
-Nodes (13): _write_review_audit_entry(), archive_node(), classify_node(), _emit_stage_audit(), _latest_audit_hash(), _run_coro(), _touch_heartbeat(), _write_audit_log() (+5 more)
+### Community 9 - "LangChain specialists"
+Cohesion: 0.09
+Nodes (21): ComplianceFilingSpecialist, CorporateRecordsSpecialist, CorrespondenceSpecialist, _SpecialistBase, get_prompt(), get_specialist(), _merge_reasoning(), _norm() (+13 more)
 
-### Community 12 - "FastAPI intake"
-Cohesion: 0.10
-Nodes (31): _check_database(), get_document_status(), get_matter(), get_queue(), health(), lifespan(), _move_rejected_to_failed(), ops_resume() (+23 more)
+### Community 1 - "HF pilot & honesty gaps"
+Cohesion: 0.06
+Nodes (80): _denial_reasons(), determination_consistency_is_quality(), honesty_trace_metadata(), insurance_determination_consistent(), insurance_determination_issues(), insurance_expected_set_is_homogeneous(), insurance_gt_is_homogeneous(), _norm_determination() (+72 more)
 
-### Community 13 - "Quality scores"
+### Community 11 - "FastAPI intake"
 Cohesion: 0.11
-Nodes (30): ensure_field_score_configs(), score_and_log_extraction(), _client(), create_trace_score(), emit_pipeline_scores(), ensure_score_configs(), is_enabled(), langfuse_score_name() (+22 more)
+Nodes (32): _check_database(), get_audit_trail(), get_document_status(), get_matter(), health(), lifespan(), ops_resume(), ops_status() (+24 more)
 
-### Community 14 - "Confidence routing"
-Cohesion: 0.15
-Nodes (28): build_graph(), retry_classify_node(), after_arbiter(), after_boss(), after_classify(), after_extraction(), after_extraction_gated(), after_human_review() (+20 more)
-
-### Community 15 - "Pipeline execution"
-Cohesion: 0.11
-Nodes (35): _emit_pipeline_result(), _execute_run(), _existing_processing_doc_id(), _extract_text_from_docx(), _extract_text_from_image(), _extract_text_from_pdf(), _file_sha256(), _file_size() (+27 more)
-
-### Community 17 - "Vision rendering"
-Cohesion: 0.15
-Nodes (22): _resolved_models(), agent_uses_vision(), _any_specialist_uses_vision(), is_vision_capable(), max_pages(), pipeline_uses_vision(), render_document_pages(), render_image() (+14 more)
-
-### Community 19 - "Inbox bins"
+### Community 12 - "Hub subclass inventories"
 Cohesion: 0.12
-Nodes (40): _build_checkpointer(), _ensure_dirs(), archive_dir(), claim_file(), classified_dir(), clear_ingestion_paused(), ensure_dirs(), failed_dir() (+32 more)
+Nodes (32): clause_handoff(), skip_conflict_field(), coerce_gt_value(), _compact(), enrich_extraction(), _normalize(), normalize_claim_type(), normalize_communication_type() (+24 more)
 
-### Community 2 - "Vision classifier"
+### Community 14 - "classifier"
 Cohesion: 0.11
 Nodes (21): classify_image(), clean_prediction(), extract_confidence(), extract_reasoning(), extract_runner_up(), _valid_classes(), build_text_messages(), build_vision_messages() (+13 more)
 
-### Community 21 - "Langfuse evaluator sync"
+### Community 15 - "Vision rendering"
+Cohesion: 0.16
+Nodes (23): _resolved_models(), agent_uses_vision(), _any_specialist_uses_vision(), is_vision_capable(), max_pages(), pipeline_uses_vision(), render_document_pages(), render_image() (+15 more)
+
+### Community 16 - "Quality scores"
+Cohesion: 0.12
+Nodes (22): ensure_field_score_configs(), score_and_log_extraction(), _client(), emit_pipeline_scores(), ensure_score_configs(), is_enabled(), langfuse_score_name(), _score_data_type() (+14 more)
+
+### Community 19 - "Langfuse evaluator sync"
 Cohesion: 0.16
 Nodes (21): _build_evaluator_request(), _build_output_definition(), _build_rule_request(), _client(), _current_evaluator_prompt(), _ensure_llm_connection(), _existing_rule_ids(), main() (+13 more)
 
-### Community 22 - "Experiment log"
+### Community 20 - "Experiment log"
 Cohesion: 0.19
 Nodes (20): append_record(), build_record(), default_log_path(), default_sibling_root(), git_snapshot(), _inside(), regenerate(), _run_python() (+12 more)
 
-### Community 24 - "retry"
-Cohesion: 0.23
-Nodes (14): _is_retryable_error(), _is_json_mode_400(), _is_retryable(), is_transient_error(), _retry_after_seconds(), _retry_config(), retry_sleep_seconds(), _status_code() (+6 more)
+### Community 21 - "Field scoring calibration"
+Cohesion: 0.14
+Nodes (19): get_field_types(), warm_embedding_model(), main(), _perturb_date(), _perturb_entity_list(), _perturb_free_text(), _perturb_money(), _perturb_name() (+11 more)
 
-### Community 3 - "run pilot"
+### Community 22 - "CUAD corpus loaders"
+Cohesion: 0.19
+Nodes (20): _contracts_from_annotations(), _contracts_from_txt(), _download(), download_all(), _list_hf_files(), _load_subtype_taxonomy(), main(), _normalize_category() (+12 more)
+
+### Community 23 - "Grounded pilot"
 Cohesion: 0.18
 Nodes (19): _attach_field_scoring(), diff_report(), filter_real_samples(), _ground_truth_scores(), _ingest_scores(), main(), misfile_candidates(), _parse_expected_fields() (+11 more)
 
-### Community 30 - "prompts docclass"
-Cohesion: 0.18
-Nodes (13): _append(), _build_versions(), _rules(), prompt_templates(), _client(), _current_production(), main(), sync_one() (+5 more)
+### Community 26 - "CUAD/MAUD inventories"
+Cohesion: 0.20
+Nodes (17): as_clause_lines(), enrich_contract_extraction(), flatten_cuad_clause_labels(), flatten_maud_clause_labels(), infer_merger_consideration(), normalize_consideration(), parse_json_obj(), _as_meta() (+9 more)
 
-### Community 31 - "Langfuse tracing"
+### Community 28 - "LLM retry"
+Cohesion: 0.20
+Nodes (15): _is_retryable_error(), _is_json_mode_400(), _is_retryable(), _retry_after_seconds(), _retry_config(), retry_sleep_seconds(), _status_code(), check_run_deadline() (+7 more)
+
+### Community 3 - "Inbox bins"
 Cohesion: 0.09
-Nodes (38): _client(), client_kwargs(), flush_langfuse(), get_langfuse_client(), get_trace_id(), install_on_dropped(), instrument_openai_client(), observation() (+30 more)
+Nodes (52): get_queue(), _move_rejected_to_failed(), _ensure_dirs(), accepted_extensions(), archive_dir(), classified_dir(), clear_ingestion_paused(), failed_dir() (+44 more)
 
-### Community 32 - "Taxonomy extract aliases"
-Cohesion: 0.29
-Nodes (9): review_classify_node(), get_all_doc_types(), get_doc_class(), get_extraction_schema_name(), get_sorter_label_set(), resolve_extract_class(), KANBAN-062 (Lane A): independent agent second opinion on a medium-band…, Map a sorter label to the live taxonomy class used for extraction. Live… (+1 more)
+### Community 33 - "Langfuse tracing"
+Cohesion: 0.16
+Nodes (14): attach_run_scores(), ensure_score_configs_if_enabled(), _environment(), legalbench_trace(), question_observation(), is_enabled(), pipeline_trace(), Any (+6 more)
 
-### Community 33 - "sync models"
-Cohesion: 0.29
-Nodes (10): default_environment(), _client(), _cost_models(), _existing_by_name(), main(), _match_pattern(), _prices_match(), sync_models() (+2 more)
+### Community 36 - "Specialist scoring suites"
+Cohesion: 0.22
+Nodes (14): attach_single_doc_extras(), _numeric_extra(), score_and_log_intake(), score_intake_suite(), score_with_suite(), unwrap_suite_result(), Any, ExtractionScoreResult (+6 more)
 
-### Community 37 - "guards"
+### Community 37 - "Langfuse model sync"
+Cohesion: 0.21
+Nodes (13): default_environment(), load_env(), _client(), _cost_models(), _existing_by_name(), main(), _match_pattern(), _prices_match() (+5 more)
+
+### Community 38 - "Pipeline guards"
 Cohesion: 0.20
 Nodes (14): apply_classification_guard(), apply_extraction_guard(), guard_classification(), guard_extraction(), _has_substantive_content(), _is_valid_confidence(), _valid_subtypes(), Guardrails for agent outputs. Agents are LLMs — they can return junk even when… (+6 more)
 
-### Community 38 - "sync langfuse logs"
-Cohesion: 0.24
-Nodes (12): main(), _slug(), _client(), main(), _parse_since(), sync_logs(), _trace_basics(), _trace_stage() (+4 more)
-
-### Community 4 - "Hub subclass inventories"
-Cohesion: 0.14
-Nodes (26): clause_handoff(), skip_conflict_field(), coerce_gt_value(), _compact(), enrich_extraction(), _normalize(), normalize_claim_type(), normalize_communication_type() (+18 more)
-
-### Community 40 - "langfuse tracing"
-Cohesion: 0.19
-Nodes (12): attach_run_scores(), ensure_score_configs_if_enabled(), _environment(), legalbench_trace(), question_observation(), is_enabled(), Any, Langfuse tracing for LegalBench runs. One trace per run (deterministic seed =… (+4 more)
-
-### Community 44 - "cuad maud"
-Cohesion: 0.17
-Nodes (19): as_clause_lines(), enrich_contract_extraction(), flatten_cuad_clause_labels(), flatten_maud_clause_labels(), infer_merger_consideration(), normalize_consideration(), parse_json_obj(), normalize_subtype() (+11 more)
-
-### Community 45 - "Intake clerk"
-Cohesion: 0.25
-Nodes (10): apply_intake(), deterministic_normalize(), intake_span_output(), looks_messy(), check_contract(), select_stratified(), Deterministic intake clerk — whitespace / hyphen / NBSP normalize. Procedural…, Normalize ``text`` and emit the ``normalize-intake`` span. Returns… (+2 more)
-
-### Community 47 - "bootstrap"
-Cohesion: 0.29
-Nodes (10): bootstrap_ci(), _clean(), delta_significance(), _resample_means(), Any, Random, Bootstrap confidence intervals and small-sample delta testing. Ported verbatim…, Coerce a per-document score list to floats, dropping None/non-numeric. (+2 more)
-
-### Community 48 - "fetch external samples"
-Cohesion: 0.33
-Nodes (10): _caption_from_text(), _download(), fetch_atticus(), fetch_legalbench(), fetch_pileoflaw(), main(), _stream_pol_records(), Path (+2 more)
-
-### Community 49 - "cutover"
-Cohesion: 0.40
-Nodes (9): cutover_agent(), cutover_all(), list_agents(), list_local_models(), load_config(), main(), recommend_cutover_order(), save_config() (+1 more)
-
-### Community 51 - "env utils"
-Cohesion: 0.28
-Nodes (8): bool_env(), get_env(), load_env(), require_env(), Load ``braintrust.env`` then ``.env`` into the environment (idempotent).…, Validate that all given environment variables are set and non-empty. Returns…, Get an environment variable with a default fallback., Get a boolean environment variable.
-
-### Community 53 - "db"
-Cohesion: 0.18
-Nodes (16): _apply_sqlite_pragmas(), check_connectivity(), close_db(), _engine_kwargs(), _ensure_models_imported(), get_engine(), get_session(), _get_sessionmaker() (+8 more)
-
-### Community 54 - "write pilot report"
-Cohesion: 0.42
-Nodes (8): build_report(), _clean_extracted(), _field_score_for(), _fmt_usd(), _json_block(), _load_config(), main(), _manifest_rows()
-
-### Community 56 - "sync dataset"
+### Community 39 - "Dataset sync"
 Cohesion: 0.26
 Nodes (13): _escape(), generate_pdf_from_text(), _load_manifest(), prepare_samples(), _client(), _doc_text(), _ensure_dataset(), main() (+5 more)
 
-### Community 57 - "Docclass prompt arm"
-Cohesion: 0.20
-Nodes (10): list_prompts(), PROMPT_TEMPLATES(), docclass_prompts_enabled(), langchain_prompt_version(), managed_prompt_lookup(), List all available prompt versions., Return all prompt templates as a dict. Single source of truth for…, Opt-in KANBAN-090 docclass prompt arm at runtime. Production agent prompts stay… (+2 more)
+### Community 40 - "Langfuse log sync"
+Cohesion: 0.24
+Nodes (12): main(), _slug(), _client(), main(), _parse_since(), sync_logs(), _trace_basics(), _trace_stage() (+4 more)
 
-### Community 58 - "scoring"
+### Community 43 - "LegalBench scoring"
 Cohesion: 0.25
 Nodes (13): equivalent_subtypes(), _binary_f1(), _ece(), _mean(), _safe_div(), score_binary(), score_multiclass(), Any (+5 more)
 
-### Community 59 - "run pilot (59)"
+### Community 47 - "Agent toolkit & memory (47)"
+Cohesion: 0.26
+Nodes (11): _memory_dir(), _memory_path(), recent_context(), record_outcome(), stats(), _tool_memory(), Path, Per-agent OUTCOME MEMORY for the vendored LangChain agents. Every designated… (+3 more)
+
+### Community 48 - "Docclass prompt arm"
+Cohesion: 0.20
+Nodes (10): list_prompts(), PROMPT_TEMPLATES(), docclass_prompts_enabled(), langchain_prompt_version(), managed_prompt_lookup(), List all available prompt versions., Return all prompt templates as a dict. Single source of truth for…, Opt-in KANBAN-090 docclass prompt arm at runtime. Production agent prompts stay… (+2 more)
+
+### Community 49 - "Field scoring & metrics"
+Cohesion: 0.24
+Nodes (11): _date_pair_days(), extraction_diagnostics(), _mean(), _median(), parse_duration_days(), _r2(), Run-level diagnostic metrics for extraction scoring. Ported from ``llm-entity-…, Coefficient of determination ``1 - SS_res/SS_tot`` over (predicted, expected)… (+3 more)
+
+### Community 5 - "Tracing backends (5)"
+Cohesion: 0.06
+Nodes (51): configure(), flush_braintrust(), instrument_openai_client(), is_configured(), _apply_taxonomy_settings(), client_kwargs(), flush_langfuse(), get_trace_id() (+43 more)
+
+### Community 50 - "Graph nodes & state (50)"
+Cohesion: 0.18
+Nodes (11): _latest_audit_hash(), _persist_provenance(), _persist_scores(), _run_coro(), _touch_heartbeat(), _write_catalog_record(), Run a coroutine from a sync context: schedule it on the running loop when one…, Best-effort fetch of the last entry_hash for this doc_id (the previous link of… (+3 more)
+
+### Community 52 - "bootstrap"
+Cohesion: 0.29
+Nodes (10): bootstrap_ci(), _clean(), delta_significance(), _resample_means(), Any, Random, Bootstrap confidence intervals and small-sample delta testing. Ported verbatim…, Coerce a per-document score list to floats, dropping None/non-numeric. (+2 more)
+
+### Community 53 - "Quality judges (53)"
+Cohesion: 0.31
+Nodes (10): create_trace_score(), is_real_sample(), _dim_summary(), _ingest(), judge_one(), main(), print_summary(), _raw_text_for() (+2 more)
+
+### Community 54 - "External samples"
+Cohesion: 0.33
+Nodes (10): _caption_from_text(), _download(), fetch_atticus(), fetch_legalbench(), fetch_pileoflaw(), main(), _stream_pol_records(), Path (+2 more)
+
+### Community 55 - "Managed prompts"
+Cohesion: 0.31
+Nodes (9): _langchain_prompt(), prompt_templates(), get_langfuse_client(), _client(), _current_production(), main(), sync_one(), agent_name -> local prompt template (with `{{var}}` placeholders). Single… (+1 more)
+
+### Community 56 - "Prompt cutover"
+Cohesion: 0.40
+Nodes (9): cutover_agent(), cutover_all(), list_agents(), list_local_models(), load_config(), main(), recommend_cutover_order(), save_config() (+1 more)
+
+### Community 58 - "env utils"
+Cohesion: 0.28
+Nodes (8): bool_env(), get_env(), load_env(), require_env(), Load ``braintrust.env`` then ``.env`` into the environment (idempotent).…, Validate that all given environment variables are set and non-empty. Returns…, Get an environment variable with a default fallback., Get a boolean environment variable.
+
+### Community 59 - "prompts docclass"
+Cohesion: 0.28
+Nodes (7): _append(), _build_versions(), _rules(), Docclass prompt variants for every mailroom classification-chain role.…, Pure-appended docclass variant: base is a STRICT PREFIX of the result., Derive every variant from the live production template of that role., # NOTE: fragment assertions in tests target SHORT substrings that do not cross
+
+### Community 6 - "Routing & reconsideration"
+Cohesion: 0.08
+Nodes (52): after_arbiter(), after_boss(), after_classify(), after_extraction(), after_extraction_gated(), after_human_review(), after_judge(), after_report() (+44 more)
+
+### Community 61 - "Pilot reports"
+Cohesion: 0.42
+Nodes (8): build_report(), _clean_extracted(), _field_score_for(), _fmt_usd(), _json_block(), _load_config(), main(), _manifest_rows()
+
+### Community 63 - "Grounded pilot (63)"
 Cohesion: 0.29
 Nodes (7): _check_cost_watchdog(), _fetch_openrouter_prices(), _price_for(), _record_langchain_response(), Warn at $0.15, abort the run at $0.20 (cumulative across all samples)., Mirror _wrap_client's usage/cost accounting for a LangChain response., Fetch live OpenRouter pricing (per-token), normalized to $/M tokens. The…
 
-### Community 60 - "phoenix setup"
-Cohesion: 0.21
-Nodes (12): flush_phoenix(), _init_opentelemetry(), _instrument_openai(), instrument_openai_client(), is_configured(), phoenix_enabled(), Arize Phoenix tracing backend — local, cost-free default for llm-mailroom.…, Return ``client`` with Phoenix auto-tracing activated (no-op if disabled).… (+4 more)
-
-### Community 61 - "braintrust setup"
-Cohesion: 0.32
-Nodes (7): configure(), flush_braintrust(), instrument_openai_client(), is_configured(), Braintrust tracing backend — alternative to Langfuse. Switch to it with…, Initialize Braintrust (idempotent). Returns True when active., Wrap `client` with Braintrust instrumentation, or return it unchanged.
-
-### Community 62 - "prompts"
+### Community 64 - "prompts"
 Cohesion: 0.40
 Nodes (5): family_classification_prompt_v1(), get_prompt(), Versioned LegalBench task prompts. Prompt version = experiment identity in the…, Fill the 25-family list into the multiclass prompt (called per run so the…, Resolve a prompt version to its system-prompt text.
 
-### Community 63 - "Chunked extraction"
+### Community 65 - "compare runs"
+Cohesion: 0.60
+Nodes (5): _aggregate(), _cell(), main(), _print_table(), _scores_of()
+
+### Community 66 - "Graph nodes & state (66)"
 Cohesion: 0.40
 Nodes (5): _chunk_config(), _extract_contracts(), _run_chunked_extraction(), Chunked-extraction config from taxonomy.yaml (`chunking:` block). Chunking…, Run a specialist extraction, chunking long documents (v15+ pass).…
 
-### Community 64 - "run vision sweep"
-Cohesion: 0.36
-Nodes (6): load_env(), _base_env(), main(), run_config(), Path, Load environment variables from a .env file. The app reads its configuration…
-
-### Community 65 - "build graph (65)"
+### Community 67 - "Graph nodes & state (67)"
 Cohesion: 0.50
 Nodes (4): _prompt_versions(), _bound_prompt_versions(), Prompt versions bound during the run (best-effort; Langfuse-managed prompts…, Version keys currently wired into production / agent defaults. Used for catalog…
 
-### Community 67 - "main"
+### Community 68 - "Field scoring & metrics (68)"
+Cohesion: 0.50
+Nodes (4): field_is_ambiguous(), get_type_bands(), Per-field-type ambiguous-band overrides from ``field_scoring.type_bands``.…, Is this field score in the (possibly type-specific) ambiguous band? Band check…
+
+### Community 69 - "FastAPI intake (69)"
 Cohesion: 0.67
 Nodes (3): _require_token(), Request, Dependency: reject requests without the bearer token (audit L-2).
-
-### Community 8 - "Field scoring & metrics"
-Cohesion: 0.07
-Nodes (36): _apply_taxonomy_settings(), field_is_ambiguous(), get_field_types(), get_type_bands(), warm_embedding_model(), _date_pair_days(), extraction_diagnostics(), _mean() (+28 more)
-
-### Community 9 - "CUAD corpus loaders"
-Cohesion: 0.19
-Nodes (20): _contracts_from_annotations(), _contracts_from_txt(), _download(), download_all(), _list_hf_files(), _load_subtype_taxonomy(), main(), _normalize_category() (+12 more)
 
 ## Knowledge Gaps
 - **1 isolated node(s):** `mailroom`
@@ -401,17 +411,17 @@ Nodes (20): _contracts_from_annotations(), _contracts_from_txt(), _download(), d
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `BaseAgent` connect `LangChain BaseAgent` to `Hugging Face pilot`, `LangChain specialists`, `run pilot`, `Sorter classification`, `Eval mocks & validation`, `Agent toolkit & memory`, `base agent`, `base agent (77)`, `base agent (78)`, `Run limits & budgets`, `agent`?**
-  _High betweenness centrality (0.070) - this node is a cross-community bridge._
-- **Why does `load_config()` connect `Run limits & budgets` to `Taxonomy extract aliases`, `sync models`, `Sorter classification`, `Managed prompts & judges`, `judge`, `Agent toolkit & memory`, `Field scoring & metrics`, `PDF & image transcription`, `FastAPI intake`, `Confidence routing`, `Pipeline execution`, `Vision rendering`, `Inbox bins`, `Langfuse evaluator sync`, `retry`, `Graph nodes & state`, `Chunked extraction`?**
-  _High betweenness centrality (0.058) - this node is a cross-community bridge._
-- **Why does `load_env()` connect `run vision sweep` to `Catalog & audit trail`, `Hugging Face pilot`, `sync models`, `run pilot`, `Eval mocks & validation`, `sync langfuse logs`, `Field scoring & metrics`, `CUAD corpus loaders`, `sync dashboards`, `logging`, `FastAPI intake`, `Quality scores`, `Inbox bins`, `Watcher ingest`, `Langfuse evaluator sync`, `sync dataset`, `providers`, `prompts docclass`?**
-  _High betweenness centrality (0.042) - this node is a cross-community bridge._
+- **Why does `BaseAgent` connect `LangChain BaseAgent` to `LegalBench agent`, `HF pilot & honesty gaps`, `Eval mocks & validation`, `Agent toolkit & memory`, `Sorter classification (8)`, `LangChain specialists`, `LangChain BaseAgent (72)`, `LangChain BaseAgent (78)`, `LangChain BaseAgent (79)`, `Grounded pilot`, `LLM retry`?**
+  _High betweenness centrality (0.090) - this node is a cross-community bridge._
+- **Why does `load_config()` connect `Vision rendering` to `Graph nodes & state`, `Inbox bins`, `Tracing backends (5)`, `Routing & reconsideration`, `Sorter classification (8)`, `FastAPI intake`, `Run limits & budgets`, `PDF & image transcription`, `Langfuse evaluator sync`, `Field scoring calibration`, `config`, `LLM retry`, `Agent toolkit & memory`, `Langfuse model sync`, `Extraction schemas`, `Quality judges`, `PDF & image transcription (57)`, `Graph nodes & state (66)`, `Field scoring & metrics (68)`?**
+  _High betweenness centrality (0.067) - this node is a cross-community bridge._
+- **Why does `load_env()` connect `Langfuse model sync` to `HF pilot & honesty gaps`, `compare runs`, `Inbox bins`, `Eval mocks & validation`, `Dataset sync`, `Langfuse log sync`, `Catalog & audit trail`, `FastAPI intake`, `Dashboard sync`, `logging`, `Langfuse evaluator sync`, `Field scoring calibration`, `CUAD corpus loaders`, `Grounded pilot`, `Watcher ingest`, `LLM providers`, `Quality judges (53)`, `Managed prompts`?**
+  _High betweenness centrality (0.040) - this node is a cross-community bridge._
 - **Are the 8 inferred relationships involving `BaseAgent` (e.g. with `SorterAgent` and `_SpecialistBase`) actually correct?**
   _`BaseAgent` has 8 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 10 inferred relationships involving `BaseAgent` (e.g. with `ArbiterAgent` and `BossAgent`) actually correct?**
+- **Are the 25 inferred relationships involving `build_graph()` (e.g. with `arbiter_node()` and `archive_node()`) actually correct?**
+  _`build_graph()` has 25 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 10 inferred relationships involving `BaseAgent` (e.g. with `ArbiterAgent` and `CompletenessJudge`) actually correct?**
   _`BaseAgent` has 10 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 24 inferred relationships involving `build_graph()` (e.g. with `archive_node()` and `ingest_node()`) actually correct?**
-  _`build_graph()` has 24 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `mailroom` to the rest of the system?**
   _1 weakly-connected nodes found - possible documentation gaps or missing edges._
