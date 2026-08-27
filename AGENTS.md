@@ -2,6 +2,30 @@
 
 The-Mailroom is the **visual engine** for the `llm-mailroom` multi-agent legal-document pipeline: a pixel-art console (web + planned TUI) that renders every run from its Langfuse traces. **Langfuse is the sole source of truth** — every displayed value is derived from Langfuse traces, observations, scores, and sessions. This repo never fabricates or falls back to locally-canned data. Python 3.11+, no build step.
 
+## Skills (tool selection)
+
+Committed under `.cursor/skills/`. **Read `mailroom-tool-router` first** for any
+source, UI surface, poller, schema, Pages, or sister-repo serving task, then
+open exactly one specialty skill. Companion to
+[`local-mailroom-sandbox` PR #4](https://github.com/Exios66/local-mailroom-sandbox/pull/4)
+(same family names, visualizer-scoped).
+
+| Skill | Appropriate for |
+| --- | --- |
+| `mailroom-tool-router` | Choosing among the stacks below |
+| `langfuse` | Default document display (SDK 2.50–4.x) |
+| `apache-phoenix` | Optional `MAILROOM_SOURCE=phoenix\|both` |
+| `braintrust` | Not a display source — do not add one |
+| `huggingface` | Hub eval/pilot scripts; copied catalogs; no runtime dojo import |
+| `ollama` | Local LLM lives in sandbox/pipeline, not here |
+| `modal` | Remote GPU lives in sandbox/pipeline, not here |
+| `pixel-console` | Vanilla `web/` SPA (no npm) |
+| `observatory` | Hosted `/live` desk |
+| `live-floor` | Poller, WS, watcher/inbox lamp |
+| `pipeline-schema-sync` | Mirror `llm-mailroom` topology |
+| `gh-pages` | Deploy-from-branch snapshot (no Actions) |
+| `tui` | `mailroom-tui` (`MAILROOM_API_URL` → this visualizer) |
+
 ## Sister repo: `llm-mailroom` (the pipeline)
 
 - **Expected location**: a sibling of this repo, i.e. `../llm-mailroom` from this checkout (e.g. `/Users/luciusjmorningstar/Downloads/llm-mailroom`). It is **not currently present on this machine** — clone it before relying on `MAILROOM_TAXONOMY`.

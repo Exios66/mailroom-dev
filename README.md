@@ -18,6 +18,10 @@ Three live surfaces share one display API (`/api/*` + `/ws`):
 | Hosted Observatory | `mailroom-hosted` (also `/live` on the same server) | `http://127.0.0.1:8001/live` |
 | TUI | `mailroom-tui` | terminal (`MAILROOM_API_URL`) |
 
+Agent skills (Langfuse / Phoenix / Braintrust / Ollama / Modal / Hugging Face
+plus pixel, Observatory, live floor, schema sync, Pages, TUI):
+[`.cursor/skills/README.md`](.cursor/skills/README.md).
+
 ---
 
 <details>

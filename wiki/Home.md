@@ -29,6 +29,15 @@ is the LegalBench eval sibling. Full map:
   inspect · debug)
 - **GitHub Pages** — static snapshot of the pixel SPA (not the Observatory)
 
+## Agent skills
+
+Committed under `.cursor/skills/`. Start with `mailroom-tool-router`. Family
+stacks match
+[local-mailroom-sandbox](https://github.com/Exios66/local-mailroom-sandbox/tree/main/.cursor/skills)
+(Langfuse default; Phoenix optional; Braintrust/Ollama/Modal are not this
+visualizer). Extra skills cover pixel console, Observatory, live floor, schema
+sync, Pages, and TUI. Index: repo `.cursor/skills/README.md`.
+
 ## Pages
 
 - [Home](Home) — overview, quick start, sister-repo pointer

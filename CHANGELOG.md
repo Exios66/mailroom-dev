@@ -8,6 +8,13 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- **Project Agent Skills (companion to local-mailroom-sandbox #4).** Committed
+  `.cursor/skills/` with `mailroom-tool-router` plus family stack skills
+  (Langfuse, Apache Phoenix, Braintrust, Ollama, Modal, Hugging Face) and
+  visualizer-surface skills (pixel console, Observatory, live floor, schema
+  sync, GH Pages, TUI) so agents pick the right tool instead of inventing a
+  second display source or a Node/LLM client here.
+
 - **Live conveyor freshness + producer watcher lamp.** In-flight traces are
   re-enriched every poll (terminal runs stay on the 60s detail cache) so a
   just-flushed classify/extract/judge span moves the envelope on the next
