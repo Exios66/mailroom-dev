@@ -8,10 +8,7 @@
 **Pixel-art visual engine for the [`llm-mailroom`](https://github.com/Exios66/llm-mailroom)
 multi-agent legal-document pipeline.** The Mailroom renders every pipeline run as an
 animated conveyor of document envelopes — sorter, specialist bays, the boss's desk,
-the reporter, the archive — driven entirely by **Langfuse traces**. Langfuse is the
-sole source of truth: every envelope, badge, verdict, and metric on screen is derived
-from the pipeline's Langfuse project. Nothing is fabricated, nothing falls back to
-local data.
+the reporter, the archive — driven entirely by **Langfuse traces**. 
 
 Three live surfaces share one display API (`/api/*` + `/ws`):
 
