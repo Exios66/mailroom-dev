@@ -4,9 +4,21 @@ const ReviewView = (() => {
   const listEl = document.getElementById("review-queue");
 
   function chip(run) {
+    if (run.needs_reconsideration) return `<span class="chip stage-review">RECONSIDER</span>`;
     if (run.stage === "review") return `<span class="chip stage-review">REVIEW</span>`;
     if (run.stage === "failed") return `<span class="chip stage-failed">FAILED</span>`;
     return `<span class="chip">${Mailroom.esc((run.stage || "unknown").toUpperCase())}</span>`;
+  }
+
+  function causeLine(run) {
+    const causes = Array.isArray(run.review_causes) ? run.review_causes : [];
+    const chips = causes
+      .map((c) => `<span class="chip stage-review">${Mailroom.esc(String(c).replaceAll("_", " "))}</span>`)
+      .join(" ");
+    const why = run.escalation_reason
+      ? `<div style="color:var(--amber);margin-top:4px">why: ${Mailroom.esc(run.escalation_reason)}</div>`
+      : "";
+    return `${chips ? `<div style="margin-top:4px">${chips}</div>` : ""}${why}`;
   }
 
   function verdictChip(run) {
@@ -16,7 +28,7 @@ const ReviewView = (() => {
 
   function render(runs) {
     if (!runs.length) {
-      listEl.innerHTML = `<div class="hint mono">REVIEW SIDING EMPTY — NO RUNS WAITING ON A HUMAN</div>`;
+      listEl.innerHTML = `<div class="hint mono">REVIEW SIDING EMPTY — NO RUNS WAITING ON A HUMAN OR FLAGGED FOR RECONSIDERATION</div>`;
       return;
     }
     listEl.innerHTML = runs
@@ -30,11 +42,7 @@ const ReviewView = (() => {
         </div>
         <div class="session-runs" style="padding:8px 10px">
           <div style="color:var(--paper-dim)">doc: <span style="color:var(--paper)">${Mailroom.esc(r.doc_type || "—")}${r.doc_subclass || r.contract_subtype ? ` / ${Mailroom.esc(r.doc_subclass || r.contract_subtype)}` : ""}</span></div>
-          ${
-            r.escalation_reason
-              ? `<div style="color:var(--amber);margin-top:4px">why: ${Mailroom.esc(r.escalation_reason)}</div>`
-              : ""
-          }
+          ${causeLine(r)}
           ${
             r.error_message
               ? `<div style="color:var(--red-light);margin-top:4px">error: ${Mailroom.esc(r.error_message)}</div>`

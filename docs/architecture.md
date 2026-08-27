@@ -167,6 +167,29 @@ dumps at `GET|POST /api/debug/client`, verbose stdout via
 `MAILROOM_DEBUG=1`, and a machine-readable endpoint index in `/api/meta`.
 Snapshot builds add `debug/build-info.json`.
 
+## Reconsideration (not self-reported confidence)
+
+The pipeline can auto-continue on high `classification_confidence` /
+`extraction_confidence`. Those numbers are the model's own. The visualizer
+does **not** treat an archived envelope as done when objective Langfuse
+scores or ground truth say otherwise:
+
+- GT class / subclass mismatch (`expected_hf_class` vs `doc_type`, with
+  `merger_agreement` ≡ `contract`)
+- Judge verdict `MISS` / `PARTIAL`
+- `extraction_overall_score` below the confidence-low floor
+- `schema_valid=0`, `guardrail_triggered`, `parse_error`
+- completeness LOW / incomplete reporting
+- `extraction_needs_judge_review` on a run that still archived
+
+Those runs keep their archived stage (the pipeline already wrote the
+catalog) but `needs_human` becomes true, they join `/api/review-queue`,
+and the floor parks them on the REVIEW siding as **RECONSIDER** so a
+wrong archive cannot look like a finished case. Cause tokens live in
+`mailroom_ui/reconsideration.py` (mirrored by llm-mailroom
+`pipeline/reconsideration.py`, which also parks GT misses before extract
+and withholds catalog writes when `compile_report` fails).
+
 ## Demos & screenshots
 
 Stills of every pixel / Observatory / TUI desk live in `docs/screenshots/`.

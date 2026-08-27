@@ -224,7 +224,11 @@ def review_table(runs: list[dict]) -> Table:
             _fmt(r.get("classification_confidence")),
             _fmt(r.get("extraction_confidence")),
             Text(verdict, style=style),
-            r.get("escalation_reason") or r.get("review_decision") or r.get("error_message") or "-",
+            r.get("escalation_reason")
+            or (", ".join(r.get("review_causes") or []))
+            or r.get("review_decision")
+            or r.get("error_message")
+            or "-",
         )
     return table
 
@@ -237,6 +241,7 @@ def metrics_table(m: dict) -> Table:
         ("total docs", m.get("total_docs")),
         ("archived", m.get("archived")),
         ("review", m.get("review")),
+        ("reconsider", m.get("reconsideration")),
         ("failed", m.get("failed")),
         ("in flight", m.get("in_flight")),
         ("llm calls", m.get("llm_calls")),

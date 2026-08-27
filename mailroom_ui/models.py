@@ -122,6 +122,7 @@ class PipelineRun(BaseModel):
     extraction_confidence: Optional[float] = None
     review_decision: Optional[str] = None
     escalation_reason: Optional[str] = None
+    review_causes: list[str] = Field(default_factory=list)
     error_message: Optional[str] = None
     run_aborted: bool = False
 
@@ -142,8 +143,19 @@ class PipelineRun(BaseModel):
         return Stage.RETRY_CLASSIFY.value in self.routing_path or Stage.RETRY_EXTRACT.value in self.routing_path
 
     @property
+    def needs_reconsideration(self) -> bool:
+        """Archived/cataloged but objective misses say it should not stay done."""
+        from .reconsideration import should_reconsider
+
+        return should_reconsider(self.stage.value if self.stage else None, self.review_causes)
+
+    @property
     def needs_human(self) -> bool:
-        return self.stage in (Stage.HUMAN_REVIEW,)
+        if self.stage == Stage.HUMAN_REVIEW:
+            return True
+        if self.stage == Stage.FAILED:
+            return False
+        return self.needs_reconsideration
 
 
 class SessionSummary(BaseModel):
@@ -200,3 +212,4 @@ class Metrics(BaseModel):
     avg_maud_valid_class_rate: Optional[float] = None
     avg_maud_category_accuracy: Optional[float] = None
     per_doc_subclass: dict[str, int] = Field(default_factory=dict)
+    reconsideration: int = 0

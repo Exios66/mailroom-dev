@@ -63,6 +63,7 @@ const MetricsView = (() => {
       total_docs: 0,
       archived: 0,
       review: 0,
+      reconsideration: 0,
       failed: 0,
       in_flight: 0,
       total_cost_usd: 0,
@@ -121,9 +122,10 @@ const MetricsView = (() => {
     };
     for (const r of runs) {
       m.total_docs++;
-      if (r.stage === "archived") m.archived++;
+      if (r.needs_reconsideration) m.reconsideration++;
+      if (r.stage === "failed") m.failed++;
       else if (r.stage === "review" || r.needs_human) m.review++;
-      else if (r.stage === "failed") m.failed++;
+      else if (r.stage === "archived") m.archived++;
       else m.in_flight++;
       m.total_cost_usd += r.cost_usd || 0;
       m.total_tokens += r.total_tokens || 0;
@@ -240,6 +242,9 @@ const MetricsView = (() => {
     html += tile("TOTAL DOCS", m.total_docs ?? "—");
     html += tile("ARCHIVED", m.archived ?? "—", "good");
     html += tile("REVIEW", m.review ?? "—", "warn");
+    if (m.reconsideration) {
+      html += tile("RECONSIDER", m.reconsideration, "warn");
+    }
     html += tile("FAILED", m.failed ?? "—", m.failed ? "bad" : "");
     html += tile("IN FLIGHT", m.in_flight ?? "—");
     html += tile("LLM CALLS", Mailroom.fmt.tokens(m.llm_calls));

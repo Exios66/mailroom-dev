@@ -8,6 +8,15 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- **Reconsideration beyond self-reported confidence.** Archived runs with
+  objective misses (judge MISS/PARTIAL, GT class/subclass mismatch,
+  extraction score below the low floor, schema/guardrail/parse failures,
+  incomplete reporting, skipped-judge flag) join the REVIEW queue and park
+  on the REVIEW siding as RECONSIDER even when the model stated 0.99
+  confidence. Cause tokens are `PipelineRun.review_causes`; the inspector,
+  Observatory, TUI, and metrics surface them. Self-reported classification
+  / extraction confidence is never a trigger.
+
 - **Dojo 0.9.0 / llm-mailroom #30 scoring sync.** Live taxonomy is five extract
   classes (`contract`, `corporate_record`, `correspondence`, `compliance_filing`,
   `insurance_claim`) plus the HF/sorter alias `merger_agreement` (still tints and

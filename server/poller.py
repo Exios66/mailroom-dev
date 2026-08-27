@@ -43,6 +43,8 @@ def floor_payload(run: PipelineRun) -> dict[str, Any]:
         "extraction_confidence": run.extraction_confidence,
         "review_decision": run.review_decision,
         "escalation_reason": run.escalation_reason,
+        "review_causes": run.review_causes,
+        "needs_reconsideration": run.needs_reconsideration,
         "error_message": run.error_message,
         "verdict": run.verdict,
         "quality": run.quality,

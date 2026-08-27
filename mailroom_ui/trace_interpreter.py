@@ -25,6 +25,7 @@ from .pipeline_schema import (
     langfuse_score_name,
     observation_type_for,
 )
+from .reconsideration import collect_review_causes, format_causes
 
 # Score names produced by observability/scores.py + Langfuse evaluators.
 JUDGE_VERDICT_SCORES = ("mailroom-pipeline-judge",)
@@ -750,6 +751,7 @@ def interpret_trace(
         or _float(t_output.get("extraction_confidence")),
         review_decision=_clean(t_output.get("review_decision")),
         escalation_reason=_clean(t_output.get("escalation_reason")),
+        review_causes=[],
         error_message=_clean(t_output.get("error_message")),
         run_aborted=bool(t_output.get("run_aborted") or score_map.get("run_aborted")),
         spans=spans,
@@ -763,6 +765,17 @@ def interpret_trace(
         total_tokens=total_tokens,
         cost_usd=cost,
     )
+    run.review_causes = collect_review_causes(
+        doc_type=run.doc_type,
+        doc_subclass=run.doc_subclass,
+        contract_subtype=run.contract_subtype,
+        expected_hf_class=run.expected_hf_class,
+        expected_subclass=run.expected_subclass,
+        scores=score_map,
+        verdict=run.verdict,
+    )
+    if not run.escalation_reason and run.review_causes:
+        run.escalation_reason = format_causes(run.review_causes)
     return run
 
 

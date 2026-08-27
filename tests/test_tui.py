@@ -64,9 +64,21 @@ def test_floor_table_renders():
     assert "$0.0496" in text
 
 
-def test_review_table_renders():
-    table = review_table([dict(RUN, stage="review", escalation_reason="low confidence")])
-    assert "low confidence" in render(table)
+def test_review_table_shows_reconsider_causes():
+    table = review_table([
+        dict(
+            RUN,
+            stage="archived",
+            needs_human=True,
+            needs_reconsideration=True,
+            review_causes=["judge_miss"],
+            escalation_reason="reconsider: judge verdict MISS",
+        )
+    ])
+    text = render(table)
+    assert "reconsider:" in text
+    assert "MISS" in text
+
 
 
 def test_metrics_table_renders():

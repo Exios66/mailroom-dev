@@ -83,10 +83,12 @@ def compute_metrics(runs: Iterable[PipelineRun], since: Optional[datetime] = Non
             if run_ts < since:
                 continue
         m.total_docs += 1
-        if run.stage == Stage.ARCHIVED:
-            m.archived += 1
-        elif run.stage == Stage.HUMAN_REVIEW:
+        if run.needs_reconsideration:
+            m.reconsideration += 1
+        if run.needs_human:
             m.review += 1
+        elif run.stage == Stage.ARCHIVED:
+            m.archived += 1
         elif run.stage == Stage.FAILED:
             m.failed += 1
         else:

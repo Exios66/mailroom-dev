@@ -35,14 +35,18 @@ const Floor = (() => {
   let hoveredId = null;
   let sourceState = "gold";
 
-  function targetFor(run) {
+    function targetFor(run) {
     const st = run.stage;
-    // Archived/failed items leave the floor
-    if (st === "archived" || st === "failed") {
+    // Failed items leave the floor. Archived items leave unless objective
+    // misses pulled them back onto the REVIEW siding (reconsideration).
+    if (st === "failed") {
       return { x: 1500, y: 440, remove: true };
     }
     if (st === "review" || run.needs_human) {
       return { x: STATIONS[6].x, y: ENV_Y };
+    }
+    if (st === "archived") {
+      return { x: 1500, y: 440, remove: true };
     }
     if (st === "classify" || st === "retry_classify" || st === "review_classify"
         || st === "ingest" || st === "inbox" || st === "unknown") {

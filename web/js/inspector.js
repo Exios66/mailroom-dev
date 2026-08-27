@@ -161,6 +161,9 @@ const Inspector = (() => {
     ];
     if (run.review_decision) rows.push(["review decision", run.review_decision]);
     if (run.escalation_reason) rows.push(["escalation", run.escalation_reason]);
+    if (Array.isArray(run.review_causes) && run.review_causes.length) {
+      rows.push(["reconsider", run.review_causes.join(", ")]);
+    }
     if (run.intake_method || run.intake_messy != null || run.intake_changed != null) {
       const flags = [];
       if (run.intake_messy) flags.push("messy");

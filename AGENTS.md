@@ -44,7 +44,8 @@ scripts/publish_pages.sh       # build site/ + push gh-pages:/docs (NO Actions;
   - `langfuse_source.py` — Langfuse SDK adapter: `client.api.trace.list/get`, `client.api.observations.get_many`, `client.api.scores.get_many`, `client.api.sessions.list/get`; `TTLCache`; `LangfuseUnavailable`. `list_recent_runs()` uses trace-list responses only (cheap "light" runs for the floor); `get_run()` fetches observations+scores for drill-down.
   - `trace_interpreter.py` — `interpret_trace(trace, observations?, scores?)` → `PipelineRun`. Accepts **both v2/v3 snake_case and v4 camelCase** observation shapes (see SDK tolerance). Light runs (no observations arg) have empty span/generation detail. Re-run clustering: deterministic trace ids are reused by pilot/attempt re-runs, so a trace can carry several full runs — observations are clustered by time gaps (`RUN_GAP_S`) and only the latest cluster is kept.
   - `pipeline_schema.py` — topology mirror (see sister-repo section).
-  - `models.py` — pydantic: `PipelineRun`, `NodeSpan`, `Generation`, `Score`, `SessionSummary`, `Metrics`, `Stage`, `Phase`.
+  - `models.py` — pydantic: `PipelineRun` (`review_causes`, `needs_reconsideration`, `needs_human` includes archived objective misses), `NodeSpan`, `Generation`, `Score`, `SessionSummary`, `Metrics`, `Stage`, `Phase`.
+  - `reconsideration.py` — objective review causes (GT miss, judge MISS/PARTIAL, extraction score floor, schema/guardrail/parse, incomplete reporting). Never uses self-reported confidence.
   - `metrics.py` — `compute_metrics()` aggregations (counts by stage/verdict, cost, tokens, p95 generation latency, per-doc-type).
 - `server/` — FastAPI, read-only:
   - `main.py` — `/api/health`, `/api/traces[?since&limit&stage&environment]`, `/api/traces/{id}` (full), `/api/metrics`, `/api/sessions[/{id}]`, `/api/review-queue`, `/api/meta`, `/api/debug/{logs,source,bundle,client}`, WebSocket `/ws`; mounts `web/` at `/static` (pixel console at `/`) and `hosted/` at `/live` + `/live/static`. `MAILROOM_EDITION=hosted` serves the Observatory on `/`. Browser never holds Langfuse keys — the backend proxies everything.
@@ -52,7 +53,7 @@ scripts/publish_pages.sh       # build site/ + push gh-pages:/docs (NO Actions;
   - `poller.py` — `PollHub`: background poll loop → compact `floor_payload` snapshots broadcast to all WS clients; full detail cached per trace with `detail_ttl`.
 - `hosted/` — Mailroom Observatory (public hosted edition): modern accessible SPA, distinct from the pixel console / TUI / GH Pages snapshot. Vanilla HTML/CSS/JS, no build step. Debug desk + `hosted/js/debug.js` (`window.__OBSERVATORY_DEBUG__`) records fetches, WebSocket frames, and uncaught errors.
 - `web/` — pixel-art SPA:
-  - `js/floor.js` — canvas conveyor renderer (stations, rollers, envelope animation, review/failed sidings, tombstones for archived/failed runs). `js/api.js` (fetch + WS with reconnect + global error banner), `js/inspector.js`, `js/sessions.js`, `js/history.js`, `js/metrics.js`, `js/review.js`, `js/console.js`, `js/main.js` (app shell).
+  - `js/floor.js` — canvas conveyor renderer (stations, rollers, envelope animation, review/failed sidings, RECONSIDER parked on REVIEW even when stage is archived, tombstones for clean archived/failed runs). `js/api.js` (fetch + WS with reconnect + global error banner), `js/inspector.js`, `js/sessions.js`, `js/history.js`, `js/metrics.js`, `js/review.js`, `js/console.js`, `js/main.js` (app shell).
 - `tui/` — planned rich-console (AgentLab-style `*** Beginning station: ... ***` banners, per-doc summary tables). Not yet built (M4).
 - `scripts/seed_demo.py` — planned (M5): generates demo traces **into Langfuse** (env `demo`), never served directly.
 

@@ -8,6 +8,9 @@ const HistoryView = (() => {
   let runsCache = [];
 
   function chip(run) {
+    if (run.needs_human && run.stage !== "review") {
+      return `<span class="chip stage-review">RECONSIDER</span>`;
+    }
     let cls = "";
     if (["review"].includes(run.stage)) cls = "stage-review";
     else if (run.stage === "failed") cls = "stage-failed";
