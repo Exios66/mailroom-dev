@@ -29,7 +29,7 @@ board, one discussion log, and one trace contract:
 ```
         ┌─────────────────────────┐         ┌─────────────────────────┐
         │  llm-entity-extraction  │ breeds  │      llm-mailroom       │
-        │  prompt-experiment loop │ ──────▶ │   the document pipeline  │
+        │  prompt-experiment loop │ ──────▶ │   the document pipeline │
         └─────────────────────────┘         └────────────┬────────────┘
                                                          │ Langfuse traces (US cloud)
                                                          ▼
