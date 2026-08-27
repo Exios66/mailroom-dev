@@ -40,7 +40,7 @@ from rich.table import Table
 from rich.text import Text
 
 API_BASE = os.environ.get("MAILROOM_API_URL", "http://127.0.0.1:8001").rstrip("/")
-POLL_INTERVAL = float(os.environ.get("MAILROOM_TUI_POLL", "5"))
+POLL_INTERVAL = float(os.environ.get("MAILROOM_TUI_POLL", "3"))
 # Same 7-day live window as the pixel console and Observatory HTTP clients.
 WINDOW_S = int(os.environ.get("MAILROOM_RECENT_WINDOW", "604800"))
 LAST_ERRORS: deque[str] = deque(maxlen=80)
@@ -429,12 +429,18 @@ def render_floor(runs: list[dict], log: deque) -> Group:
     return Group(body, log_panel)
 
 
-def status_header(connected: bool, count: int) -> Panel:
+def status_header(connected: bool, count: int, pipeline: Optional[dict] = None) -> Panel:
     state = "MAILROOM LIVE — watching Langfuse" if connected else \
         "MAILROOM CLOSED — no Langfuse connection"
     style = "bright_green" if connected else "bright_red"
+    extra = ""
+    if pipeline and pipeline.get("configured"):
+        extra = (f"   watcher: {pipeline.get('watcher') or '?'} "
+                 f"  inbox: {pipeline.get('inbox_pending')}")
+        if pipeline.get("watcher") != "live":
+            style = "yellow" if connected else style
     return Panel(Text(f"THE MAILROOM TUI   {state}   runs: {count}   "
-                      f"source: {API_BASE}", style=style),
+                      f"source: {API_BASE}{extra}", style=style),
                  border_style=style)
 
 
@@ -501,7 +507,8 @@ def run() -> None:
                 )
         if runs is not None:
             runs_to_banners({}, runs, log)
-            console.print(status_header(True, len(runs)))
+            pipe = fetch("/api/pipeline") or {}
+            console.print(status_header(True, len(runs), pipe))
             console.print(frame_for(args.view, runs, log, args.inspect))
         else:
             console.print(status_header(False, 0))
@@ -519,6 +526,7 @@ def run() -> None:
     closed = False
     inspect_idx = 0
     inspect_cache: Optional[dict] = None
+    pipeline_ops: dict = {}
 
     with Live(console=console, screen=False, refresh_per_second=4, auto_refresh=False) as live:
         last_poll = 0.0
@@ -536,6 +544,7 @@ def run() -> None:
                     runs = fresh
                     runs_to_banners(prev, runs, log)
                     prev = {r["trace_id"]: r for r in runs}
+                    pipeline_ops = fetch("/api/pipeline") or {}
 
             try:
                 ch = keys.get_nowait()
@@ -590,7 +599,7 @@ def run() -> None:
 
             live.update(
                 Group(
-                    status_header(not closed, len(runs)),
+                    status_header(not closed, len(runs), pipeline_ops),
                     body,
                     Text("  [f]loor  [r]eview  [s]essions  [m]etrics  [i]nspect  [[]/[]]  [d]ebug  [c]lear  [q]uit",
                          style="grey35"),

@@ -29,6 +29,7 @@ from mailroom_ui.langfuse_source import (
 from mailroom_ui.metrics import compute_metrics
 from mailroom_ui.models import PipelineRun, SessionSummary
 from mailroom_ui.multi_source import MultiSource
+from mailroom_ui.pipeline_ops import fetch_pipeline_ops
 from mailroom_ui.pipeline_schema import DOC_CLASSES
 from mailroom_ui.phoenix_source import PhoenixSource
 from mailroom_ui.sources import TraceSourceUnavailable
@@ -62,6 +63,7 @@ API_ENDPOINTS = [
     {"method": "GET", "path": "/api/debug/bundle", "desc": "one-pull: health + source + server logs + last client dumps"},
     {"method": "GET", "path": "/api/debug/client", "desc": "last browser dumps posted by Observatory / pixel clients"},
     {"method": "POST", "path": "/api/debug/client", "desc": "store a browser debug dump for the next agent pull"},
+    {"method": "GET", "path": "/api/pipeline", "desc": "producer watcher/inbox liveness (MAILROOM_PIPELINE_URL)"},
     {"method": "WS", "path": "/ws", "desc": "floor snapshots (live mode only)"},
     {"method": "GET", "path": "/live", "desc": "hosted Observatory UI (modern, accessible, public)"},
 ]
@@ -70,11 +72,17 @@ API_ENDPOINTS = [
 def _build_default_source() -> object:
     """MAILROOM_SOURCE selector: langfuse (default) | phoenix | both."""
     which = os.environ.get("MAILROOM_SOURCE", "langfuse").strip().lower()
+    # List/obs TTL follows the poll interval so a just-created trace is
+    # visible on the next snapshot instead of sitting behind a longer cache.
+    ttl = max(0.0, POLL_INTERVAL)
     if which == "phoenix":
-        return PhoenixSource()
+        return PhoenixSource(cache_ttl=ttl)
     if which in ("both", "multi", "all"):
-        return MultiSource([LangfuseSource(), PhoenixSource()])
-    return LangfuseSource()
+        return MultiSource([
+            LangfuseSource(cache_ttl=ttl, poll_cache_ttl=ttl),
+            PhoenixSource(cache_ttl=ttl),
+        ])
+    return LangfuseSource(cache_ttl=ttl, poll_cache_ttl=ttl)
 
 
 def create_app(source: Optional[object] = None) -> FastAPI:
@@ -209,6 +217,12 @@ def create_app(source: Optional[object] = None) -> FastAPI:
                 if r.needs_human]
         return {"count": len(runs), "source": _source_names(src), "runs": [_serialize(r) for r in runs]}
 
+    @app.get("/api/pipeline")
+    def pipeline_ops():
+        """Producer watcher + inbox liveness. Document display stays Langfuse."""
+        ops = hub.pipeline_ops if hub.pipeline_ops.get("configured") else fetch_pipeline_ops()
+        return ops
+
     @app.get("/api/meta")
     def meta():
         # V-23: use PipelineSchema.load() so the MAILROOM_TAXONOMY override is
@@ -231,6 +245,8 @@ def create_app(source: Optional[object] = None) -> FastAPI:
                 "hosted": "/live",
                 "default": "/live" if _edition() in ("hosted", "live", "observatory") else "/",
             },
+            "poll_interval_s": POLL_INTERVAL,
+            "recent_window_s": RECENT_WINDOW,
             "endpoints": API_ENDPOINTS,
         }
 
@@ -249,6 +265,10 @@ def create_app(source: Optional[object] = None) -> FastAPI:
             "recent_window_s": RECENT_WINDOW,
             "trace_limit": TRACE_LIMIT,
             "edition": _edition(),
+            "pipeline_url": bool(
+                os.environ.get("MAILROOM_PIPELINE_URL")
+                or os.environ.get("MAILROOM_PIPELINE_API")
+            ),
         }
         for attr in ("project",):
             if hasattr(src, attr):

@@ -30,6 +30,7 @@ const Obs = (() => {
     metrics: (since = 604800) => get(`/api/metrics?since=${since}`),
     sessions: (limit = 50) => get(`/api/sessions?limit=${limit}`),
     reviewQueue: (since = 604800) => get(`/api/review-queue?since=${since}`),
+    pipeline: () => get("/api/pipeline"),
   };
 
   const fmt = {

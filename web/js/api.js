@@ -180,6 +180,7 @@ const Mailroom = (() => {
     metrics: (since = 604800) => get(`/api/metrics?since=${since}`),
     sessions: (limit = 50) => get(`/api/sessions?limit=${limit}`),
     reviewQueue: (since = 604800) => get(`/api/review-queue?since=${since}`),
+    pipeline: () => get("/api/pipeline"),
   };
 
   const snapshots = {
@@ -193,6 +194,7 @@ const Mailroom = (() => {
     metrics: () => snap("metrics"),
     sessions: () => snap("sessions"),
     reviewQueue: () => snap("review-queue"),
+    pipeline: async () => ({ configured: false, watcher: "snapshot", ok: null }),
   };
 
   function dispatch(name, ...args) {
@@ -207,6 +209,7 @@ const Mailroom = (() => {
     metrics: (...a) => dispatch("metrics", ...a),
     sessions: (...a) => dispatch("sessions", ...a),
     reviewQueue: (...a) => dispatch("reviewQueue", ...a),
+    pipeline: (...a) => dispatch("pipeline", ...a),
   };
 
   const fmt = {

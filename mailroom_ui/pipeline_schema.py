@@ -14,6 +14,9 @@ from typing import Optional
 
 from .models import Phase, Stage
 
+# Verb-first observation names (traced_node) plus LangGraph node names, so
+# a floor envelope never falls through to INBOX/unknown when the producer
+# records the underscored graph id instead of the display span.
 SPAN_STAGE_MAP: dict[str, Stage] = {
     "ingest-document": Stage.INGEST,
     "normalize-intake": Stage.INGEST,
@@ -28,6 +31,20 @@ SPAN_STAGE_MAP: dict[str, Stage] = {
     "compile-report": Stage.COMPILE_REPORT,
     "write-catalog": Stage.CATALOG,
     "archive-document": Stage.ARCHIVE,
+    # LangGraph add_node ids (build_graph.py)
+    "ingest": Stage.INGEST,
+    "classify": Stage.CLASSIFY,
+    "retry_classify": Stage.RETRY_CLASSIFY,
+    "review_classify": Stage.RETRY_CLASSIFY,
+    "extract": Stage.EXTRACT,
+    "retry_extract": Stage.RETRY_EXTRACT,
+    "judge_verify": Stage.JUDGE_VERIFY,
+    "arbiter": Stage.ARBITER,
+    "human_review": Stage.HUMAN_REVIEW,
+    "boss_escalation": Stage.BOSS,
+    "compile_report": Stage.COMPILE_REPORT,
+    "catalog_write": Stage.CATALOG,
+    "archive": Stage.ARCHIVE,
 }
 
 # Langfuse observation types (llm-mailroom observability/tracing.py

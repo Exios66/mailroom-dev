@@ -39,15 +39,22 @@ keys).
    `MAILROOM_POLL_INTERVAL` seconds over a **7-day** window by default
    (`MAILROOM_RECENT_WINDOW=604800`, matching `/api/traces` / `/api/metrics`
    / the TUI). `list_recent_runs` uses **trace-list responses only**
-   ("light" runs) — cheap enough to poll continuously.
+   ("light" runs) — cheap enough to poll continuously. In-flight traces
+   are then **re-enriched every poll** (`inflight_ttl=0`) so a node that
+   just flushed moves the envelope on the next tick; archived/failed runs
+   stay on the 60s detail cache until `updated_at` / stage change.
+   List/obs TTLs follow `MAILROOM_POLL_INTERVAL`.
 2. Each light run is interpreted by `trace_interpreter.interpret_trace` and
    compacted by `poller.floor_payload` (stage, doc type, confidences, verdict,
-   cost, …).
+   cost, …). Optional `MAILROOM_PIPELINE_URL` is fetched the same tick
+   (`GET /health`) and attached as `pipeline` on the WS snapshot — watcher
+   heartbeat and inbox pending, never fabricated envelopes.
 3. Full drill-down (`/api/traces/{id}`) fetches observations + scores on
-   demand via `LangfuseSource.get_run()`; `PollHub` keeps a small per-trace
-   detail cache.
+   demand via `LangfuseSource.get_run()`; pass `force_refresh` for in-flight.
 4. Snapshots are broadcast over WebSocket `/ws`; the SPA renders the floor,
-   sessions, metrics, and console from the same payloads.
+   sessions, metrics, and console from the same payloads. HTTP fallback
+   (pixel console and Observatory) polls traces + `/api/pipeline` at the
+   same interval as the hub when the WebSocket is down.
 
 ## Interpreting traces
 

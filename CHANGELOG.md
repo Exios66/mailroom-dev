@@ -8,6 +8,22 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- **Live conveyor freshness + producer watcher lamp.** In-flight traces are
+  re-enriched every poll (terminal runs stay on the 60s detail cache) so a
+  just-flushed classify/extract/judge span moves the envelope on the next
+  tick instead of sitting on the previous station for a minute. List/obs
+  TTLs match `MAILROOM_POLL_INTERVAL` (3s). WS snapshots carry
+  `poll_interval_s` and `pipeline` ops; the pixel fallback poll uses that
+  interval (was a hard-coded 10s). `GET /api/pipeline` reports llm-mailroom
+  watcher heartbeat + inbox pending when `MAILROOM_PIPELINE_URL` is set
+  (operator liveness, not fabricated document data). Floor gained an INBOX
+  hopper; Observatory/TUI show watcher/inbox; graph node ids
+  (`retry_classify`, `judge_verify`, …) map onto stations.
+
+- **Observatory Inbox tray.** Hosted live board parks `stage=inbox` in its
+  own tray (matching the pixel hopper) instead of mixing those envelopes
+  into Sorter.
+
 - **Reconsideration beyond self-reported confidence.** Archived runs with
   objective misses (judge MISS/PARTIAL, GT class/subclass mismatch,
   extraction score below the low floor, schema/guardrail/parse failures,
@@ -46,6 +62,19 @@ All notable changes to The-Mailroom are documented here, following
   inspector, Observatory inspect dialog, and TUI. Phoenix remaps known
   mailroom names to the same types. Flush/batch knobs stay on the pipeline
   (`LANGFUSE_FLUSH_AT` / `FLUSH_INTERVAL`); this viewer is read-only.
+
+### Fixed
+
+- Pixel console no longer logs `inbox pending: N` on every WebSocket tick;
+  the console line fires only when the count changes. Fallback poll
+  retunes if `poll_interval_s` changes after the timer started.
+- Observatory HTTP fallback now polls traces + `/api/pipeline` at the
+  hub interval when the socket is down (previously a one-shot
+  `refreshTraces` at boot, then silence until reconnect).
+- Langfuse/Phoenix list-cache TTL follows `MAILROOM_POLL_INTERVAL` instead
+  of a hardcoded 3s/5s, so a 1s poll no longer waits on a longer list cache.
+- `GET /api/pipeline` prefers the producer's `checks.watcher` lamp and
+  accepts top-level heartbeat/inbox fields from older health payloads.
 
 ### Changed
 

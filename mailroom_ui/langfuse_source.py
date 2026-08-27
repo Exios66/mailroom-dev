@@ -50,6 +50,10 @@ class TTLCache:
         with self._lock:
             self._data[key] = (time.monotonic() + ttl, value)
 
+    def delete(self, key: str) -> None:
+        with self._lock:
+            self._data.pop(key, None)
+
     def clear(self) -> None:
         with self._lock:
             self._data.clear()
@@ -88,13 +92,14 @@ class LangfuseSource:
         self,
         client: Any = None,
         *,
-        cache_ttl: float = 15.0,
-        poll_cache_ttl: float = 15.0,
+        cache_ttl: float = 3.0,
+        poll_cache_ttl: float = 3.0,
         run_cache_ttl: float = 60.0,
     ) -> None:
-        # V-5: cache TTLs must be >= the poll interval (default 3 s) or every
-        # poll re-fetches the same data — the old 1-2 s TTLs caused ~102-302
-        # Langfuse API calls per poll. Defaults here are deliberately >= 3 s.
+        # List/obs TTL matches MAILROOM_POLL_INTERVAL (default 3 s) so a new
+        # document-pipeline trace appears on the next snapshot instead of
+        # sitting behind a 15 s list cache. Full-run cache stays longer;
+        # the poller force-refreshes in-flight traces.
         self.client = client if client is not None else self._build_client()
         self.available = self.client is not None
         self.cache = TTLCache()
@@ -372,17 +377,28 @@ class LangfuseSource:
         self.cache.set(key, out, self.cache_ttl)
         return out
 
-    def get_run(self, trace_id: str) -> Optional[PipelineRun]:
+    def invalidate_run(self, trace_id: str) -> None:
+        """Drop cached trace/obs/scores/run so the next get_run is live."""
+        if not trace_id:
+            return
+        for prefix in ("run:", "obs:", "scores:", "trace:"):
+            self.cache.delete(f"{prefix}{trace_id}")
+
+    def get_run(self, trace_id: str, *, force_refresh: bool = False) -> Optional[PipelineRun]:
         """Full interpreted pipeline run for one trace (sole source: Langfuse).
 
-        V-5: results are cached for `run_cache_ttl` (>= poll interval) so the
-        poller and the metrics/sessions/review endpoints all share one fetch
-        per run per TTL instead of re-reading observations+scores every poll.
+        V-5: results are cached for `run_cache_ttl` so the poller and the
+        metrics/sessions/review endpoints share one fetch per terminal run.
+        Pass ``force_refresh=True`` for in-flight conveyor traces so a node
+        that just flushed is not stuck on the previous station for 60 s.
         """
         key = f"run:{trace_id}"
-        cached = self.cache.get(key)
-        if cached is not None:
-            return cached
+        if force_refresh:
+            self.invalidate_run(trace_id)
+        else:
+            cached = self.cache.get(key)
+            if cached is not None:
+                return cached
         trace = self.get_trace(trace_id)
         if trace is None:
             return None

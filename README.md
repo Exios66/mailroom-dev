@@ -335,8 +335,9 @@ All knobs live in `.env` (see `.env.example`): Langfuse keys/host
 (`LANGFUSE_HOST`, default `https://us.cloud.langfuse.com`), poll cadence
 (`MAILROOM_POLL_INTERVAL`), recent window (default **7 days**,
 `MAILROOM_RECENT_WINDOW=604800`), trace limit (`MAILROOM_TRACE_LIMIT=200`),
-optional tag/env filters, `MAILROOM_PORT` (default `8001`), and
-`MAILROOM_TAXONOMY`. The GH Pages edition adds `MAILROOM_SOURCE`
+optional tag/env filters, `MAILROOM_PORT` (default `8001`),
+`MAILROOM_TAXONOMY`, and optional `MAILROOM_PIPELINE_URL` (producer watcher
++ inbox liveness). The GH Pages edition adds `MAILROOM_SOURCE`
 (`langfuse|phoenix|both`), `PHOENIX_ENDPOINT` / `PHOENIX_API_KEY` /
 `MAILROOM_PHOENIX_PROJECT`, `MAILROOM_CORS_ORIGINS`, and `MAILROOM_DEBUG`.
 

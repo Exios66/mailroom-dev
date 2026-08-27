@@ -96,16 +96,33 @@ class MultiSource:
                 log.warning("score_configs failed on %s: %s", type(src).__name__, exc)
         return merged
 
-    def get_run(self, trace_id: str) -> Optional[PipelineRun]:
+    def get_run(self, trace_id: str, *, force_refresh: bool = False) -> Optional[PipelineRun]:
         for src in self.sources:
             try:
-                run = src.get_run(trace_id)
+                if force_refresh and hasattr(src, "invalidate_run"):
+                    src.invalidate_run(trace_id)
+                run = src.get_run(trace_id, force_refresh=force_refresh) if force_refresh else src.get_run(trace_id)
+            except TypeError:
+                try:
+                    run = src.get_run(trace_id)
+                except Exception as exc:
+                    log.warning("get_run(%s) failed on %s: %s", trace_id, type(src).__name__, exc)
+                    continue
             except Exception as exc:
                 log.warning("get_run(%s) failed on %s: %s", trace_id, type(src).__name__, exc)
                 continue
             if run is not None:
                 return run
         return None
+
+    def invalidate_run(self, trace_id: str) -> None:
+        for src in self.sources:
+            fn = getattr(src, "invalidate_run", None)
+            if callable(fn):
+                try:
+                    fn(trace_id)
+                except Exception as exc:
+                    log.warning("invalidate_run(%s) failed on %s: %s", trace_id, type(src).__name__, exc)
 
     # ------------------------------------------------------------ sessions
 

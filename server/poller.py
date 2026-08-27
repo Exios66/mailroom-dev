@@ -11,9 +11,13 @@ from typing import Any, Optional
 from fastapi import WebSocket
 
 from mailroom_ui.langfuse_source import LangfuseSource, list_recent_runs
-from mailroom_ui.models import PipelineRun
+from mailroom_ui.models import PipelineRun, Stage
+from mailroom_ui.pipeline_ops import fetch_pipeline_ops
 
 log = logging.getLogger("mailroom.poller")
+
+_TERMINAL_STAGES = {Stage.ARCHIVED.value, Stage.FAILED.value}
+_PARKED_STAGES = {Stage.HUMAN_REVIEW.value}
 
 
 def floor_payload(run: PipelineRun) -> dict[str, Any]:
@@ -60,6 +64,23 @@ def floor_payload(run: PipelineRun) -> dict[str, Any]:
     }
 
 
+def run_fingerprint(run: PipelineRun) -> tuple[Any, ...]:
+    """Light-run identity used to decide whether cached detail is stale."""
+    updated = run.updated_at.isoformat() if run.updated_at else None
+    stage = run.stage.value if run.stage else None
+    try:
+        latency = round(float(run.latency or 0), 2)
+    except (TypeError, ValueError):
+        latency = 0.0
+    return (updated, stage, latency, run.error_message)
+
+
+def is_conveyor_hot(run: PipelineRun) -> bool:
+    """True when the envelope is still moving and must be re-enriched often."""
+    st = run.stage.value if run.stage else "unknown"
+    return st not in _TERMINAL_STAGES and st not in _PARKED_STAGES
+
+
 class PollHub:
     """One poll loop broadcasting snapshots to all connected clients."""
 
@@ -71,12 +92,18 @@ class PollHub:
         window: float = 7 * 86400,
         limit: int = 100,
         detail_ttl: float = 60.0,
+        inflight_ttl: float = 0.0,
+        review_ttl: float = 15.0,
     ) -> None:
         self.source = source
         self.interval = interval
         self.window = window
         self.limit = limit
         self.detail_ttl = detail_ttl
+        # 0 = re-enrich every poll so a just-flushed node moves the envelope
+        # on the next tick instead of sitting on the previous station.
+        self.inflight_ttl = inflight_ttl
+        self.review_ttl = review_ttl
         self.clients: set[WebSocket] = set()
         self.snapshot: list[dict[str, Any]] = []
         # Last successful enriched PipelineRun list (same traces as snapshot).
@@ -84,14 +111,18 @@ class PollHub:
         # walking Langfuse again — a 2-minute sequential enrich blocked the
         # inspector overlay on the single uvicorn worker.
         self.runs: list[PipelineRun] = []
-        self._details: dict[str, tuple[float, dict[str, Any]]] = {}
+        self.pipeline_ops: dict[str, Any] = {"configured": False, "watcher": "unconfigured"}
+        self._details: dict[str, tuple[float, dict[str, Any], tuple[Any, ...]]] = {}
         self._task: Optional[asyncio.Task] = None
         self._stop = asyncio.Event()
 
     async def start(self) -> None:
         if self._task is None:
             self._task = asyncio.create_task(self._run())
-            log.info("poller started (interval=%ss window=%ss)", self.interval, self.window)
+            log.info(
+                "poller started (interval=%ss window=%ss inflight_ttl=%ss)",
+                self.interval, self.window, self.inflight_ttl,
+            )
 
     async def stop(self) -> None:
         self._stop.set()
@@ -106,15 +137,29 @@ class PollHub:
     async def connect(self, ws: WebSocket) -> None:
         await ws.accept()
         self.clients.add(ws)
-        await ws.send_json({"type": "snapshot", "runs": self.snapshot})
+        await ws.send_json(self._snapshot_message(stale=False))
 
     def disconnect(self, ws: WebSocket) -> None:
         self.clients.discard(ws)
 
+    def _snapshot_message(self, *, stale: bool) -> dict[str, Any]:
+        return {
+            "type": "snapshot",
+            "runs": self.snapshot,
+            "stale": stale,
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "poll_interval_s": self.interval,
+            "pipeline": self.pipeline_ops,
+        }
+
     async def _run(self) -> None:
         while not self._stop.is_set():
             try:
-                runs = await asyncio.to_thread(self._fetch)
+                runs, ops = await asyncio.gather(
+                    asyncio.to_thread(self._fetch),
+                    asyncio.to_thread(fetch_pipeline_ops),
+                )
+                self.pipeline_ops = ops
                 # V-4: a partial Langfuse failure must NOT wipe the floor —
                 # keep the last good snapshot and mark it stale so the UI can
                 # show a staleness badge instead of a blank screen with a
@@ -122,12 +167,7 @@ class PollHub:
                 # []), meaning "no fresh data".
                 if runs is not None:
                     self.snapshot = runs
-                payload = {
-                    "type": "snapshot",
-                    "runs": self.snapshot,
-                    "stale": runs is None,
-                    "fetched_at": datetime.now(timezone.utc).isoformat(),
-                }
+                payload = self._snapshot_message(stale=runs is None)
                 dead: list[WebSocket] = []
                 for ws in list(self.clients):
                     try:
@@ -142,6 +182,27 @@ class PollHub:
                 await asyncio.wait_for(self._stop.wait(), timeout=self.interval)
             except asyncio.TimeoutError:
                 pass
+
+    def _needs_refresh(
+        self,
+        light: PipelineRun,
+        cached: Optional[tuple[float, dict[str, Any], tuple[Any, ...]]],
+        now: float,
+        prev: Optional[PipelineRun],
+    ) -> bool:
+        if cached is None:
+            return True
+        ts, _payload, fp = cached
+        if fp != run_fingerprint(light):
+            return True
+        age = now - ts
+        probe = prev or light
+        if is_conveyor_hot(probe) or is_conveyor_hot(light):
+            return age >= self.inflight_ttl
+        st = (probe.stage.value if probe.stage else "") or (light.stage.value if light.stage else "")
+        if st in _PARKED_STAGES or probe.needs_human:
+            return age >= self.review_ttl
+        return age >= self.detail_ttl
 
     def _fetch(self) -> Optional[list[dict[str, Any]]]:
         # Langfuse timestamps are UTC: the window must be UTC-aware or a
@@ -164,19 +225,32 @@ class PollHub:
                 continue
             current_ids.add(run.trace_id)
             cached = self._details.get(run.trace_id)
-            payload = None
+            prev = prev_by_id.get(run.trace_id)
             chosen: PipelineRun = run
-            if cached is not None and now - cached[0] < self.detail_ttl:
+            payload: Optional[dict[str, Any]] = None
+            if not self._needs_refresh(run, cached, now, prev):
                 payload = cached[1]
-                chosen = prev_by_id.get(run.trace_id) or run
+                chosen = prev or run
             else:
+                force = cached is not None
                 try:
-                    full = self.source.get_run(run.trace_id)
+                    getter = getattr(self.source, "get_run", None)
+                    if force and hasattr(self.source, "invalidate_run"):
+                        try:
+                            self.source.invalidate_run(run.trace_id)
+                        except Exception:
+                            pass
+                    full = getter(run.trace_id, force_refresh=force) if getter else None
+                except TypeError:
+                    try:
+                        full = self.source.get_run(run.trace_id)
+                    except Exception:
+                        full = None
                 except Exception:
                     full = None
                 chosen = full if full is not None else run
                 payload = floor_payload(chosen)
-                self._details[run.trace_id] = (now, payload)
+                self._details[run.trace_id] = (now, payload, run_fingerprint(run))
             full_runs.append(chosen)
             out.append(payload)
         for tid in list(self._details):

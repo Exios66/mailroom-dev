@@ -1,7 +1,8 @@
 /* Mailroom Observatory app shell: views, live board, replay, inspector, debug. */
 const App = (() => {
   const STATIONS = [
-    { key: "sorter", label: "Sorter", stages: ["inbox", "ingest", "classify", "retry_classify", "review_classify", "unknown"] },
+    { key: "inbox", label: "Inbox", stages: ["inbox"] },
+    { key: "sorter", label: "Sorter", stages: ["ingest", "classify", "retry_classify", "review_classify", "unknown"] },
     { key: "extract", label: "Extract", stages: ["extract", "retry_extract"] },
     { key: "judge", label: "Judge", stages: ["judge_verify", "arbiter"] },
     { key: "boss", label: "Boss", stages: ["boss"] },
@@ -13,6 +14,9 @@ const App = (() => {
 
   const SPAN_STAGE = {
     "ingest-document": "ingest",
+    "normalize-intake": "ingest",
+    "transcribe-pdf": "ingest",
+    "extract-image-text": "ingest",
     "classify-document": "classify",
     "judge-verify": "judge_verify",
     "arbitrate-verdict": "arbiter",
@@ -22,6 +26,19 @@ const App = (() => {
     "compile-report": "report",
     "write-catalog": "catalog",
     "archive-document": "archive",
+    ingest: "ingest",
+    classify: "classify",
+    retry_classify: "retry_classify",
+    review_classify: "retry_classify",
+    extract: "extract",
+    retry_extract: "retry_extract",
+    judge_verify: "judge_verify",
+    arbiter: "arbiter",
+    human_review: "review",
+    boss_escalation: "boss",
+    compile_report: "report",
+    catalog_write: "catalog",
+    archive: "archive",
   };
 
   const views = ["pipeline", "review", "history", "matters", "metrics", "debug"];
@@ -32,6 +49,9 @@ const App = (() => {
   let replayTimers = [];
   let lastFocus = null;
   let socketLive = false;
+  let pollIntervalMs = 3000;
+  let fallbackTimer = null;
+  let fallbackPollMs = 0;
 
   const $ = (id) => document.getElementById(id);
 
@@ -162,6 +182,22 @@ const App = (() => {
     bindCards(board);
     const count = need("run-count");
     if (count) count.textContent = `${runs.length} run${runs.length === 1 ? "" : "s"} in the live window`;
+  }
+
+  function applyPipelineOps(ops) {
+    const el = need("pipeline-ops");
+    if (!el) return;
+    if (!ops || !ops.configured) {
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
+    const w = ops.watcher === "live" ? "Watcher live"
+      : ops.watcher === "stale" ? "Watcher stale"
+      : "Watcher down";
+    const inbox = ops.inbox_pending == null ? "?" : ops.inbox_pending;
+    const paused = ops.ingestion_paused ? " · ingestion paused" : "";
+    el.textContent = `${w} · inbox ${inbox}${paused}`;
   }
 
   function bindCards(root) {
@@ -624,16 +660,37 @@ const App = (() => {
     refreshTraces();
   }
 
+  function applyPollInterval(seconds) {
+    if (typeof seconds === "number" && seconds > 0) {
+      pollIntervalMs = Math.max(1000, Math.round(seconds * 1000));
+    }
+  }
+
   async function refreshTraces() {
     try {
       const data = await Obs.api.traces(604800, 200);
       applyRuns(data.runs || []);
       showAlert("");
       dbg("traces", { where: "floor", count: (data.runs || []).length });
+      try {
+        applyPipelineOps(await Obs.api.pipeline());
+      } catch (_e) { /* producer URL optional */ }
     } catch (err) {
       dbg("traces-error", { message: err.message });
       showAlert(`Could not load traces — ${err.message}`);
     }
+  }
+
+  function startFallbackPolling() {
+    const tick = async () => {
+      if (socketLive) return;
+      await refreshTraces();
+    };
+    if (fallbackTimer && fallbackPollMs === pollIntervalMs) return;
+    if (fallbackTimer) clearInterval(fallbackTimer);
+    fallbackPollMs = pollIntervalMs;
+    fallbackTimer = setInterval(tick, pollIntervalMs);
+    dbg("poll", { where: "fallback", ms: pollIntervalMs });
   }
 
   async function checkHealth() {
@@ -647,6 +704,7 @@ const App = (() => {
         if (!meta) {
           try {
             meta = await Obs.api.meta();
+            applyPollInterval(meta.poll_interval_s);
             dbg("meta", { edition: meta.edition, version: meta.version });
             applyEditionNote();
           } catch (e) {
@@ -676,6 +734,9 @@ const App = (() => {
       else setSource("stale", "Socket disconnected — reconnecting");
     } else if (msg.type === "snapshot") {
       applyRuns(msg.runs || []);
+      applyPipelineOps(msg.pipeline);
+      applyPollInterval(msg.poll_interval_s);
+      if (!socketLive) startFallbackPolling();
       if (msg.stale) setSource("stale", "Live · last snapshot is stale");
     }
   }
@@ -841,8 +902,12 @@ const App = (() => {
 
     checkHealth().then((ok) => {
       if (!ok) return;
+      applyPollInterval(meta && meta.poll_interval_s);
       refreshTraces();
       Obs.connectWS(onMessage);
+      setTimeout(() => {
+        if (!socketLive) startFallbackPolling();
+      }, 8000);
     });
     setInterval(checkHealth, 10000);
   }

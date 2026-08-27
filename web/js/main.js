@@ -16,6 +16,9 @@ const Main = (() => {
   let lastSnapshot = [];
   let lastIds = new Set();
   let byId = new Map();
+  let lastPipeline = { configured: false };
+  let lastFetchedAt = null;
+  let pollIntervalMs = 3000;
   let pollTimer = null;
   let fallbackTimer = null;
   let activeTab = "floor";
@@ -90,6 +93,17 @@ const Main = (() => {
       Floor.setSource(wsOk ? "green" : "gold");
       stopDemo();
     }
+  }
+
+  function pipelineStrip(ops) {
+    if (!ops || !ops.configured) return "";
+    const w = ops.watcher === "live" ? "WATCHER LIVE"
+      : ops.watcher === "stale" ? "WATCHER STALE"
+      : ops.watcher === "missing" ? "WATCHER DOWN"
+      : "WATCHER ?";
+    const inbox = ops.inbox_pending == null ? "?" : String(ops.inbox_pending);
+    const paused = ops.ingestion_paused ? " · PAUSED" : "";
+    return ` · ${w} · INBOX ${inbox}${paused}`;
   }
 
   function startDemo() {
@@ -204,6 +218,25 @@ const Main = (() => {
     renderStatus();
   }
 
+  function applyPipeline(ops) {
+    if (!ops) return;
+    const prev = lastPipeline || {};
+    lastPipeline = ops;
+    if (ops.configured && prev.watcher && prev.watcher !== ops.watcher) {
+      ConsoleView.log(`watcher ${prev.watcher} → ${ops.watcher}`, ops.watcher === "live" ? "c-ok" : "c-warn");
+    }
+    const prevInbox = prev.inbox_pending;
+    if (ops.configured && typeof ops.inbox_pending === "number"
+        && ops.inbox_pending !== prevInbox) {
+      if (ops.inbox_pending > 0) {
+        ConsoleView.log(`inbox pending: ${ops.inbox_pending}`, "c-dim");
+      } else if (typeof prevInbox === "number" && prevInbox > 0) {
+        ConsoleView.log("inbox empty", "c-dim");
+      }
+    }
+    renderStatus();
+  }
+
   function renderStatus() {
     const envs = new Set();
     for (const r of lastSnapshot) {
@@ -211,12 +244,23 @@ const Main = (() => {
       if (env) envs.add(env);
     }
     const envTxt = envs.size ? ` · ENV: ${[...envs].sort().join(",")}` : "";
-    statusRightEl.textContent = `RUNS: ${lastSnapshot.length}${envTxt}`;
+    const pipe = pipelineStrip(lastPipeline);
+    let updated = "";
+    if (lastFetchedAt) {
+      const t = new Date(lastFetchedAt);
+      if (!Number.isNaN(t.getTime())) updated = ` · UPDATED ${t.toLocaleTimeString()}`;
+    }
+    statusRightEl.textContent = `RUNS: ${lastSnapshot.length}${envTxt}${pipe}${updated}`;
   }
 
   async function loadMeta() {
     try {
       Mailroom.meta = await Mailroom.api.meta();
+      const poll = Mailroom.meta && Mailroom.meta.poll_interval_s;
+      if (typeof poll === "number" && poll > 0) {
+        pollIntervalMs = Math.max(1000, Math.round(poll * 1000));
+        if (fallbackTimer) startFallbackPolling();
+      }
     } catch (e) {
       Mailroom.showError(`meta: ${e.message || e}`);
     }
@@ -270,34 +314,44 @@ const Main = (() => {
       applySource();
     } else if (msg.type === "snapshot") {
       applySnapshot(msg.runs || []);
+      if (msg.pipeline) applyPipeline(msg.pipeline);
+      if (msg.fetched_at) lastFetchedAt = msg.fetched_at;
+      if (typeof msg.poll_interval_s === "number" && msg.poll_interval_s > 0) {
+        pollIntervalMs = Math.max(1000, Math.round(msg.poll_interval_s * 1000));
+        if (fallbackTimer) startFallbackPolling();
+      }
       // V-14: surface staleness + last-updated so a frozen floor with a green
       // lamp is distinguishable from a live one.
       if (msg.stale) {
         sourceLabelEl.textContent = "SOURCE: LANGFUSE (STALE)";
         sourceLabelEl.className = "st-warn mono";
       }
-      if (msg.fetched_at) {
-        const t = new Date(msg.fetched_at);
-        statusRightEl.textContent =
-          (statusRightEl.textContent || "") + ` · UPDATED ${t.toLocaleTimeString()}`;
-      }
+      renderStatus();
     }
   }
 
+  let fallbackPollMs = 0;
+
   function startFallbackPolling() {
-    if (fallbackTimer) return;
-    fallbackTimer = setInterval(async () => {
+    const tick = async () => {
       if (!langfuseOk || wsOk) return;
       try {
         const data = await Mailroom.api.traces(604800, 200);
         applySnapshot(data.runs || []);
+        try {
+          applyPipeline(await Mailroom.api.pipeline());
+        } catch (_e) { /* pipeline URL optional */ }
       } catch (err) {
         const msg = err.message || String(err);
         ConsoleView.log(`poll fallback failed: ${msg}`, "c-warn");
         Mailroom.showError(`fallback poll: ${msg}`);
       }
-    }, 10000);
-    ConsoleView.log("polling /api/traces as fallback", "c-dim");
+    };
+    if (fallbackTimer && fallbackPollMs === pollIntervalMs) return;
+    if (fallbackTimer) clearInterval(fallbackTimer);
+    fallbackPollMs = pollIntervalMs;
+    fallbackTimer = setInterval(tick, pollIntervalMs);
+    ConsoleView.log(`polling /api/traces as fallback (${pollIntervalMs}ms)`, "c-dim");
   }
 
   function switchView(name) {

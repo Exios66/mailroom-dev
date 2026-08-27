@@ -48,8 +48,11 @@ const Floor = (() => {
     if (st === "archived") {
       return { x: 1500, y: 440, remove: true };
     }
+    if (st === "inbox") {
+      return { x: 24, y: ENV_Y };
+    }
     if (st === "classify" || st === "retry_classify" || st === "review_classify"
-        || st === "ingest" || st === "inbox" || st === "unknown") {
+        || st === "ingest" || st === "unknown") {
       return { x: STATIONS[0].x, y: ENV_Y };
     }
     if (st === "extract" || st === "retry_extract") {
@@ -105,6 +108,21 @@ const Floor = (() => {
     ctx.fillRect(x, y + ENV_H - 1, ENV_W, 1);
     ctx.fillRect(x, y, 1, ENV_H);
     ctx.fillRect(x + ENV_W - 1, y, 1, ENV_H);
+  }
+
+  function drawInboxHopper() {
+    // Files that have a Langfuse trace at stage=inbox sit in this hopper
+    // before the SORTER desk (uploads without a trace show on the ops strip).
+    ctx.fillStyle = "#3a2f22";
+    ctx.fillRect(4, ENV_Y + ENV_H + 4, 56, 4);
+    ctx.fillStyle = "#a48c6d";
+    ctx.fillRect(4, ENV_Y + ENV_H + 4, 56, 1);
+    ctx.fillStyle = "#7d97b5";
+    ctx.fillRect(8, ENV_Y - 20, 48, 4);
+    ctx.font = "bold 10px 'Courier New', monospace";
+    ctx.fillStyle = "#7d97b5";
+    ctx.textAlign = "center";
+    ctx.fillText("INBOX", 32, ENV_Y - 26);
   }
 
   function drawStation(s) {
@@ -294,6 +312,7 @@ const Floor = (() => {
   function draw(t) {
     ctx.clearRect(0, 0, W, H);
     drawBackground();
+    drawInboxHopper();
     for (const s of STATIONS) drawStation(s);
     drawConveyor();
     drawEnvelopes(t);

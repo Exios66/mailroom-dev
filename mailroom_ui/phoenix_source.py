@@ -425,11 +425,20 @@ class PhoenixSource:
         """Phoenix carries no categorical configs; labels are stored directly."""
         return {}
 
-    def get_run(self, trace_id: str) -> Optional[PipelineRun]:
+    def invalidate_run(self, trace_id: str) -> None:
+        if not trace_id:
+            return
+        for prefix in ("run:", "obs:", "scores:", "trace:"):
+            self.cache.delete(f"{prefix}{trace_id}")
+
+    def get_run(self, trace_id: str, *, force_refresh: bool = False) -> Optional[PipelineRun]:
         key = f"run:{trace_id}"
-        cached = self.cache.get(key)
-        if cached is not None:
-            return cached
+        if force_refresh:
+            self.invalidate_run(trace_id)
+        else:
+            cached = self.cache.get(key)
+            if cached is not None:
+                return cached
         trace = self.get_trace(trace_id)
         if trace is None:
             return None

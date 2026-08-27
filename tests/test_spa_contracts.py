@@ -76,6 +76,27 @@ def test_archive_station_is_a_real_target():
     assert "STATIONS[5].x" in FLOOR
     assert 'st === "catalog" || st === "archive"' in FLOOR
     assert "catalog: 5, archive: 5, archived: 5" in FLOOR
+    assert "drawInboxHopper" in FLOOR
+    assert 'st === "inbox"' in FLOOR
+    assert "INBOX" in FLOOR
+
+
+def test_live_poll_matches_server_interval_and_pipeline_ops():
+    """Fallback poll used to be a hard-coded 10s, so new traces lagged the
+    3s WebSocket snapshot. Pipeline watcher/inbox rides the same snapshot."""
+    assert "pollIntervalMs" in MAIN
+    assert "applyPipeline" in MAIN
+    assert "ops.inbox_pending !== prevInbox" in MAIN
+    assert "fallbackPollMs === pollIntervalMs" in MAIN
+    assert 'dispatch("pipeline"' in API
+    assert 'get("/api/pipeline")' in API
+    hosted_app = (ROOT / "hosted" / "js" / "app.js").read_text()
+    hosted_client = (ROOT / "hosted" / "js" / "client.js").read_text()
+    assert '"normalize-intake": "ingest"' in hosted_app
+    assert "applyPipelineOps" in hosted_app
+    assert "startFallbackPolling" in hosted_app
+    assert '{ key: "inbox", label: "Inbox", stages: ["inbox"] }' in hosted_app
+    assert 'get("/api/pipeline")' in hosted_client
 
 
 def test_error_banner_is_outside_overflow_hidden_screen():

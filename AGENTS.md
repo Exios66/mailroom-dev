@@ -81,7 +81,7 @@ scripts/publish_pages.sh       # build site/ + push gh-pages:/docs (NO Actions;
 
 - `.env` is loaded by `server/main.py:run()` via `load_dotenv()`; if you launch uvicorn directly (`uvicorn server.main:app`) you must export the vars yourself. `LangfuseSource` reads `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST` (default `https://us.cloud.langfuse.com`).
 - This repo uses **`LANGFUSE_HOST`** (SDK convention) while Langfuse docs/CLI use `LANGFUSE_BASE_URL` — if your shell exports `BASE_URL`, set `HOST` to match.
-- All `MAILROOM_*` knobs (`MAILROOM_POLL_INTERVAL`, `MAILROOM_RECENT_WINDOW`, `MAILROOM_TRACE_LIMIT`, `MAILROOM_TRACE_TAGS`, `MAILROOM_TRACE_ENVIRONMENTS`, `MAILROOM_PORT`, `MAILROOM_TAXONOMY`, `MAILROOM_API_URL`) are documented in `.env.example`; poller/server read them at startup — restart to change.
+- All `MAILROOM_*` knobs (`MAILROOM_POLL_INTERVAL`, `MAILROOM_RECENT_WINDOW`, `MAILROOM_TRACE_LIMIT`, `MAILROOM_TRACE_TAGS`, `MAILROOM_TRACE_ENVIRONMENTS`, `MAILROOM_PORT`, `MAILROOM_TAXONOMY`, `MAILROOM_PIPELINE_URL`, `MAILROOM_API_URL`) are documented in `.env.example`; poller/server read them at startup — restart to change.
 - `pipeline_schema.py` is cached at process level — editing `taxonomy.yaml` or the mirror requires a restart.
 
 ## Testing quirks
