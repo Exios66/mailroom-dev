@@ -138,7 +138,8 @@ AGENTS: dict[str, dict[str, str]] = {
 }
 
 # Live taxonomy classes that dispatch to a specialist (llm-mailroom v0.5+ /
-# llm-dojo-scoring LIVE_DOC_TYPES). `merger_agreement` is an HF/sorter alias
+# llm-dojo-scoring LIVE_DOC_TYPES, catalogs copied from `@v0.11.0`; T0 names
+# unchanged from v0.10.0). `merger_agreement` is an HF/sorter alias
 # that extracts through contracts; `unknown` is a routing token, not a class.
 LIVE_DOC_TYPES: tuple[str, ...] = (
     "contract",
