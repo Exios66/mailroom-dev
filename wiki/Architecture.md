@@ -197,6 +197,14 @@ wrong archive cannot look like a finished case. Cause tokens live in
 `pipeline/reconsideration.py`, which also parks GT misses before extract
 and withholds catalog writes when `compile_report` fails).
 
+Operators resolve those items from the REVIEW desk (pixel cards, inspector,
+Observatory, or `mailroom-tui --resolve`). The visualizer proxies
+`POST /api/review/resolve` to llm-mailroom: `disposition=resume` re-extracts
+a parked `stage=review` document; `record` appends a hash-chained audit row
+without moving the file; `requeue` copies the source file back to the inbox.
+Requires `MAILROOM_PIPELINE_URL` + `MAILROOM_PIPELINE_TOKEN`. Display data
+stays Langfuse-only — the producer token never leaves the visualizer server.
+
 ## Demos & screenshots
 
 Stills of every pixel / Observatory / TUI desk live in `docs/screenshots/`.

@@ -147,6 +147,7 @@ const Inspector = (() => {
       ["user", run.user_id || "—"],
       ["release", run.release || "—"],
       ["filename", run.filename || "—"],
+      ["producer doc id", run.doc_id || "—"],
       ["doc type", run.doc_type || "—"],
       ["subclass", run.doc_subclass || run.contract_subtype || "—"],
       ["expected class", run.expected_hf_class || "—"],
@@ -237,6 +238,7 @@ const Inspector = (() => {
         <div class="insp-kv">${kv}</div>
       </div>
       ${errorBlock}
+      ${Mailroom.reviewPanel(run)}
       <div class="insp-section">
         <h3>OBSERVATIONS</h3>
         <div class="insp-spans">${spansHtml}</div>
@@ -250,6 +252,7 @@ const Inspector = (() => {
         ${scoresHtml}
       </div>` : ""}
       ${suiteHtml}`;
+    Mailroom.bindReviewForms(bodyEl);
   }
 
   function open(traceId) {

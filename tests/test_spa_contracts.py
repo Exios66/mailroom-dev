@@ -25,6 +25,11 @@ def test_review_queue_dispatch_uses_object_key():
     assert "pullServer" in API and "pushClient" in API
     assert 'url("/api/debug/bundle")' in API
     assert 'dispatch("review-queue"' not in API
+    assert 'dispatch("reviewResolve"' in API
+    assert 'post("/api/review/resolve"' in API
+    assert "function reviewPanel" in API
+    assert "function bindReviewForms" in API
+    assert "snapshot mode is read-only — review resolve needs a live API" in API
 
 
 def test_snapshot_fetches_are_same_origin_not_api_base():
@@ -97,6 +102,9 @@ def test_live_poll_matches_server_interval_and_pipeline_ops():
     assert "startFallbackPolling" in hosted_app
     assert '{ key: "inbox", label: "Inbox", stages: ["inbox"] }' in hosted_app
     assert 'get("/api/pipeline")' in hosted_client
+    assert "reviewResolve" in hosted_client
+    assert "function reviewForm" in hosted_app
+    assert 'data-decision="approved"' in hosted_app
 
 
 def test_error_banner_is_outside_overflow_hidden_screen():
@@ -119,6 +127,9 @@ def test_desk_tabs_show_loading_placeholder():
     metrics = (ROOT / "web" / "js" / "metrics.js").read_text()
     history = (ROOT / "web" / "js" / "history.js").read_text()
     assert "LOADING REVIEW QUEUE FROM LANGFUSE" in review
+    assert "Mailroom.reviewPanel(r)" in review
+    assert 'data-decision="approved"' in API
+    assert "stopPropagation" in API
     assert "LOADING SESSIONS FROM LANGFUSE" in sessions
     assert "LOADING METRICS FROM LANGFUSE" in metrics
     assert "LOADING RUN HISTORY FROM LANGFUSE" in history
@@ -134,6 +145,8 @@ def test_inspector_renders_typed_observations():
     assert "obsTypeChip" in inspector
     assert "run.user_id" in inspector and "run.release" in inspector
     assert "run.doc_subclass" in inspector
+    assert "run.doc_id" in inspector
+    assert "Mailroom.reviewPanel(run)" in inspector
     assert "run.expected_subclass" in inspector
     assert "run.intake_messy" in inspector
     assert "SUITE EXTRAS" in inspector

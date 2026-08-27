@@ -15,6 +15,7 @@ from tui.mailroom_console import (
     floor_table,
     inspect_panels,
     metrics_table,
+    post_json,
     review_table,
     runs_to_banners,
     sessions_table,
@@ -78,6 +79,7 @@ def test_review_table_shows_reconsider_causes():
     text = render(table)
     assert "reconsider:" in text
     assert "MISS" in text
+    assert "mailroom-tui --resolve" in text
 
 
 
@@ -129,6 +131,16 @@ def test_inspect_panels_show_subclass_and_intake():
     assert "license" in text
     assert "INTAKE MESSY" in text
     assert "deterministic" in text
+
+
+def test_inspect_panels_show_doc_id():
+    text = "\n".join(render(p) for p in inspect_panels(dict(RUN, doc_id="doc-abc")))
+    assert "DOC ID" in text
+    assert "doc-abc" in text
+
+
+def test_post_json_is_exported():
+    assert callable(post_json)
 
 
 def test_station_map_covers_stages():

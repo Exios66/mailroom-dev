@@ -24,7 +24,7 @@ open exactly one specialty skill. Companion to
 | `live-floor` | Poller, WS, watcher/inbox lamp |
 | `pipeline-schema-sync` | Mirror `llm-mailroom` topology |
 | `gh-pages` | Deploy-from-branch snapshot (no Actions) |
-| `tui` | `mailroom-tui` (`MAILROOM_API_URL` → this visualizer) |
+| `tui` | `mailroom-tui` (`MAILROOM_API_URL` → this visualizer; `--resolve` via `/api/review/resolve`) |
 
 ## Sister repo: `llm-mailroom` (the pipeline)
 
@@ -68,11 +68,13 @@ scripts/publish_pages.sh       # build site/ + push gh-pages:/docs (NO Actions;
   - `langfuse_source.py` — Langfuse SDK adapter: `client.api.trace.list/get`, `client.api.observations.get_many`, `client.api.scores.get_many`, `client.api.sessions.list/get`; `TTLCache`; `LangfuseUnavailable`. `list_recent_runs()` uses trace-list responses only (cheap "light" runs for the floor); `get_run()` fetches observations+scores for drill-down.
   - `trace_interpreter.py` — `interpret_trace(trace, observations?, scores?)` → `PipelineRun`. Accepts **both v2/v3 snake_case and v4 camelCase** observation shapes (see SDK tolerance). Light runs (no observations arg) have empty span/generation detail. Re-run clustering: deterministic trace ids are reused by pilot/attempt re-runs, so a trace can carry several full runs — observations are clustered by time gaps (`RUN_GAP_S`) and only the latest cluster is kept.
   - `pipeline_schema.py` — topology mirror (see sister-repo section).
-  - `models.py` — pydantic: `PipelineRun` (`review_causes`, `needs_reconsideration`, `needs_human` includes archived objective misses), `NodeSpan`, `Generation`, `Score`, `SessionSummary`, `Metrics`, `Stage`, `Phase`.
+  - `models.py` — pydantic: `PipelineRun` (`doc_id`, `review_causes`, `needs_reconsideration`, `needs_human` includes archived objective misses), `NodeSpan`, `Generation`, `Score`, `SessionSummary`, `Metrics`, `Stage`, `Phase`.
   - `reconsideration.py` — objective review causes (GT miss, judge MISS/PARTIAL, extraction score floor, schema/guardrail/parse, incomplete reporting). Never uses self-reported confidence.
+  - `pipeline_ops.py` — producer watcher/inbox liveness (`MAILROOM_PIPELINE_URL`).
+  - `review_actions.py` — server-side proxy to llm-mailroom `GET /lookup`, `POST /review/{doc_id}/resolve` (`disposition=resume|record|requeue`), `GET /audit/{doc_id}`. Missing URL/token is a clear error, never a fabricated catalog row.
   - `metrics.py` — `compute_metrics()` aggregations (counts by stage/verdict, cost, tokens, p95 generation latency, per-doc-type).
-- `server/` — FastAPI, read-only:
-  - `main.py` — `/api/health`, `/api/traces[?since&limit&stage&environment]`, `/api/traces/{id}` (full), `/api/metrics`, `/api/sessions[/{id}]`, `/api/review-queue`, `/api/meta`, `/api/debug/{logs,source,bundle,client}`, WebSocket `/ws`; mounts `web/` at `/static` (pixel console at `/`) and `hosted/` at `/live` + `/live/static`. `MAILROOM_EDITION=hosted` serves the Observatory on `/`. Browser never holds Langfuse keys — the backend proxies everything.
+- `server/` — FastAPI (Langfuse reads + producer operator proxy):
+  - `main.py` — `/api/health`, `/api/traces[?since&limit&stage&environment]`, `/api/traces/{id}` (full), `/api/metrics`, `/api/sessions[/{id}]`, `/api/review-queue`, `/api/review/context`, `POST /api/review/resolve`, `/api/review/audit`, `/api/meta`, `/api/debug/{logs,source,bundle,client}`, `/api/pipeline`, WebSocket `/ws`; mounts `web/` at `/static` (pixel console at `/`) and `hosted/` at `/live` + `/live/static`. `MAILROOM_EDITION=hosted` serves the Observatory on `/`. Browser never holds Langfuse or producer keys — the backend proxies everything, including human-review resolve to llm-mailroom.
   - `hosted.py` — `mailroom-hosted` entry: binds `0.0.0.0`, edition=hosted.
   - `poller.py` — `PollHub`: background poll loop → compact `floor_payload` snapshots broadcast to all WS clients; full detail cached per trace with `detail_ttl`.
 - `hosted/` — Mailroom Observatory (public hosted edition): modern accessible SPA, distinct from the pixel console / TUI / GH Pages snapshot. Vanilla HTML/CSS/JS, no build step. Debug desk + `hosted/js/debug.js` (`window.__OBSERVATORY_DEBUG__`) records fetches, WebSocket frames, and uncaught errors.

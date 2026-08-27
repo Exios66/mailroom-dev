@@ -22,6 +22,28 @@ const Obs = (() => {
     return res.json();
   }
 
+  async function post(path, body) {
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(body || {}),
+    });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const payload = await res.json();
+        const msg = payload && (payload.detail || payload.error);
+        if (msg != null) {
+          detail = ` — ${typeof msg === "string" ? msg : JSON.stringify(msg)}`;
+        }
+      } catch (e) { /* non-JSON error body */ }
+      const err = new Error(`HTTP ${res.status} ${path}${detail}`);
+      dbg("fetch-error", { url: path, status: res.status, message: err.message, where: "Obs.post" });
+      throw err;
+    }
+    return res.json();
+  }
+
   const api = {
     health: () => get("/api/health"),
     meta: () => get("/api/meta"),
@@ -31,6 +53,16 @@ const Obs = (() => {
     sessions: (limit = 50) => get(`/api/sessions?limit=${limit}`),
     reviewQueue: (since = 604800) => get(`/api/review-queue?since=${since}`),
     pipeline: () => get("/api/pipeline"),
+    reviewContext: (opts = {}) => {
+      const q = new URLSearchParams();
+      if (opts.trace_id) q.set("trace_id", opts.trace_id);
+      if (opts.filename) q.set("filename", opts.filename);
+      if (opts.doc_id) q.set("doc_id", opts.doc_id);
+      const qs = q.toString();
+      return get(`/api/review/context${qs ? `?${qs}` : ""}`);
+    },
+    reviewResolve: (body) => post("/api/review/resolve", body),
+    reviewAudit: (docId) => get(`/api/review/audit?doc_id=${encodeURIComponent(docId)}`),
   };
 
   const fmt = {

@@ -69,3 +69,7 @@ def test_router_encodes_langfuse_default_and_no_node():
         encoding="utf-8"
     )
     assert "not served here" in ollama.lower() or "not part of The-Mailroom" in ollama
+    tui = (ROOT / ".cursor" / "skills" / "tui" / "SKILL.md").read_text(encoding="utf-8")
+    assert "--resolve" in tui
+    assert "MAILROOM_API_URL" in tui
+    assert "/api/review/resolve" in router

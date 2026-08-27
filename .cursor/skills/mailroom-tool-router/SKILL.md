@@ -23,6 +23,7 @@ this visualizer.
 | Pixel conveyor / SPA | `web/` vanilla HTML/CSS/JS | [pixel-console](../pixel-console/SKILL.md) | npm / webpack / React |
 | Public hosted desk | `hosted/` + `mailroom-hosted` | [observatory](../observatory/SKILL.md) | Treating GH Pages as the Observatory |
 | Live poll, WS, watcher lamp | `server/poller.py`, `/api/pipeline` | [live-floor](../live-floor/SKILL.md) | Fabricated envelopes while Langfuse is down |
+| Human review resolve | Pixel/Observatory REVIEW + `mailroom-tui --resolve` | [pixel-console](../pixel-console/SKILL.md) / [observatory](../observatory/SKILL.md) / [tui](../tui/SKILL.md) | Pointing `MAILROOM_API_URL` at producer `:8000`; resolving from snapshot mode |
 | Span/stage/taxonomy drift | `mailroom_ui/pipeline_schema.py` | [pipeline-schema-sync](../pipeline-schema-sync/SKILL.md) | Editing schema without interpreter + tests + CHANGELOG |
 | Static snapshot site | `scripts/publish_pages.sh` | [gh-pages](../gh-pages/SKILL.md) | GitHub Actions for Pages |
 | Terminal console | `mailroom-tui` | [tui](../tui/SKILL.md) | Pointing `MAILROOM_API_URL` at producer `:8000` |
@@ -36,8 +37,10 @@ Canonical default in `.env.example`: **`langfuse`**.
 3. **both** — `MultiSource` union; still no fabricated rows.
 4. Unreachable Langfuse → **MAILROOM CLOSED**, not stale/canned data.
 
-Operator liveness (watcher heartbeat, inbox pending) may come from
-`MAILROOM_PIPELINE_URL` (`GET /health`). That is **not** document data.
+Operator liveness (watcher heartbeat, inbox pending) and **human-review
+resolve** (`POST /api/review/resolve` → approve / reject / record / requeue)
+may go through `MAILROOM_PIPELINE_URL` on the visualizer server. That is
+**not** document display data; the browser never holds the producer token.
 
 ## Serving note (this repo does not serve models)
 

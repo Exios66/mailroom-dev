@@ -30,6 +30,7 @@ from mailroom_ui.metrics import compute_metrics
 from mailroom_ui.models import PipelineRun, SessionSummary
 from mailroom_ui.multi_source import MultiSource
 from mailroom_ui.pipeline_ops import fetch_pipeline_ops
+from mailroom_ui.review_actions import ReviewActionError, fetch_audit, resolve_review, review_context
 from mailroom_ui.pipeline_schema import DOC_CLASSES
 from mailroom_ui.phoenix_source import PhoenixSource
 from mailroom_ui.sources import TraceSourceUnavailable
@@ -64,6 +65,9 @@ API_ENDPOINTS = [
     {"method": "GET", "path": "/api/debug/client", "desc": "last browser dumps posted by Observatory / pixel clients"},
     {"method": "POST", "path": "/api/debug/client", "desc": "store a browser debug dump for the next agent pull"},
     {"method": "GET", "path": "/api/pipeline", "desc": "producer watcher/inbox liveness (MAILROOM_PIPELINE_URL)"},
+    {"method": "GET", "path": "/api/review/context", "desc": "producer catalog+audit for a review item; ?trace_id=&filename=&doc_id="},
+    {"method": "POST", "path": "/api/review/resolve", "desc": "proxy approve/reject/record/requeue to llm-mailroom"},
+    {"method": "GET", "path": "/api/review/audit", "desc": "hash-chained producer audit; ?doc_id="},
     {"method": "WS", "path": "/ws", "desc": "floor snapshots (live mode only)"},
     {"method": "GET", "path": "/live", "desc": "hosted Observatory UI (modern, accessible, public)"},
 ]
@@ -222,6 +226,43 @@ def create_app(source: Optional[object] = None) -> FastAPI:
         """Producer watcher + inbox liveness. Document display stays Langfuse."""
         ops = hub.pipeline_ops if hub.pipeline_ops.get("configured") else fetch_pipeline_ops()
         return ops
+
+    @app.get("/api/review/context")
+    def review_context_ep(
+        trace_id: str = Query("", max_length=256),
+        filename: str = Query("", max_length=512),
+        doc_id: str = Query("", max_length=128),
+    ):
+        """Producer catalog lookup + audit for a REVIEW desk item."""
+        return review_context(trace_id=trace_id, filename=filename, doc_id=doc_id)
+
+    @app.post("/api/review/resolve")
+    def review_resolve_ep(payload: dict[str, Any]):
+        """Proxy a human review decision to llm-mailroom. Browser never holds the token."""
+        try:
+            return resolve_review(
+                decision=str(payload.get("decision") or ""),
+                disposition=str(payload.get("disposition") or "resume"),
+                notes=str(payload.get("notes") or ""),
+                trace_id=str(payload.get("trace_id") or ""),
+                filename=str(payload.get("filename") or ""),
+                doc_id=str(payload.get("doc_id") or ""),
+            )
+        except ReviewActionError as exc:
+            return JSONResponse(
+                status_code=exc.status,
+                content={"error": exc.message, "detail": exc.detail},
+            )
+
+    @app.get("/api/review/audit")
+    def review_audit_ep(doc_id: str = Query(..., min_length=1, max_length=128)):
+        try:
+            return fetch_audit(doc_id)
+        except ReviewActionError as exc:
+            return JSONResponse(
+                status_code=exc.status,
+                content={"error": exc.message, "detail": exc.detail},
+            )
 
     @app.get("/api/meta")
     def meta():

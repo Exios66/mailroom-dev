@@ -15,6 +15,8 @@ Views:
 Keys: f floor · r review · s sessions · m metrics · i inspect · [ ] cycle
       d debug · c clear log · q quit
 `--once --view floor|review|metrics|sessions|inspect|debug` for scripting.
+`--resolve TRACE --decision approved|rejected --disposition resume|record|requeue --notes "..."`
+posts through the visualizer (`MAILROOM_API_URL`, default :8001) to the producer.
 """
 
 from __future__ import annotations
@@ -99,6 +101,31 @@ def fetch_list(path: str) -> Optional[list[dict]]:
     if data is None:
         return None
     return data.get("runs") or []
+
+
+def post_json(path: str, body: dict, timeout: float = 60.0) -> Optional[dict]:
+    """POST JSON to the visualizer (review resolve). None on failure."""
+    url = f"{API_BASE}{path}"
+    payload = json.dumps(body).encode("utf-8")
+    try:
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={"Accept": "application/json", "Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode())
+    except urllib.error.HTTPError as exc:
+        _record_error(f"POST {path}", exc)
+        try:
+            LAST_ERRORS.append(f"POST {path} body: {exc.read().decode()[:400]}")
+        except Exception:
+            pass
+        return None
+    except Exception as exc:
+        _record_error(f"POST {path}", exc)
+        return None
 
 
 def fetch_snapshot() -> Optional[list[dict]]:
@@ -207,7 +234,10 @@ def floor_table(runs: list[dict]) -> Table:
 
 
 def review_table(runs: list[dict]) -> Table:
-    table = Table(title="REVIEW SIDING — WAITING ON A HUMAN", box=None, pad_edge=False, expand=True)
+    table = Table(
+        title="REVIEW SIDING — WAITING ON A HUMAN  (resolve: mailroom-tui --resolve TRACE --decision approved)",
+        box=None, pad_edge=False, expand=True,
+    )
     table.add_column("FILE", style="bold white", no_wrap=True, max_width=34)
     table.add_column("DOC TYPE", style="dim")
     table.add_column("CLS", justify="right")
@@ -293,6 +323,7 @@ def inspect_panels(run: dict) -> list[Panel]:
     kv.add_column("FIELD", style="dim")
     kv.add_column("VALUE")
     labels = {
+        "doc_id": "DOC ID",
         "doc_subclass": "SUBCLASS",
         "contract_subtype": "CONTRACT SUBTYPE",
         "expected_hf_class": "EXPECTED CLASS",
@@ -302,7 +333,7 @@ def inspect_panels(run: dict) -> list[Panel]:
         "intake_method": "INTAKE METHOD",
         "intake_chars": "INTAKE CHARS",
     }
-    for key in ("session_id", "matter_id", "user_id", "release", "attempt", "environment",
+    for key in ("doc_id", "session_id", "matter_id", "user_id", "release", "attempt", "environment",
                 "doc_subclass", "contract_subtype", "expected_hf_class", "expected_subclass",
                 "intake_messy", "intake_changed", "intake_method", "intake_chars",
                 "classification_confidence", "extraction_confidence", "latency",
@@ -456,11 +487,41 @@ def run() -> None:
                         help="which desk --once (and the live start view) shows")
     parser.add_argument("--inspect", default="",
                         help="trace id to open on the inspect desk")
+    parser.add_argument("--resolve", default="",
+                        help="trace id (or producer doc_id) to resolve via POST /api/review/resolve")
+    parser.add_argument("--decision", default="approved",
+                        choices=["approved", "rejected"],
+                        help="review decision used with --resolve")
+    parser.add_argument("--disposition", default="resume",
+                        choices=["resume", "record", "requeue"],
+                        help="resume pipeline, record-only audit, or requeue to inbox")
+    parser.add_argument("--notes", default="",
+                        help="reviewer notes stored on the producer audit chain")
     args = parser.parse_args()
     API_BASE = args.api.rstrip("/")
     POLL_INTERVAL = args.poll
-
     console = Console()
+
+    if args.resolve:
+        ident = args.resolve.strip()
+        body: dict[str, Any] = {
+            "decision": args.decision,
+            "disposition": args.disposition,
+            "notes": args.notes,
+        }
+        if "." in ident and "/" not in ident:
+            body["filename"] = ident
+        else:
+            body["trace_id"] = ident
+            body["doc_id"] = ident
+        result = post_json("/api/review/resolve", body)
+        if result is None:
+            console.print(Panel(Text("review resolve failed — see LAST_ERRORS / [d]ebug", style="bright_red")))
+            for line in LAST_ERRORS:
+                console.print(Text(line, style="red"))
+            raise SystemExit(1)
+        console.print(Panel(Text(json.dumps(result, indent=2), style="green"), title="REVIEW RESOLVE"))
+        return
 
     def frame_for(view: str, runs: list[dict], log: deque, inspect_id: str = "") -> Any:
         if view == "floor":

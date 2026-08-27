@@ -42,6 +42,8 @@ def test_live_assets_are_mounted():
     assert "content_topic_accuracy" in js.text
     assert css.status_code == 200 and "skip-link" in css.text and ".obs-type" in css.text
     assert client.status_code == 200 and "reviewQueue" in client.text
+    assert "reviewResolve" in client.text
+    assert "reviewForm" in js.text and "data-decision" in js.text
     assert debug.status_code == 200 and "__OBSERVATORY_DEBUG__" in debug.text
 
 

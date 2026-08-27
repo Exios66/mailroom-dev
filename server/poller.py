@@ -25,6 +25,7 @@ def floor_payload(run: PipelineRun) -> dict[str, Any]:
     return {
         "trace_id": run.trace_id,
         "filename": run.filename,
+        "doc_id": run.doc_id,
         "matter_id": run.matter_id,
         "session_id": run.session_id,
         "environment": run.environment,

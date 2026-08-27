@@ -12,6 +12,7 @@ verdicts). v4 SDK payloads use `observationType` (camelCase) as well as
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime
 from typing import Any, Optional
 
@@ -77,6 +78,36 @@ def _clean(value: Any) -> Optional[str]:
     if value is None:
         return None
     return str(value).strip() or None
+
+
+# Producer doc_ids are uuid / slug tokens. Filenames with a dot (the fixture
+# span input uses ``doc_id: filename``) must not be lifted as a catalog id.
+_DOC_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+def _as_doc_id(value: Any) -> Optional[str]:
+    text = _clean(value)
+    if text and _DOC_ID_RE.match(text):
+        return text
+    return None
+
+
+def _lift_doc_id(
+    t_output: dict[str, Any],
+    t_input: dict[str, Any],
+    metadata: dict[str, Any],
+    spans: list[NodeSpan],
+) -> Optional[str]:
+    for src in (t_output, t_input, metadata):
+        found = _as_doc_id(src.get("doc_id"))
+        if found:
+            return found
+    for span in reversed(spans):
+        out = span.output if isinstance(span.output, dict) else {}
+        found = _as_doc_id(out.get("doc_id"))
+        if found:
+            return found
+    return None
 
 
 def _pick(d: dict[str, Any], *keys: str) -> Any:
@@ -664,6 +695,7 @@ def interpret_trace(
     if attempt is None:
         attempt = metadata.get("attempt")
     filename = _clean(t_input.get("filename")) or _clean(t_input.get("file"))
+    doc_id = _lift_doc_id(t_output, t_input, metadata, spans)
     matter_id = _clean(t_input.get("matter_id"))
     session_id = _clean(_both(trace, "session_id", "sessionId"))
     if matter_id is None:
@@ -723,6 +755,7 @@ def interpret_trace(
         trace_id=str(trace.get("id") or ""),
         name=_clean(trace.get("name")) or "document-pipeline",
         filename=filename,
+        doc_id=doc_id,
         matter_id=matter_id,
         session_id=session_id,
         environment=environment,

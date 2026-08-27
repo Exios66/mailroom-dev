@@ -172,6 +172,43 @@ const Mailroom = (() => {
     return res.json();
   }
 
+  async function post(path, body) {
+    const t0 = performance.now();
+    let res;
+    try {
+      res = await fetch(url(path), {
+        method: "POST",
+        headers: { "Accept": "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify(body || {}),
+      });
+    } catch (err) {
+      capture("fetch", { url: path, error: String(err), ms: Math.round(performance.now() - t0), method: "POST" });
+      throw err;
+    }
+    capture("fetch", { url: path, status: res.status, ms: Math.round(performance.now() - t0), method: "POST" });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const payload = await res.json();
+        const msg = payload && (payload.detail || payload.error);
+        if (msg != null) {
+          detail = ` — ${typeof msg === "string" ? msg : JSON.stringify(msg)}`;
+        }
+      } catch (e) { /* non-JSON error body */ }
+      throw new Error(`HTTP ${res.status} ${path}${detail}`);
+    }
+    return res.json();
+  }
+
+  function reviewContextQs(opts = {}) {
+    const q = new URLSearchParams();
+    if (opts.trace_id) q.set("trace_id", opts.trace_id);
+    if (opts.filename) q.set("filename", opts.filename);
+    if (opts.doc_id) q.set("doc_id", opts.doc_id);
+    const qs = q.toString();
+    return `/api/review/context${qs ? `?${qs}` : ""}`;
+  }
+
   const remote = {
     health: () => get("/api/health"),
     meta: () => get("/api/meta"),
@@ -181,6 +218,9 @@ const Mailroom = (() => {
     sessions: (limit = 50) => get(`/api/sessions?limit=${limit}`),
     reviewQueue: (since = 604800) => get(`/api/review-queue?since=${since}`),
     pipeline: () => get("/api/pipeline"),
+    reviewContext: (opts) => get(reviewContextQs(opts)),
+    reviewResolve: (body) => post("/api/review/resolve", body),
+    reviewAudit: (docId) => get(`/api/review/audit?doc_id=${encodeURIComponent(docId)}`),
   };
 
   const snapshots = {
@@ -195,6 +235,16 @@ const Mailroom = (() => {
     sessions: () => snap("sessions"),
     reviewQueue: () => snap("review-queue"),
     pipeline: async () => ({ configured: false, watcher: "snapshot", ok: null }),
+    reviewContext: async () => ({
+      configured: false, snapshot: true,
+      error: "snapshot mode is read-only — review resolve needs a live API",
+    }),
+    reviewResolve: async () => {
+      throw new Error("snapshot mode is read-only — review resolve needs a live API");
+    },
+    reviewAudit: async () => {
+      throw new Error("snapshot mode is read-only — review audit needs a live API");
+    },
   };
 
   function dispatch(name, ...args) {
@@ -210,6 +260,9 @@ const Mailroom = (() => {
     sessions: (...a) => dispatch("sessions", ...a),
     reviewQueue: (...a) => dispatch("reviewQueue", ...a),
     pipeline: (...a) => dispatch("pipeline", ...a),
+    reviewContext: (...a) => dispatch("reviewContext", ...a),
+    reviewResolve: (...a) => dispatch("reviewResolve", ...a),
+    reviewAudit: (...a) => dispatch("reviewAudit", ...a),
   };
 
   const fmt = {
@@ -255,6 +308,78 @@ const Mailroom = (() => {
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#39;");
   };
+
+  function needsReviewActions(run) {
+    if (!run) return false;
+    return run.stage === "review" || !!run.needs_human || !!run.needs_reconsideration;
+  }
+
+  function defaultDisposition(run) {
+    return run && run.stage === "review" ? "resume" : "record";
+  }
+
+  function reviewPanel(run) {
+    if (!needsReviewActions(run)) return "";
+    const parked = run.stage === "review";
+    const disp = defaultDisposition(run);
+    const hint = parked
+      ? "Resume sends an approved extract back through the pipeline. Record appends an audit row only. Requeue copies the file to the inbox."
+      : "This run is not parked in the review bin — Resume is disabled. Record writes an audit row; Requeue copies the file back to the inbox.";
+    return `<form class="review-resolve" data-trace="${esc(run.trace_id || "")}" data-filename="${esc(run.filename || "")}" data-doc-id="${esc(run.doc_id || "")}">
+      <div class="review-resolve-head">HUMAN REVIEW</div>
+      <p class="review-resolve-hint">${esc(hint)}</p>
+      <textarea name="notes" class="review-notes" rows="2" placeholder="reviewer notes (stored on the producer audit chain)"></textarea>
+      <label class="review-disp-label">disposition
+        <select name="disposition" class="review-disp">
+          <option value="resume" ${disp === "resume" ? "selected" : ""} ${parked ? "" : "disabled"}>Resume pipeline</option>
+          <option value="record" ${disp === "record" ? "selected" : ""}>Record only (audit)</option>
+          <option value="requeue">Requeue to inbox</option>
+        </select>
+      </label>
+      <div class="review-resolve-btns">
+        <button type="submit" class="px-btn mono review-approve" data-decision="approved">Approve</button>
+        <button type="submit" class="px-btn mono review-reject" data-decision="rejected">Reject</button>
+        <button type="submit" class="px-btn mono review-requeue" data-decision="approved" data-disposition="requeue">Requeue</button>
+      </div>
+      <div class="review-resolve-status" aria-live="polite"></div>
+    </form>`;
+  }
+
+  function bindReviewForms(root, { onDone } = {}) {
+    if (!root) return;
+    for (const form of root.querySelectorAll(".review-resolve")) {
+      if (form.dataset.bound === "1") continue;
+      form.dataset.bound = "1";
+      form.addEventListener("click", (ev) => ev.stopPropagation());
+      form.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const status = form.querySelector(".review-resolve-status");
+        const btn = ev.submitter;
+        const decision = (btn && btn.dataset.decision) || "approved";
+        const disposition = (btn && btn.dataset.disposition)
+          || (form.disposition && form.disposition.value)
+          || "resume";
+        const notes = (form.notes && form.notes.value) || "";
+        if (status) status.textContent = "submitting…";
+        try {
+          const result = await api.reviewResolve({
+            trace_id: form.dataset.trace,
+            filename: form.dataset.filename,
+            doc_id: form.dataset.docId,
+            decision,
+            disposition,
+            notes,
+          });
+          const msg = `ok — ${result.disposition || disposition} ${result.decision || decision}${result.doc_id ? ` · ${result.doc_id}` : ""}`;
+          if (status) status.textContent = msg;
+          if (typeof onDone === "function") onDone(result, form);
+        } catch (err) {
+          if (status) status.textContent = err.message || String(err);
+        }
+      });
+    }
+  }
 
   let ws = null;
   let wsTimer = null;
@@ -345,6 +470,7 @@ const Mailroom = (() => {
 
   const exports = {
     api, fmt, esc, connectWS, envFromTags, showError,
+    reviewPanel, bindReviewForms, needsReviewActions,
     get wsConnected() { return connected; },
     get staticMode() { return staticMode; },
     enableStaticMode,

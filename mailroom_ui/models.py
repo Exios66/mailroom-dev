@@ -96,6 +96,7 @@ class PipelineRun(BaseModel):
     trace_id: str
     name: str = "document-pipeline"
     filename: Optional[str] = None
+    doc_id: Optional[str] = None
     matter_id: Optional[str] = None
     session_id: Optional[str] = None
     environment: Optional[str] = None

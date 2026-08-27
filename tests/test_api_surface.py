@@ -28,7 +28,7 @@ def _client():
 
 
 def test_every_meta_endpoint_is_reachable():
-    skip = {"/ws", "/live"}
+    skip = {"/ws", "/live", "/api/review/audit"}
     with _client() as c:
         meta = c.get("/api/meta").json()
         listed = [e["path"] for e in meta["endpoints"]]

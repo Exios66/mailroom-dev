@@ -28,6 +28,10 @@ description: Mailroom Observatory hosted desk (hosted/ vanilla SPA at /live, mai
 When the WebSocket drops, HTTP fallback must poll traces + `/api/pipeline` at
 `poll_interval_s` (see [live-floor](../live-floor/SKILL.md)).
 
+The Review desk can **resolve** items (`Obs.api.reviewResolve`) the same way
+as the pixel console. Unconfigured producer → setup hint, not a fabricated
+catalog write.
+
 ## Related
 
 - Pixel CRT: [pixel-console](../pixel-console/SKILL.md)

@@ -234,12 +234,81 @@ const App = (() => {
     </table></div>`;
   }
 
+  function reviewForm(run) {
+    if (!run || !(run.stage === "review" || run.needs_human || run.needs_reconsideration)) return "";
+    const parked = run.stage === "review";
+    const disp = parked ? "resume" : "record";
+    const hint = parked
+      ? "Resume re-extracts. Record writes an audit row only. Requeue copies the file to the inbox."
+      : "Not parked in the review bin — Resume is disabled. Record or requeue instead.";
+    return `<form class="review-resolve" data-trace="${Obs.esc(run.trace_id || "")}" data-filename="${Obs.esc(run.filename || "")}" data-doc-id="${Obs.esc(run.doc_id || "")}">
+      <p class="hint">${Obs.esc(hint)}</p>
+      <label>Notes <textarea name="notes" rows="2"></textarea></label>
+      <label>Disposition
+        <select name="disposition">
+          <option value="resume" ${disp === "resume" ? "selected" : ""} ${parked ? "" : "disabled"}>Resume pipeline</option>
+          <option value="record" ${disp === "record" ? "selected" : ""}>Record only (audit)</option>
+          <option value="requeue">Requeue to inbox</option>
+        </select>
+      </label>
+      <div class="toolbar" role="group" aria-label="Review decision">
+        <button type="submit" class="btn" data-decision="approved">Approve</button>
+        <button type="submit" class="btn btn-quiet" data-decision="rejected">Reject</button>
+        <button type="submit" class="btn btn-quiet" data-decision="approved" data-disposition="requeue">Requeue</button>
+      </div>
+      <p class="review-status" role="status"></p>
+    </form>`;
+  }
+
+  function bindReviewForms(root, { onDone } = {}) {
+    if (!root) return;
+    for (const form of root.querySelectorAll(".review-resolve")) {
+      if (form.dataset.bound === "1") continue;
+      form.dataset.bound = "1";
+      form.addEventListener("click", (ev) => ev.stopPropagation());
+      form.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const status = form.querySelector(".review-status");
+        const btn = ev.submitter;
+        const decision = (btn && btn.dataset.decision) || "approved";
+        const disposition = (btn && btn.dataset.disposition)
+          || (form.disposition && form.disposition.value)
+          || "resume";
+        const notes = (form.notes && form.notes.value) || "";
+        if (status) status.textContent = "Submitting…";
+        try {
+          const result = await Obs.api.reviewResolve({
+            trace_id: form.dataset.trace,
+            filename: form.dataset.filename,
+            doc_id: form.dataset.docId,
+            decision,
+            disposition,
+            notes,
+          });
+          if (status) {
+            status.textContent = `Saved — ${result.disposition || disposition} ${result.decision || decision}`;
+          }
+          if (typeof onDone === "function") onDone(result);
+        } catch (err) {
+          if (status) status.textContent = err.message || String(err);
+        }
+      });
+    }
+  }
+
   async function refreshReview() {
     const el = need("review-list");
     if (!el) return;
     el.innerHTML = `<p class="empty">Loading review queue…</p>`;
     try {
-      const data = await Obs.api.reviewQueue();
+      const [data, ctx] = await Promise.all([
+        Obs.api.reviewQueue(),
+        Obs.api.reviewContext().catch(() => null),
+      ]);
+      const setup = ctx && ctx.configured === false
+        ? `<p class="empty" role="status">${Obs.esc(ctx.error || "Set MAILROOM_PIPELINE_URL to resolve reviews.")}</p>`
+        : "";
       const rows = (data.runs || []).map((r) => `<tr>
         <th scope="row"><button type="button" class="row-btn" data-trace="${Obs.esc(r.trace_id)}">${Obs.esc(r.filename || r.trace_id)}</button></th>
         <td>${Obs.esc((r.doc_type || "—").replaceAll("_", " "))}${r.doc_subclass || r.contract_subtype ? ` / ${Obs.esc(r.doc_subclass || r.contract_subtype)}` : ""}</td>
@@ -250,9 +319,11 @@ const App = (() => {
         }</td>
         <td>${Obs.fmt.conf(r.extraction_confidence)}</td>
         <td>${r.verdict ? `<span class="badge ${verdictClass(r.verdict)}">${Obs.esc(r.verdict)}</span>` : "—"}</td>
+        <td>${reviewForm(r)}</td>
       </tr>`);
-      el.innerHTML = table("Runs waiting on a human", ["Document", "Type", "Why", "Extract", "Verdict"], rows);
+      el.innerHTML = setup + table("Runs waiting on a human", ["Document", "Type", "Why", "Extract", "Verdict", "Resolve"], rows);
       bindCards(el);
+      bindReviewForms(el, { onDone: () => refreshReview() });
       dbg("traces", { where: "review", count: (data.runs || []).length });
     } catch (err) {
       dbg("review-error", { message: err.message });
@@ -418,6 +489,7 @@ const App = (() => {
           run.intake_chars != null ? `${run.intake_chars} chars` : null,
         ].filter(Boolean).join(" · ") || "—"],
         ["Matter", run.session_id || run.matter_id],
+        ["Producer doc id", run.doc_id || "—"],
         ["User", run.user_id || "—"],
         ["Release", run.release || "—"],
         ["Classification", Obs.fmt.conf(run.classification_confidence)],
@@ -466,11 +538,13 @@ const App = (() => {
         ? `<h3>Suite extras</h3><div class="stack">${scoreHtml(suite)}</div>`
         : "";
       body.innerHTML = `
+        ${reviewForm(run)}
         <dl class="kv">${rows.map(([k, v]) => `<dt>${Obs.esc(k)}</dt><dd>${Obs.esc(v == null ? "—" : v)}</dd>`).join("")}</dl>
         <h3>Observations</h3><div class="stack">${spans}</div>
         <h3>LLM generations</h3><div class="stack">${gens}</div>
         ${scoresBlock ? `<h3>Scores</h3><div class="stack">${scoresBlock}</div>` : ""}
         ${suiteBlock}`;
+      bindReviewForms(body, { onDone: () => refreshReview() });
       dbg("traces", { where: "inspect", id: traceId, spans: (run.spans || []).length });
     } catch (err) {
       dbg("detail-error", { id: traceId, message: err.message });

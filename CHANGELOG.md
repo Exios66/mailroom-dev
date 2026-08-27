@@ -8,6 +8,17 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- **Human-review resolve on the REVIEW desk.** Pixel REVIEW cards, the
+  inspector, Observatory Review, and `mailroom-tui --resolve` can approve,
+  reject, record-only, or requeue a `needs_human` run. The visualizer proxies
+  `POST /api/review/resolve` to llm-mailroom (`MAILROOM_PIPELINE_URL` +
+  `MAILROOM_PIPELINE_TOKEN`); the browser never holds the producer token.
+  `disposition=resume` re-extracts a parked review; `record` appends a
+  hash-chained audit row without moving the file (archived/RECONSIDER);
+  `requeue` copies the source file back to the inbox. `PipelineRun.doc_id`
+  is lifted from Langfuse output/input/metadata. Snapshot mode stays
+  read-only.
+
 - **Project Agent Skills (companion to local-mailroom-sandbox #4).** Committed
   `.cursor/skills/` with `mailroom-tool-router` plus family stack skills
   (Langfuse, Apache Phoenix, Braintrust, Ollama, Modal, Hugging Face) and

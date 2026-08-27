@@ -26,12 +26,12 @@ const ReviewView = (() => {
     return `<span class="chip verdict-${Mailroom.esc(run.verdict)}">${Mailroom.esc(run.verdict)}</span>`;
   }
 
-  function render(runs) {
+  function render(runs, producerHint) {
     if (!runs.length) {
-      listEl.innerHTML = `<div class="hint mono">REVIEW SIDING EMPTY — NO RUNS WAITING ON A HUMAN OR FLAGGED FOR RECONSIDERATION</div>`;
+      listEl.innerHTML = `${producerHint || ""}<div class="hint mono">REVIEW SIDING EMPTY — NO RUNS WAITING ON A HUMAN OR FLAGGED FOR RECONSIDERATION</div>`;
       return;
     }
-    listEl.innerHTML = runs
+    listEl.innerHTML = (producerHint || "") + runs
       .map(
         (r) => `<div class="session-card run-row-solo" data-trace="${Mailroom.esc(r.trace_id)}">
         <div class="session-head">
@@ -41,7 +41,7 @@ const ReviewView = (() => {
           <span class="ses-count">${Mailroom.fmt.time(r.created_at)}</span>
         </div>
         <div class="session-runs" style="padding:8px 10px">
-          <div style="color:var(--paper-dim)">doc: <span style="color:var(--paper)">${Mailroom.esc(r.doc_type || "—")}${r.doc_subclass || r.contract_subtype ? ` / ${Mailroom.esc(r.doc_subclass || r.contract_subtype)}` : ""}</span></div>
+          <div style="color:var(--paper-dim)">doc: <span style="color:var(--paper)">${Mailroom.esc(r.doc_type || "—")}${r.doc_subclass || r.contract_subtype ? ` / ${Mailroom.esc(r.doc_subclass || r.contract_subtype)}` : ""}</span>${r.doc_id ? ` · id ${Mailroom.esc(r.doc_id)}` : ""}</div>
           ${causeLine(r)}
           ${
             r.error_message
@@ -53,6 +53,7 @@ const ReviewView = (() => {
               r.extraction_confidence,
             )} · ${r.llm_call_count ?? 0} calls · ${Mailroom.fmt.tokens(r.total_tokens)} tok · ${Mailroom.fmt.cost(r.cost_usd)}
           </div>
+          ${Mailroom.reviewPanel(r)}
         </div>
       </div>`,
       )
@@ -62,13 +63,24 @@ const ReviewView = (() => {
         Inspector.open(card.dataset.trace);
       });
     }
+    Mailroom.bindReviewForms(listEl, { onDone: () => { refresh(); } });
+  }
+
+  async function producerBanner() {
+    try {
+      const ctx = await Mailroom.api.reviewContext();
+      if (ctx && ctx.configured === false) {
+        return `<div class="hint mono review-setup">${Mailroom.esc(ctx.error || "Set MAILROOM_PIPELINE_URL + MAILROOM_PIPELINE_TOKEN to resolve reviews.")}</div>`;
+      }
+    } catch (_err) { /* probe is best-effort */ }
+    return "";
   }
 
   async function refresh() {
     listEl.innerHTML = `<div class="hint mono">LOADING REVIEW QUEUE FROM LANGFUSE…</div>`;
     try {
-      const data = await Mailroom.api.reviewQueue();
-      render(data.runs || []);
+      const [data, hint] = await Promise.all([Mailroom.api.reviewQueue(), producerBanner()]);
+      render(data.runs || [], hint);
       return data;
     } catch (err) {
       listEl.innerHTML = `<div class="insp-error">review queue unavailable — ${Mailroom.esc(err.message || String(err))}</div>`;

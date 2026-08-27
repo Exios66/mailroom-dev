@@ -92,6 +92,7 @@ def fetch_pipeline_ops(*, timeout: float = 1.5) -> dict[str, Any]:
         "ingestion_paused": None,
         "queued": [],
         "error": None,
+        "token_configured": bool(token),
     }
     try:
         health = _get_json(f"{base}/health", timeout=timeout)
