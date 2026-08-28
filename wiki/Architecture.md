@@ -213,6 +213,14 @@ Requires `MAILROOM_PIPELINE_URL` + `MAILROOM_PIPELINE_TOKEN` on the visualizer
 `:8001`). `MAILROOM_PIPELINE_API_PREFIX` defaults to `/v1`. Display data
 stays Langfuse-only — the producer token never leaves the visualizer server.
 
+The producer **code** pin is optional extra `[pipeline]`
+(`mailroom @ git+https://github.com/Exios66/llm-mailroom.git@2c0bcac`).
+`mailroom_ui/producer.py` imports `pipeline.review_resolve` and
+`schemas.manifest` when that extra or a sibling checkout is present; the
+REVIEW proxy and `tests/fake_producer.py` use those contract helpers
+(dispositions, `serialize_document`, tray actions). The adapter never
+imports `api.main` or `llm_dojo_scoring`. `/api/meta` reports the pin.
+
 ## Demos & screenshots
 
 A working REVIEW-tray round-trip (FakeClient traces + `tests/fake_producer.py`

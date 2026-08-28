@@ -41,6 +41,7 @@ from mailroom_ui.review_actions import (
 )
 from mailroom_ui.pipeline_schema import DOC_CLASSES, DOC_SUBCLASS_BY_CLASS
 from mailroom_ui.phoenix_source import PhoenixSource
+from mailroom_ui.producer import producer_status
 from mailroom_ui.sources import TraceSourceUnavailable
 from mailroom_ui.trace_interpreter import interpret_trace
 from server.debug_log import DebugLog, DebugLogMiddleware
@@ -148,6 +149,7 @@ def create_app(source: Optional[object] = None) -> FastAPI:
         if isinstance(payload, dict):
             payload = dict(payload)
             payload["pipeline_configured"] = pipeline_configured()
+            payload["mailroom"] = producer_status()
         return payload
 
     @app.get("/api/traces")
@@ -331,6 +333,7 @@ def create_app(source: Optional[object] = None) -> FastAPI:
             "doc_classes": classes,
             "doc_subclasses": subclasses,
             "pipeline_configured": pipeline_configured(),
+            "mailroom": producer_status(),
             "source": _source_names(src),
             "mode": "api",
             "edition": _edition(),
@@ -366,6 +369,7 @@ def create_app(source: Optional[object] = None) -> FastAPI:
             ),
             "pipeline_configured": pipeline_configured(),
         }
+        info["mailroom"] = producer_status()
         for attr in ("project",):
             if hasattr(src, attr):
                 info["phoenix_project"] = getattr(src, attr)

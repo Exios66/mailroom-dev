@@ -22,8 +22,10 @@ PYTHONPATH=. python scripts/demo_review_tray.py --port 8006
 - Observatory: `http://127.0.0.1:8006/live?api=`
 
 Display traces are FakeClient. The stub (`tests/fake_producer.py`) speaks
-llm-mailroom `/v1`. It does not implement `GET /documents/{id}/source` — the
-text pane uses catalog lookup, matching producer main.
+llm-mailroom `/v1` and uses pinned `serialize_document` when `[pipeline]`
+(or a sibling checkout) is importable. It does not implement
+`GET /documents/{id}/source` — the text pane uses catalog lookup, matching
+producer main.
 
 ## v0.3.0 release demos
 

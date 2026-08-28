@@ -8,6 +8,16 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- **Pinned llm-mailroom as an importable extra.** `pip install -e ".[pipeline]"`
+  installs dist `mailroom` from
+  `git+https://github.com/Exios66/llm-mailroom.git@2c0bcac` (package 0.5.0).
+  `mailroom_ui/producer.py` imports `pipeline.review_resolve` /
+  `schemas.manifest` (dispositions, `serialize_document`, tray actions) from
+  that extra, a sibling checkout, or a git-archive of the pin SHA when the
+  live sibling branch has moved on. Missing extra falls back to the same
+  contract. The visualizer never imports `api.main` or `llm_dojo_scoring`.
+  `/api/meta`, `/api/health`, and `/api/debug/source` surface the pin.
+
 - **Working REVIEW-tray demo.** `scripts/demo_review_tray.py` boots a FakeClient
   floor plus an in-process llm-mailroom stub (`/v1` lookup, resolve, audit,
   health) so Approve / Reject / Record / Requeue / Complete, class correction,

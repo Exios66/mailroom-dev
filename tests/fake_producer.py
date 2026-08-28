@@ -22,9 +22,9 @@ from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request
 
+from mailroom_ui.producer import DECISIONS, DISPOSITIONS, serialize_catalog_row
+
 DEMO_TOKEN = "demo-review-token"
-DISPOSITIONS = frozenset({"resume", "record", "requeue", "complete"})
-DECISIONS = frozenset({"approved", "rejected"})
 
 
 def _now() -> str:
@@ -107,23 +107,7 @@ class FakeProducerStore:
         self.inbox_pending = 1
 
     def serialize(self, doc: dict[str, Any]) -> dict[str, Any]:
-        return {
-            "doc_id": doc.get("doc_id"),
-            "matter_id": doc.get("matter_id"),
-            "original_filename": doc.get("original_filename"),
-            "stage": doc.get("stage"),
-            "doc_type": doc.get("doc_type"),
-            "contract_subtype": doc.get("contract_subtype"),
-            "doc_subclass": doc.get("doc_subclass"),
-            "classification_confidence": doc.get("classification_confidence"),
-            "extraction_confidence": doc.get("extraction_confidence"),
-            "escalation_reason": doc.get("escalation_reason"),
-            "trace_id": doc.get("trace_id"),
-            "review_decision": doc.get("review_decision"),
-            "extracted_data": doc.get("extracted_data"),
-            "created_at": doc.get("created_at"),
-            "updated_at": doc.get("updated_at"),
-        }
+        return serialize_catalog_row(doc)
 
     def find(self, *, doc_id: str = "", trace_id: str = "", filename: str = "") -> Optional[dict[str, Any]]:
         if doc_id and doc_id in self.documents:

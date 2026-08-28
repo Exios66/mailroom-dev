@@ -23,10 +23,11 @@ from typing import Any, Optional
 
 from .pipeline_ops import _token, pipeline_base_url, producer_url
 from .pipeline_schema import normalize_review_doc_type, normalize_review_subclass
+from .producer import DECISIONS, DISPOSITIONS, tray_actions_for
 
 log = logging.getLogger("mailroom.review_actions")
 
-VALID_DISPOSITIONS = frozenset({"resume", "record", "requeue", "complete"})
+VALID_DISPOSITIONS = DISPOSITIONS
 
 
 class ReviewActionError(Exception):
@@ -410,6 +411,7 @@ def review_context(
             "configured": False,
             "document": None,
             "audit": None,
+            "tray_actions": None,
             "error": (
                 "Set MAILROOM_PIPELINE_URL and MAILROOM_PIPELINE_TOKEN to "
                 "approve, reject, record, or requeue against llm-mailroom."
@@ -419,6 +421,7 @@ def review_context(
         "configured": True,
         "document": None,
         "audit": None,
+        "tray_actions": None,
         "error": None,
     }
     if not (trace_id or filename or doc_id):
@@ -428,6 +431,7 @@ def review_context(
             trace_id=trace_id, filename=filename, doc_id=doc_id, timeout=timeout,
         )
         out["document"] = document
+        out["tray_actions"] = tray_actions_for(document.get("stage"))
         resolved = str(document.get("doc_id") or doc_id or "")
         if resolved:
             try:
@@ -459,7 +463,7 @@ def resolve_review(
     """POST /v1/review/{doc_id}/resolve on the producer (JSON body)."""
     decision = (decision or "").strip()
     disposition = (disposition or "resume").strip() or "resume"
-    if decision not in ("approved", "rejected"):
+    if decision not in DECISIONS:
         raise ReviewActionError("decision must be 'approved' or 'rejected'", status=400)
     if disposition not in VALID_DISPOSITIONS:
         raise ReviewActionError(

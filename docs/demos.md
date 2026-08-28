@@ -22,7 +22,9 @@ PYTHONPATH=. python scripts/demo_review_tray.py --port 8006
 
 Display traces are FakeClient (same contract as the test suite). The stub is
 `tests/fake_producer.py` and speaks llm-mailroom `/v1` — including
-`override_doc_type`. It does **not** implement `GET /documents/{id}/source`
+`override_doc_type`. Lookup serialization comes from pinned
+`pipeline.review_resolve.serialize_document` when `[pipeline]` (or a sibling
+checkout) is importable. It does **not** implement `GET /documents/{id}/source`
 (same as producer main); the text pane uses catalog lookup.
 
 ## v0.3.0 release demos
