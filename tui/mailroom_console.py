@@ -15,8 +15,9 @@ Views:
 Keys: f floor · r review · s sessions · m metrics · i inspect · [ ] cycle
       d debug · c clear log · q quit
 `--once --view floor|review|metrics|sessions|inspect|debug` for scripting.
-`--resolve TRACE --decision approved|rejected --disposition resume|record|requeue --notes "..."`
+`--resolve TRACE --decision approved|rejected --disposition resume|record|requeue --notes "..." [--doc-type X --doc-subclass Y]`
 posts through the visualizer (`MAILROOM_API_URL`, default :8001) to the producer.
+`--source TRACE` prints parked document text via `GET /api/review/source`.
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections import deque
 from typing import Any, Optional
@@ -497,10 +499,40 @@ def run() -> None:
                         help="resume pipeline, record-only audit, or requeue to inbox")
     parser.add_argument("--notes", default="",
                         help="reviewer notes stored on the producer audit chain")
+    parser.add_argument("--doc-type", default="", dest="doc_type",
+                        help="human class correction used with --resolve")
+    parser.add_argument("--doc-subclass", default="", dest="doc_subclass",
+                        help="human subtype correction used with --resolve")
+    parser.add_argument("--source", default="",
+                        help="print parked document text via GET /api/review/source")
     args = parser.parse_args()
     API_BASE = args.api.rstrip("/")
     POLL_INTERVAL = args.poll
     console = Console()
+
+    if args.source:
+        ident = args.source.strip()
+        qs = urllib.parse.urlencode(
+            {"filename": ident} if "." in ident and "/" not in ident
+            else {"trace_id": ident, "doc_id": ident}
+        )
+        payload = fetch(f"/api/review/source?{qs}")
+        if payload is None:
+            console.print(Panel(Text("document source failed — see LAST_ERRORS / [d]ebug", style="bright_red")))
+            for line in LAST_ERRORS:
+                console.print(Text(line, style="red"))
+            raise SystemExit(1)
+        if payload.get("configured") is False:
+            console.print(Panel(Text(str(payload.get("error") or "producer not configured"), style="bright_yellow")))
+            if not args.resolve:
+                raise SystemExit(1)
+        else:
+            title = payload.get("filename") or ident
+            extra = "  [truncated]" if payload.get("truncated") else ""
+            text = payload.get("text") or payload.get("error") or ""
+            console.print(Panel(Text(str(text), style="green"), title=f"DOCUMENT SOURCE — {title}{extra}"))
+        if not args.resolve:
+            return
 
     if args.resolve:
         ident = args.resolve.strip()
@@ -509,6 +541,10 @@ def run() -> None:
             "disposition": args.disposition,
             "notes": args.notes,
         }
+        if args.doc_type:
+            body["doc_type"] = args.doc_type
+        if args.doc_subclass:
+            body["doc_subclass"] = args.doc_subclass
         if "." in ident and "/" not in ident:
             body["filename"] = ident
         else:

@@ -30,6 +30,10 @@ def test_review_queue_dispatch_uses_object_key():
     assert "function reviewPanel" in API
     assert "function bindReviewForms" in API
     assert "snapshot mode is read-only — review resolve needs a live API" in API
+    assert "reviewSource" in API
+    assert "review-source-text" in API
+    assert 'name="doc_type"' in API
+    assert 'name="doc_subclass"' in API
 
 
 def test_snapshot_fetches_are_same_origin_not_api_base():
@@ -103,8 +107,11 @@ def test_live_poll_matches_server_interval_and_pipeline_ops():
     assert '{ key: "inbox", label: "Inbox", stages: ["inbox"] }' in hosted_app
     assert 'get("/api/pipeline")' in hosted_client
     assert "reviewResolve" in hosted_client
+    assert "reviewSource" in hosted_client
     assert "function reviewForm" in hosted_app
     assert 'data-decision="approved"' in hosted_app
+    assert 'name="doc_type"' in hosted_app
+    assert "review-source-text" in hosted_app
 
 
 def test_error_banner_is_outside_overflow_hidden_screen():

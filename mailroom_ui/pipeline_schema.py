@@ -317,3 +317,49 @@ class PipelineSchema:
             return None
         key = EXTRACT_CLASS_ALIASES.get(doc_type, doc_type)
         return SPECIALIST_BY_DOC_CLASS.get(key) or SPECIALIST_BY_DOC_CLASS.get(doc_type)
+
+
+def allowed_review_doc_types() -> frozenset[str]:
+    return frozenset(DOC_CLASSES) | frozenset(LIVE_DOC_TYPES) | frozenset(EXTRACT_CLASS_ALIASES) | {
+        UNKNOWN_DOC_TYPE,
+    }
+
+
+def doc_subclasses_payload() -> dict[str, list[str]]:
+    return {key: list(values) for key, values in DOC_SUBCLASS_BY_CLASS.items()}
+
+
+def normalize_review_doc_type(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    key = str(value).strip()
+    if not key:
+        return None
+    allowed = allowed_review_doc_types()
+    if key in allowed:
+        return key
+    lower = key.lower().replace(" ", "_")
+    if lower in allowed:
+        return lower
+    raise ValueError(f"unknown doc_type: {value}")
+
+
+def normalize_review_subclass(doc_type: Optional[str], value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    kind = str(doc_type or "")
+    catalog = DOC_SUBCLASS_BY_CLASS.get(kind) or DOC_SUBCLASS_BY_CLASS.get(
+        EXTRACT_CLASS_ALIASES.get(kind, kind), ()
+    )
+    if not catalog:
+        return text
+    compact = "".join(ch for ch in text.lower() if ch.isalnum())
+    for token in catalog:
+        if token == text:
+            return token
+        if "".join(ch for ch in token.lower() if ch.isalnum()) == compact:
+            return token
+    raise ValueError(f"unknown doc_subclass {value!r} for {kind}")

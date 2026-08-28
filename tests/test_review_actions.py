@@ -91,6 +91,7 @@ def test_api_review_resolve_proxies(monkeypatch):
                 "decision": body["decision"],
                 "disposition": body["disposition"],
                 "notes": body["notes"],
+                "class_override": {k: body[k] for k in ("doc_type", "doc_subclass") if k in body},
             }
         raise AssertionError(url)
 
@@ -107,6 +108,8 @@ def test_api_review_resolve_proxies(monkeypatch):
                 "decision": "approved",
                 "disposition": "resume",
                 "notes": "looks good",
+                "doc_type": "insurance_claim",
+                "doc_subclass": "pde",
             })
     assert r.status_code == 200, r.text
     body = r.json()
@@ -116,6 +119,101 @@ def test_api_review_resolve_proxies(monkeypatch):
     posted = next(c for c in calls if c["method"] == "POST")
     assert posted["token"] == "secret-token"
     assert posted["body"]["notes"] == "looks good"
+    assert posted["body"]["doc_type"] == "insurance_claim"
+    assert posted["body"]["doc_subclass"] == "pde"
+
+
+def test_api_review_resolve_rejects_unknown_class(monkeypatch):
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")
+    src = LangfuseSource(client=FakeClient([make_trace("t1", stage="review")]))
+    with TestClient(create_app(src)) as c:
+        r = c.post("/api/review/resolve", json={
+            "trace_id": "t1", "decision": "approved", "doc_type": "spaceship",
+        })
+    assert r.status_code == 400
+    assert "unknown doc_type" in (r.json().get("error") or "")
+
+
+def test_api_review_source_unconfigured():
+    src = LangfuseSource(client=FakeClient([make_trace("t1", stage="review")]))
+    with TestClient(create_app(src)) as c:
+        r = c.get("/api/review/source")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["configured"] is False
+        assert "MAILROOM_PIPELINE" in (body.get("error") or "")
+
+
+def test_api_review_source_proxies(monkeypatch):
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")
+
+    def fake_request(method, url, *, token="", body=None, timeout=8.0):
+        if method == "GET" and "/lookup" in url:
+            return {"status": "ok", "document": {"doc_id": "doc-src", "file": "claim.txt"}}
+        if method == "GET" and "/documents/doc-src/source" in url and "download" not in url:
+            return {
+                "status": "ok",
+                "doc_id": "doc-src",
+                "filename": "claim.txt",
+                "content_type": "text/plain; charset=utf-8",
+                "text": "Dear claims adjuster",
+                "truncated": False,
+                "bytes": 20,
+                "readable": True,
+            }
+        raise AssertionError(url)
+
+    from mailroom_ui import review_actions
+
+    src = LangfuseSource(client=FakeClient([make_trace("t-src", stage="review")]))
+    with patch.object(review_actions, "_request_json", side_effect=fake_request):
+        with TestClient(create_app(src)) as c:
+            r = c.get("/api/review/source", params={"trace_id": "t-src", "filename": "claim.txt"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["configured"] is True
+    assert "Dear claims adjuster" in body["text"]
+    assert body["filename"] == "claim.txt"
+
+
+def test_api_review_source_download(monkeypatch):
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")
+
+    def fake_json(method, url, *, token="", body=None, timeout=8.0):
+        if method == "GET" and "/lookup" in url:
+            return {"status": "ok", "document": {"doc_id": "doc-dl", "file": "msa.pdf"}}
+        raise AssertionError(url)
+
+    def fake_bytes(method, url, *, token="", timeout=8.0):
+        assert "download=1" in url
+        assert "/documents/doc-dl/source" in url
+        return b"%PDF-1.4 test", "application/pdf", "msa.pdf"
+
+    from mailroom_ui import review_actions
+
+    src = LangfuseSource(client=FakeClient([make_trace("t-dl")]))
+    with patch.object(review_actions, "_request_json", side_effect=fake_json):
+        with patch.object(review_actions, "_request_bytes", side_effect=fake_bytes):
+            with TestClient(create_app(src)) as c:
+                r = c.get("/api/review/source", params={"doc_id": "doc-dl", "download": True})
+    assert r.status_code == 200
+    assert r.content.startswith(b"%PDF")
+    assert "pdf" in (r.headers.get("content-type") or "")
+
+
+def test_health_and_meta_surface_pipeline_configured():
+    src = LangfuseSource(client=FakeClient([make_trace("t1")]))
+    with TestClient(create_app(src)) as c:
+        h = c.get("/api/health").json()
+        m = c.get("/api/meta").json()
+    assert h["pipeline_configured"] is False
+    assert m["pipeline_configured"] is False
+    assert "insurance_claim" in m["doc_classes"]
+    assert "contract" in m["doc_subclasses"]
+    assert "license" in m["doc_subclasses"]["contract"]
 
 
 def test_review_queue_includes_doc_id():

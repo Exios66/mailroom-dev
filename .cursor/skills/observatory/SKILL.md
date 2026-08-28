@@ -29,8 +29,9 @@ When the WebSocket drops, HTTP fallback must poll traces + `/api/pipeline` at
 `poll_interval_s` (see [live-floor](../live-floor/SKILL.md)).
 
 The Review desk can **resolve** items (`Obs.api.reviewResolve`) the same way
-as the pixel console. Unconfigured producer → setup hint, not a fabricated
-catalog write.
+as the pixel console, including class/subtype correction and
+`Obs.api.reviewSource` for the parked file. Unconfigured producer → setup
+hint, not a fabricated catalog write.
 
 ## Related
 

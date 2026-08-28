@@ -209,6 +209,16 @@ const Mailroom = (() => {
     return `/api/review/context${qs ? `?${qs}` : ""}`;
   }
 
+  function reviewSourceQs(opts = {}) {
+    const q = new URLSearchParams();
+    if (opts.trace_id) q.set("trace_id", opts.trace_id);
+    if (opts.filename) q.set("filename", opts.filename);
+    if (opts.doc_id) q.set("doc_id", opts.doc_id);
+    if (opts.download) q.set("download", "1");
+    const qs = q.toString();
+    return `/api/review/source${qs ? `?${qs}` : ""}`;
+  }
+
   const remote = {
     health: () => get("/api/health"),
     meta: () => get("/api/meta"),
@@ -221,6 +231,8 @@ const Mailroom = (() => {
     reviewContext: (opts) => get(reviewContextQs(opts)),
     reviewResolve: (body) => post("/api/review/resolve", body),
     reviewAudit: (docId) => get(`/api/review/audit?doc_id=${encodeURIComponent(docId)}`),
+    reviewSource: (opts) => get(reviewSourceQs(opts)),
+    reviewSourceUrl: (opts) => url(reviewSourceQs(opts)),
   };
 
   const snapshots = {
@@ -245,6 +257,11 @@ const Mailroom = (() => {
     reviewAudit: async () => {
       throw new Error("snapshot mode is read-only — review audit needs a live API");
     },
+    reviewSource: async () => ({
+      configured: false, snapshot: true,
+      error: "snapshot mode is read-only — document source needs a live API",
+    }),
+    reviewSourceUrl: () => "",
   };
 
   function dispatch(name, ...args) {
@@ -263,6 +280,8 @@ const Mailroom = (() => {
     reviewContext: (...a) => dispatch("reviewContext", ...a),
     reviewResolve: (...a) => dispatch("reviewResolve", ...a),
     reviewAudit: (...a) => dispatch("reviewAudit", ...a),
+    reviewSource: (...a) => dispatch("reviewSource", ...a),
+    reviewSourceUrl: (opts) => staticMode ? "" : remote.reviewSourceUrl(opts),
   };
 
   const fmt = {
@@ -318,16 +337,88 @@ const Mailroom = (() => {
     return run && run.stage === "review" ? "resume" : "record";
   }
 
+  function reviewClassMap() {
+    const meta = window.Mailroom && window.Mailroom.meta;
+    const classes = (meta && meta.doc_classes) || {
+      contract: "Contract / Agreement",
+      corporate_record: "Corporate Record",
+      correspondence: "Correspondence",
+      compliance_filing: "Compliance Filing",
+      insurance_claim: "Insurance Claim",
+      merger_agreement: "Merger Agreement",
+      unknown: "Unknown",
+    };
+    return classes;
+  }
+
+  function reviewSubclassMap() {
+    const meta = window.Mailroom && window.Mailroom.meta;
+    return (meta && meta.doc_subclasses) || {};
+  }
+
+  function classSelectHtml(selected) {
+    const classes = reviewClassMap();
+    const current = selected || "";
+    const keys = Object.keys(classes);
+    if (current && !keys.includes(current)) keys.unshift(current);
+    const opts = [`<option value="">(keep current)</option>`]
+      .concat(keys.map((k) => {
+        const sel = k === current ? " selected" : "";
+        return `<option value="${esc(k)}"${sel}>${esc(classes[k] || k)}</option>`;
+      }));
+    return opts.join("");
+  }
+
+  function subclassSelectHtml(docType, selected) {
+    const catalog = reviewSubclassMap()[docType] || [];
+    const current = selected || "";
+    const opts = [`<option value="">(none / keep)</option>`];
+    const seen = new Set();
+    for (const k of catalog) {
+      seen.add(k);
+      const sel = k === current ? " selected" : "";
+      opts.push(`<option value="${esc(k)}"${sel}>${esc(k)}</option>`);
+    }
+    if (current && !seen.has(current)) {
+      opts.splice(1, 0, `<option value="${esc(current)}" selected>${esc(current)}</option>`);
+    }
+    return opts.join("");
+  }
+
   function reviewPanel(run) {
     if (!needsReviewActions(run)) return "";
     const parked = run.stage === "review";
     const disp = defaultDisposition(run);
     const hint = parked
-      ? "Resume sends an approved extract back through the pipeline. Record appends an audit row only. Requeue copies the file to the inbox."
+      ? "Correct the class if the sorter missed. Resume re-extracts with that class. Record appends an audit row only. Requeue copies the file to the inbox."
       : "This run is not parked in the review bin — Resume is disabled. Record writes an audit row; Requeue copies the file back to the inbox.";
+    const currentType = run.doc_type || "";
+    const currentSub = run.doc_subclass || run.contract_subtype || "";
+    const hasSubs = (reviewSubclassMap()[currentType] || []).length > 0 || !!currentSub;
+    const sourceQs = {
+      trace_id: run.trace_id || "",
+      filename: run.filename || "",
+      doc_id: run.doc_id || "",
+      download: true,
+    };
+    const openHref = staticMode ? "" : remote.reviewSourceUrl(sourceQs);
     return `<form class="review-resolve" data-trace="${esc(run.trace_id || "")}" data-filename="${esc(run.filename || "")}" data-doc-id="${esc(run.doc_id || "")}">
       <div class="review-resolve-head">HUMAN REVIEW</div>
       <p class="review-resolve-hint">${esc(hint)}</p>
+      <div class="review-source">
+        <div class="review-source-toolbar">
+          <span class="review-source-label">DOCUMENT</span>
+          ${openHref ? `<a class="review-source-open" href="${esc(openHref)}" target="_blank" rel="noopener">Open original</a>` : `<span class="review-source-open" hidden>Open original</span>`}
+          <span class="review-source-badge" hidden>truncated</span>
+        </div>
+        <pre class="review-source-text">loading document text…</pre>
+      </div>
+      <label class="review-disp-label">doc type
+        <select name="doc_type" class="review-disp review-doc-type">${classSelectHtml(currentType)}</select>
+      </label>
+      <label class="review-disp-label review-subclass-label"${hasSubs ? "" : " hidden"}>subtype
+        <select name="doc_subclass" class="review-disp review-doc-subclass">${subclassSelectHtml(currentType, currentSub)}</select>
+      </label>
       <textarea name="notes" class="review-notes" rows="2" placeholder="reviewer notes (stored on the producer audit chain)"></textarea>
       <label class="review-disp-label">disposition
         <select name="disposition" class="review-disp">
@@ -345,12 +436,49 @@ const Mailroom = (() => {
     </form>`;
   }
 
+  function fillSubclassSelect(select, docType, selected) {
+    if (!select) return;
+    select.innerHTML = subclassSelectHtml(docType, selected || "");
+    const label = select.closest(".review-subclass-label");
+    const catalog = reviewSubclassMap()[docType] || [];
+    if (label) label.hidden = catalog.length === 0 && !selected;
+  }
+
+  function bindReviewSource(form) {
+    const pane = form.querySelector(".review-source-text");
+    const badge = form.querySelector(".review-source-badge");
+    const open = form.querySelector(".review-source-open");
+    if (!pane) return;
+    api.reviewSource({
+      trace_id: form.dataset.trace,
+      filename: form.dataset.filename,
+      doc_id: form.dataset.docId,
+    }).then((src) => {
+      if (!src || src.configured === false) {
+        pane.textContent = (src && src.error) || "live producer required to view the parked file";
+        if (open) open.hidden = true;
+        return;
+      }
+      pane.textContent = src.text || "(empty document text)";
+      if (badge) badge.hidden = !src.truncated;
+      if (open && src.filename) open.hidden = false;
+    }).catch((err) => {
+      pane.textContent = err.message || String(err);
+    });
+  }
+
   function bindReviewForms(root, { onDone } = {}) {
     if (!root) return;
     for (const form of root.querySelectorAll(".review-resolve")) {
       if (form.dataset.bound === "1") continue;
       form.dataset.bound = "1";
       form.addEventListener("click", (ev) => ev.stopPropagation());
+      const typeSel = form.querySelector("select[name='doc_type']");
+      const subSel = form.querySelector("select[name='doc_subclass']");
+      if (typeSel) {
+        typeSel.addEventListener("change", () => fillSubclassSelect(subSel, typeSel.value, ""));
+      }
+      bindReviewSource(form);
       form.addEventListener("submit", async (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
@@ -361,6 +489,8 @@ const Mailroom = (() => {
           || (form.disposition && form.disposition.value)
           || "resume";
         const notes = (form.notes && form.notes.value) || "";
+        const docType = (form.doc_type && form.doc_type.value) || "";
+        const docSubclass = (form.doc_subclass && form.doc_subclass.value) || "";
         if (status) status.textContent = "submitting…";
         try {
           const result = await api.reviewResolve({
@@ -370,6 +500,8 @@ const Mailroom = (() => {
             decision,
             disposition,
             notes,
+            doc_type: docType,
+            doc_subclass: docSubclass,
           });
           const msg = `ok — ${result.disposition || disposition} ${result.decision || decision}${result.doc_id ? ` · ${result.doc_id}` : ""}`;
           if (status) status.textContent = msg;

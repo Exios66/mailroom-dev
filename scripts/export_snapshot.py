@@ -85,7 +85,7 @@ def _sessions(runs, limit: int = 50) -> list[dict]:
 def build_snapshot(source_name: str, since_hours: float, limit: int) -> dict:
     from mailroom_ui.langfuse_source import LangfuseSource, enriched_recent_runs
     from mailroom_ui.metrics import compute_metrics
-    from mailroom_ui.pipeline_schema import DOC_CLASSES, PipelineSchema
+    from mailroom_ui.pipeline_schema import DOC_CLASSES, DOC_SUBCLASS_BY_CLASS, PipelineSchema
     from mailroom_ui.phoenix_source import PhoenixSource
     from mailroom_ui.multi_source import MultiSource
     from server.poller import floor_payload
@@ -130,6 +130,8 @@ def build_snapshot(source_name: str, since_hours: float, limit: int) -> dict:
         "generated_at": _utcnow().isoformat(),
         "source": source_name,
         "doc_classes": doc_classes,
+        "doc_subclasses": {k: list(v) for k, v in DOC_SUBCLASS_BY_CLASS.items()},
+        "pipeline_configured": False,
         "endpoints": [
             {"method": "GET", "path": "data/traces.json", "desc": "floor runs; per-run at data/runs/{id}.json"},
             {"method": "GET", "path": "data/metrics.json", "desc": "window aggregates"},

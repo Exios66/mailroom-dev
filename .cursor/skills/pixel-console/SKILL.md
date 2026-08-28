@@ -20,8 +20,10 @@ CONSOLE tabs, `web/js/*.js`, `theme.css`, `index.html` cache-bust `?v=`.
 | `web/js/review.js` / `sessions.js` / `history.js` / `metrics.js` / `console.js` | Desks |
 
 REVIEW is not display-only: `Mailroom.reviewPanel` / `bindReviewForms` in
-`api.js` post `POST /api/review/resolve` (resume / record / requeue). Snapshot
-mode must stay read-only. Producer URL/token live on the server.
+`api.js` post `POST /api/review/resolve` (resume / record / requeue) with
+optional `doc_type` / `doc_subclass`, and fetch `GET /api/review/source` for
+the parked-file text pane. Snapshot mode must stay read-only. Producer
+URL/token live on the server (`MAILROOM_PIPELINE_URL` = `:8000`).
 
 Entry: `mailroom-web` / `python -m server.main` → `http://127.0.0.1:8001/`.
 

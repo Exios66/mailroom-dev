@@ -63,6 +63,23 @@ const Obs = (() => {
     },
     reviewResolve: (body) => post("/api/review/resolve", body),
     reviewAudit: (docId) => get(`/api/review/audit?doc_id=${encodeURIComponent(docId)}`),
+    reviewSource: (opts = {}) => {
+      const q = new URLSearchParams();
+      if (opts.trace_id) q.set("trace_id", opts.trace_id);
+      if (opts.filename) q.set("filename", opts.filename);
+      if (opts.doc_id) q.set("doc_id", opts.doc_id);
+      if (opts.download) q.set("download", "1");
+      const qs = q.toString();
+      return get(`/api/review/source${qs ? `?${qs}` : ""}`);
+    },
+    reviewSourceUrl: (opts = {}) => {
+      const q = new URLSearchParams();
+      if (opts.trace_id) q.set("trace_id", opts.trace_id);
+      if (opts.filename) q.set("filename", opts.filename);
+      if (opts.doc_id) q.set("doc_id", opts.doc_id);
+      q.set("download", "1");
+      return `/api/review/source?${q.toString()}`;
+    },
   };
 
   const fmt = {

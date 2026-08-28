@@ -234,15 +234,72 @@ const App = (() => {
     </table></div>`;
   }
 
+  function classOptions(selected) {
+    const classes = (meta && meta.doc_classes) || {
+      contract: "Contract / Agreement",
+      corporate_record: "Corporate Record",
+      correspondence: "Correspondence",
+      compliance_filing: "Compliance Filing",
+      insurance_claim: "Insurance Claim",
+      merger_agreement: "Merger Agreement",
+      unknown: "Unknown",
+    };
+    const current = selected || "";
+    const keys = Object.keys(classes);
+    if (current && !keys.includes(current)) keys.unshift(current);
+    return [`<option value="">(keep current)</option>`].concat(keys.map((k) => {
+      const sel = k === current ? " selected" : "";
+      return `<option value="${Obs.esc(k)}"${sel}>${Obs.esc(classes[k] || k)}</option>`;
+    })).join("");
+  }
+
+  function subclassOptions(docType, selected) {
+    const catalog = ((meta && meta.doc_subclasses) || {})[docType] || [];
+    const current = selected || "";
+    const opts = [`<option value="">(none / keep)</option>`];
+    const seen = new Set();
+    for (const k of catalog) {
+      seen.add(k);
+      const sel = k === current ? " selected" : "";
+      opts.push(`<option value="${Obs.esc(k)}"${sel}>${Obs.esc(k)}</option>`);
+    }
+    if (current && !seen.has(current)) {
+      opts.splice(1, 0, `<option value="${Obs.esc(current)}" selected>${Obs.esc(current)}</option>`);
+    }
+    return { html: opts.join(""), has: catalog.length > 0 || !!current };
+  }
+
   function reviewForm(run) {
     if (!run || !(run.stage === "review" || run.needs_human || run.needs_reconsideration)) return "";
     const parked = run.stage === "review";
     const disp = parked ? "resume" : "record";
     const hint = parked
-      ? "Resume re-extracts. Record writes an audit row only. Requeue copies the file to the inbox."
+      ? "Correct the class if the sorter missed. Resume re-extracts with that class. Record writes an audit row only. Requeue copies the file to the inbox."
       : "Not parked in the review bin — Resume is disabled. Record or requeue instead.";
+    const currentType = run.doc_type || "";
+    const currentSub = run.doc_subclass || run.contract_subtype || "";
+    const subs = subclassOptions(currentType, currentSub);
+    const openHref = Obs.api.reviewSourceUrl({
+      trace_id: run.trace_id || "",
+      filename: run.filename || "",
+      doc_id: run.doc_id || "",
+    });
     return `<form class="review-resolve" data-trace="${Obs.esc(run.trace_id || "")}" data-filename="${Obs.esc(run.filename || "")}" data-doc-id="${Obs.esc(run.doc_id || "")}">
       <p class="hint">${Obs.esc(hint)}</p>
+      <div class="review-source">
+        <div class="review-source-toolbar">
+          <span>Document</span>
+          <a class="review-source-open" href="${Obs.esc(openHref)}" target="_blank" rel="noopener">Open original</a>
+          <span class="review-source-badge" hidden>truncated</span>
+        </div>
+        <pre class="review-source-text">Loading document text…</pre>
+      </div>
+      <label>Doc type
+        <select name="doc_type">${classOptions(currentType)}</select>
+      </label>
+      <label class="review-subclass-label"${subs.has ? "" : " hidden"}>Subtype
+        <select name="doc_subclass">${subs.html}</select>
+      </label>
       <label>Notes <textarea name="notes" rows="2"></textarea></label>
       <label>Disposition
         <select name="disposition">
@@ -260,12 +317,47 @@ const App = (() => {
     </form>`;
   }
 
+  function fillHostedSubclass(form) {
+    const typeSel = form.querySelector("select[name='doc_type']");
+    const subSel = form.querySelector("select[name='doc_subclass']");
+    const label = form.querySelector(".review-subclass-label");
+    if (!typeSel || !subSel) return;
+    const next = subclassOptions(typeSel.value, "");
+    subSel.innerHTML = next.html;
+    if (label) label.hidden = !next.has;
+  }
+
+  function bindReviewSource(form) {
+    const pane = form.querySelector(".review-source-text");
+    const badge = form.querySelector(".review-source-badge");
+    const open = form.querySelector(".review-source-open");
+    if (!pane) return;
+    Obs.api.reviewSource({
+      trace_id: form.dataset.trace,
+      filename: form.dataset.filename,
+      doc_id: form.dataset.docId,
+    }).then((src) => {
+      if (!src || src.configured === false) {
+        pane.textContent = (src && src.error) || "Live producer required to view the parked file.";
+        if (open) open.hidden = true;
+        return;
+      }
+      pane.textContent = src.text || "(empty document text)";
+      if (badge) badge.hidden = !src.truncated;
+    }).catch((err) => {
+      pane.textContent = err.message || String(err);
+    });
+  }
+
   function bindReviewForms(root, { onDone } = {}) {
     if (!root) return;
     for (const form of root.querySelectorAll(".review-resolve")) {
       if (form.dataset.bound === "1") continue;
       form.dataset.bound = "1";
       form.addEventListener("click", (ev) => ev.stopPropagation());
+      const typeSel = form.querySelector("select[name='doc_type']");
+      if (typeSel) typeSel.addEventListener("change", () => fillHostedSubclass(form));
+      bindReviewSource(form);
       form.addEventListener("submit", async (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
@@ -276,6 +368,8 @@ const App = (() => {
           || (form.disposition && form.disposition.value)
           || "resume";
         const notes = (form.notes && form.notes.value) || "";
+        const docType = (form.doc_type && form.doc_type.value) || "";
+        const docSubclass = (form.doc_subclass && form.doc_subclass.value) || "";
         if (status) status.textContent = "Submitting…";
         try {
           const result = await Obs.api.reviewResolve({
@@ -285,6 +379,8 @@ const App = (() => {
             decision,
             disposition,
             notes,
+            doc_type: docType,
+            doc_subclass: docSubclass,
           });
           if (status) {
             status.textContent = `Saved — ${result.disposition || disposition} ${result.decision || decision}`;

@@ -200,9 +200,14 @@ and withholds catalog writes when `compile_report` fails).
 Operators resolve those items from the REVIEW desk (pixel cards, inspector,
 Observatory, or `mailroom-tui --resolve`). The visualizer proxies
 `POST /api/review/resolve` to llm-mailroom: `disposition=resume` re-extracts
-a parked `stage=review` document; `record` appends a hash-chained audit row
-without moving the file; `requeue` copies the source file back to the inbox.
-Requires `MAILROOM_PIPELINE_URL` + `MAILROOM_PIPELINE_TOKEN`. Display data
+a parked `stage=review` document (optional `doc_type` / `doc_subclass`
+override is written onto the parked manifest first); `record` appends a
+hash-chained audit row without moving the file; `requeue` copies the source
+file back to the inbox (class override stamped on the sidecar).
+`GET /api/review/source` re-reads the parked file (text JSON, or
+`?download=1` for original bytes). Requires `MAILROOM_PIPELINE_URL` +
+`MAILROOM_PIPELINE_TOKEN` on the visualizer (`:8000` producer — not
+`MAILROOM_API_URL`, which is TUI → this process `:8001`). Display data
 stays Langfuse-only — the producer token never leaves the visualizer server.
 
 ## Demos & screenshots

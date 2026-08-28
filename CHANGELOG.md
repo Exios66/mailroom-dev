@@ -6,6 +6,20 @@ All notable changes to The-Mailroom are documented here, following
 
 ## [Unreleased]
 
+### Added
+
+- **REVIEW tray class correction and document viewer.** Pixel REVIEW, inspector,
+  and Observatory Review can correct `doc_type` / `doc_subclass` on a parked
+  item and read the raw parked file (extracted text pane + Open original)
+  while deciding. `POST /api/review/resolve` forwards those fields; new
+  `GET /api/review/source` proxies producer `GET /documents/{doc_id}/source`.
+  `mailroom-tui --resolve` gained `--doc-type` / `--doc-subclass`; `--source`
+  prints parked text. `/api/health` and `/api/meta` now surface
+  `pipeline_configured` (boolean only) plus `doc_subclasses`. Snapshot / GH
+  Pages stay read-only. Requires `MAILROOM_PIPELINE_URL` +
+  `MAILROOM_PIPELINE_TOKEN` pointing at llm-mailroom `:8000` — not
+  `MAILROOM_API_URL` (TUI → this visualizer `:8001`).
+
 ## [0.3.0] - 2026-08-28
 
 > review resolve, live floor, skills, and reconsideration

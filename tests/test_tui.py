@@ -82,6 +82,16 @@ def test_review_table_shows_reconsider_causes():
     assert "mailroom-tui --resolve" in text
 
 
+def test_tui_resolve_flags_include_class_and_source():
+    from pathlib import Path
+
+    src = (Path(__file__).resolve().parent.parent / "tui" / "mailroom_console.py").read_text()
+    assert "--doc-type" in src
+    assert "--doc-subclass" in src
+    assert 'help="print parked document text via GET /api/review/source"' in src
+    assert "doc_type" in src and "doc_subclass" in src
+
+
 
 def test_metrics_table_renders():
     table = metrics_table({"total_docs": 10, "verdict_counts": {"CORRECT": 3, "PARTIAL": 1}})

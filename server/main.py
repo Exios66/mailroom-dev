@@ -13,7 +13,7 @@ from typing import Any, Optional
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 # V-8: .env must be loaded BEFORE any module-level env reads (the knobs below
@@ -30,8 +30,16 @@ from mailroom_ui.metrics import compute_metrics
 from mailroom_ui.models import PipelineRun, SessionSummary
 from mailroom_ui.multi_source import MultiSource
 from mailroom_ui.pipeline_ops import fetch_pipeline_ops
-from mailroom_ui.review_actions import ReviewActionError, fetch_audit, resolve_review, review_context
-from mailroom_ui.pipeline_schema import DOC_CLASSES
+from mailroom_ui.review_actions import (
+    ReviewActionError,
+    fetch_audit,
+    fetch_source,
+    fetch_source_download,
+    pipeline_configured,
+    resolve_review,
+    review_context,
+)
+from mailroom_ui.pipeline_schema import DOC_CLASSES, DOC_SUBCLASS_BY_CLASS
 from mailroom_ui.phoenix_source import PhoenixSource
 from mailroom_ui.sources import TraceSourceUnavailable
 from mailroom_ui.trace_interpreter import interpret_trace
@@ -66,7 +74,8 @@ API_ENDPOINTS = [
     {"method": "POST", "path": "/api/debug/client", "desc": "store a browser debug dump for the next agent pull"},
     {"method": "GET", "path": "/api/pipeline", "desc": "producer watcher/inbox liveness (MAILROOM_PIPELINE_URL)"},
     {"method": "GET", "path": "/api/review/context", "desc": "producer catalog+audit for a review item; ?trace_id=&filename=&doc_id="},
-    {"method": "POST", "path": "/api/review/resolve", "desc": "proxy approve/reject/record/requeue to llm-mailroom"},
+    {"method": "POST", "path": "/api/review/resolve", "desc": "proxy approve/reject/record/requeue (+ optional doc_type/doc_subclass) to llm-mailroom"},
+    {"method": "GET", "path": "/api/review/source", "desc": "parked document text from producer; ?trace_id=&filename=&doc_id=&download=1"},
     {"method": "GET", "path": "/api/review/audit", "desc": "hash-chained producer audit; ?doc_id="},
     {"method": "WS", "path": "/ws", "desc": "floor snapshots (live mode only)"},
     {"method": "GET", "path": "/live", "desc": "hosted Observatory UI (modern, accessible, public)"},
@@ -135,7 +144,11 @@ def create_app(source: Optional[object] = None) -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return src.health()
+        payload = src.health()
+        if isinstance(payload, dict):
+            payload = dict(payload)
+            payload["pipeline_configured"] = pipeline_configured()
+        return payload
 
     @app.get("/api/traces")
     def traces(
@@ -247,8 +260,44 @@ def create_app(source: Optional[object] = None) -> FastAPI:
                 trace_id=str(payload.get("trace_id") or ""),
                 filename=str(payload.get("filename") or ""),
                 doc_id=str(payload.get("doc_id") or ""),
+                doc_type=str(payload.get("doc_type") or ""),
+                doc_subclass=str(payload.get("doc_subclass") or ""),
             )
         except ReviewActionError as exc:
+            return JSONResponse(
+                status_code=exc.status,
+                content={"error": exc.message, "detail": exc.detail},
+            )
+
+    @app.get("/api/review/source")
+    def review_source_ep(
+        trace_id: str = Query("", max_length=256),
+        filename: str = Query("", max_length=512),
+        doc_id: str = Query("", max_length=128),
+        download: bool = Query(False),
+    ):
+        """Parked document text/bytes from the producer. Browser never hits :8000."""
+        try:
+            if download:
+                data, content_type, name = fetch_source_download(
+                    trace_id=trace_id, filename=filename, doc_id=doc_id,
+                )
+                headers = {}
+                if name:
+                    headers["Content-Disposition"] = f'attachment; filename="{name}"'
+                return Response(content=data, media_type=content_type, headers=headers)
+            if not (trace_id or filename or doc_id):
+                if not pipeline_configured():
+                    return fetch_source()
+                return {"configured": True, "text": None, "error": None}
+            return fetch_source(trace_id=trace_id, filename=filename, doc_id=doc_id)
+        except ReviewActionError as exc:
+            if not download and exc.status == 503:
+                return {
+                    "configured": False,
+                    "text": None,
+                    "error": exc.message,
+                }
             return JSONResponse(
                 status_code=exc.status,
                 content={"error": exc.message, "detail": exc.detail},
@@ -275,8 +324,11 @@ def create_app(source: Optional[object] = None) -> FastAPI:
             classes = schema.doc_classes if hasattr(schema, "doc_classes") else DOC_CLASSES
         except Exception:
             classes = DOC_CLASSES
+        subclasses = {k: list(v) for k, v in DOC_SUBCLASS_BY_CLASS.items()}
         return {
             "doc_classes": classes,
+            "doc_subclasses": subclasses,
+            "pipeline_configured": pipeline_configured(),
             "source": _source_names(src),
             "mode": "api",
             "edition": _edition(),
@@ -310,6 +362,7 @@ def create_app(source: Optional[object] = None) -> FastAPI:
                 os.environ.get("MAILROOM_PIPELINE_URL")
                 or os.environ.get("MAILROOM_PIPELINE_API")
             ),
+            "pipeline_configured": pipeline_configured(),
         }
         for attr in ("project",):
             if hasattr(src, attr):

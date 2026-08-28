@@ -81,8 +81,10 @@ mailroom-tui              # AgentLab-style live console (same data, in a termina
   `arbitrate-verdict`). Click an envelope for its full run.
 - **REVIEW** — the review siding as a queue: every run waiting on a human,
   with its escalation reason and confidence. Approve / Reject / Requeue
-  (and record-only audit) when `MAILROOM_PIPELINE_URL` points at
-  llm-mailroom; one click still opens the inspector.
+  (and record-only audit), plus doc-type / subtype correction and a raw
+  document text viewer, when `MAILROOM_PIPELINE_URL` +
+  `MAILROOM_PIPELINE_TOKEN` point at llm-mailroom `:8000`; one click still
+  opens the inspector.
 - **INSPECTOR** — drill-down into any trace: node-span timeline, LLM
   generations (model, tokens, latency, cost), confidence and judge scores.
 - **SESSIONS** — matter explorer grouped by Langfuse session.
@@ -103,9 +105,10 @@ verdict banners, review siding, sessions, metrics, inspect (`[` / `]` cycle
 runs), and a debug ring. It subscribes to the same WebSocket floor snapshots
 as the web UI (`--once --view floor|review|metrics|sessions|inspect|debug`
 renders a single frame for scripting). `--resolve TRACE --decision
-approved|rejected --disposition resume|record|requeue --notes "..."` posts
-through this visualizer to the producer (never point `MAILROOM_API_URL` at
-the producer `:8000`).
+approved|rejected --disposition resume|record|requeue --notes "..."
+[--doc-type X --doc-subclass Y]` posts through this visualizer to the
+producer. `--source TRACE` prints parked document text. Never point
+`MAILROOM_API_URL` at the producer `:8000`.
 
 </details>
 
@@ -354,8 +357,10 @@ All knobs live in `.env` (see `.env.example`): Langfuse keys/host
 (`MAILROOM_POLL_INTERVAL`), recent window (default **7 days**,
 `MAILROOM_RECENT_WINDOW=604800`), trace limit (`MAILROOM_TRACE_LIMIT=200`),
 optional tag/env filters, `MAILROOM_PORT` (default `8001`),
-`MAILROOM_TAXONOMY`, and optional `MAILROOM_PIPELINE_URL` (producer watcher
-+ inbox liveness, and the human-review resolve proxy). The GH Pages edition adds `MAILROOM_SOURCE`
+`MAILROOM_TAXONOMY`, and `MAILROOM_PIPELINE_URL` + `MAILROOM_PIPELINE_TOKEN`
+(producer on `:8000` — watcher/inbox liveness, human-review resolve, class
+correction, parked-file source). `MAILROOM_API_URL` is the TUI → this
+visualizer (`:8001`), not the producer. The GH Pages edition adds `MAILROOM_SOURCE`
 (`langfuse|phoenix|both`), `PHOENIX_ENDPOINT` / `PHOENIX_API_KEY` /
 `MAILROOM_PHOENIX_PROJECT`, `MAILROOM_CORS_ORIGINS`, and `MAILROOM_DEBUG`.
 
