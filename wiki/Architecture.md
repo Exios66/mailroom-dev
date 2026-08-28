@@ -215,6 +215,10 @@ stays Langfuse-only — the producer token never leaves the visualizer server.
 
 ## Demos & screenshots
 
+A working REVIEW-tray round-trip (FakeClient traces + `tests/fake_producer.py`
+`/v1` stub) is `PYTHONPATH=. python scripts/demo_review_tray.py --port 8006`.
+`--check-api` hits lookup, source fallback, record, resume, and complete.
+
 Stills of every pixel / Observatory / TUI desk live in `docs/screenshots/`.
 The PR desk walkthrough (`docs/demos/tui-server-observatory-desk-walkthrough.mp4`)
 and the gallery notebook (`docs/demos/The-Mailroom-Demos.ipynb`) live next

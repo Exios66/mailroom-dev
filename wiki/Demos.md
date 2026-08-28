@@ -7,6 +7,24 @@ The pixel console, hosted Observatory, and TUI share one display API.
 These captures document those desks. **Langfuse is still the sole display
 source** — nothing here is canned data served to the UI.
 
+## Working REVIEW tray (producer stub)
+
+`scripts/demo_v030_cast.py` still shows the honest 503 when the producer URL
+is unset. For a **working** resolve path (lookup, source fallback, resume /
+record / requeue / complete):
+
+```bash
+PYTHONPATH=. python scripts/demo_review_tray.py --check-api
+PYTHONPATH=. python scripts/demo_review_tray.py --port 8006
+```
+
+- pixel: `http://127.0.0.1:8006/?api=`
+- Observatory: `http://127.0.0.1:8006/live?api=`
+
+Display traces are FakeClient. The stub (`tests/fake_producer.py`) speaks
+llm-mailroom `/v1`. It does not implement `GET /documents/{id}/source` — the
+text pane uses catalog lookup, matching producer main.
+
 ## v0.3.0 release demos
 
 Full-screen recordings of the new desks (INBOX hopper, REVIEW resolve,

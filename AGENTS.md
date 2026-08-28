@@ -47,6 +47,7 @@ python -m server.main          # FastAPI web server on :8001 (also: mailroom-web
 mailroom-hosted                # Observatory on 0.0.0.0 (public /live UI)
 mailroom-tui                   # TUI console (planned, M4)
 python scripts/seed_demo.py    # seed demo traces INTO Langfuse (planned, M5)
+python scripts/demo_review_tray.py --check-api  # working REVIEW tray vs fake /v1 producer
 python scripts/run_production_pilot.py --check   # HF subset + eval scorer (needs sibling llm-mailroom)
 python scripts/run_production_pilot.py --real    # live Qwen 3.7-Flash pilot → Langfuse, then eval
 python scripts/eval_pipeline.py --session pilot-hf-...   # score existing traces vs docclass-merged GT

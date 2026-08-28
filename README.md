@@ -120,6 +120,13 @@ Langfuse remains the sole display source. The full gallery, including the
 PR screen recording, lives in the **[demos notebook](docs/demos/The-Mailroom-Demos.ipynb)**
 and [`docs/demos.md`](docs/demos.md).
 
+**Working REVIEW tray** (Approve / Record / Requeue / Complete against a `/v1` stub):
+
+```bash
+PYTHONPATH=. python scripts/demo_review_tray.py --port 8006
+# http://127.0.0.1:8006/?api=  and  /live?api=
+```
+
 **v0.3.0 pixel desks** (~42s) — FLOOR hopper, inspector resolve form, REVIEW
 Approve → honest 503, then SESSIONS / HISTORY / METRICS / CONSOLE:
 [v030-pixel-desks-review-resolve.mp4](docs/demos/v030-pixel-desks-review-resolve.mp4)
@@ -159,7 +166,7 @@ Open a section below to expand the stills.
 | ![Inspector overlay on the floor](docs/screenshots/inspector.png) |
 | **INSPECTOR** — node spans, LLM generations, classification / extraction / judge scores. |
 | ![REVIEW siding — human-review queue](docs/screenshots/review.png) |
-| **REVIEW** — parked + RECONSIDER cards with Approve / Reject / Requeue (disposition resume/record/requeue). |
+| **REVIEW** — parked + RECONSIDER cards with Approve / Reject / Requeue / Complete (disposition resume/record/requeue/complete). |
 | ![SESSIONS / matters](docs/screenshots/sessions.png) |
 | **SESSIONS** — Langfuse matters with their traces, stages, and verdicts. |
 | ![HISTORY with replay](docs/screenshots/history.png) |
@@ -179,7 +186,7 @@ Open a section below to expand the stills.
 | ![Observatory pipeline trays](docs/screenshots/observatory-pipeline.png) |
 | **Pipeline** — live trays including INBOX hopper, Sorter · Extract · Judge · Boss · Report · Archive · Review · Completed. |
 | ![Observatory review queue](docs/screenshots/observatory-review.png) |
-| **Review** — human-review queue with inline resolve (Approve / Reject / Requeue). |
+| **Review** — human-review queue with inline resolve (Approve / Reject / Requeue / Complete). |
 | ![Observatory run history](docs/screenshots/observatory-history.png) |
 | **History** — recent runs with paced Replay of stored span sequences. |
 | ![Observatory matters](docs/screenshots/observatory-matters.png) |

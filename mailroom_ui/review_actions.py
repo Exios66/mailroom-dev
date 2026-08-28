@@ -369,8 +369,10 @@ def _class_override_body(
         extra["override_doc_type"] = kind
     try:
         subclass = normalize_review_subclass(kind or doc_type or None, doc_subclass)
-    except ValueError as exc:
-        raise ReviewActionError(str(exc), status=400) from exc
+    except ValueError:
+        # Producer main does not catalog-gate subclass; a parked token like
+        # insurance "fnol" must still resolve. Canonicalize when we can.
+        subclass = (doc_subclass or "").strip() or None
     if subclass:
         extra["doc_subclass"] = subclass
         if kind == "contract" or (not kind and (doc_type or "") == "contract"):

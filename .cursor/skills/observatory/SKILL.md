@@ -30,9 +30,10 @@ When the WebSocket drops, HTTP fallback must poll traces + `/api/pipeline` at
 
 The Review desk can **resolve** items (`Obs.api.reviewResolve`) the same way
 as the pixel console, including class/subtype correction (`doc_type` mapped
-to producer `override_doc_type`) and `Obs.api.reviewSource` for parked text
-(lookup fallback on producer main). Unconfigured producer → setup hint, not
-a fabricated catalog write.
+to producer `override_doc_type`), Complete + `extracted_data`, and
+`Obs.api.reviewSource` for parked text (lookup fallback on producer main).
+Unconfigured producer → setup hint, not a fabricated catalog write.
+Working demo: `scripts/demo_review_tray.py`.
 
 ## Related
 
