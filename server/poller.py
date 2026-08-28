@@ -73,7 +73,56 @@ def run_fingerprint(run: PipelineRun) -> tuple[Any, ...]:
         latency = round(float(run.latency or 0), 2)
     except (TypeError, ValueError):
         latency = 0.0
-    return (updated, stage, latency, run.error_message)
+    # Session is part of identity: llm-mailroom reuses deterministic trace
+    # ids across pilots, so a new session_id means a new run on the same id.
+    return (updated, stage, latency, run.error_message, run.session_id)
+
+
+def apply_light_identity(full: PipelineRun, light: PipelineRun) -> PipelineRun:
+    """Prefer fresh list-payload identity over a cached get_run.
+
+    Reused Langfuse trace ids keep first-write session_id / output on the
+    cached full run even after a later pilot retags the list row. Desk
+    grouping (SESSIONS / REVIEW) keys off session_id, so overlay the light
+    list fields whenever they are present.
+    """
+    updates: dict[str, Any] = {}
+    if light.session_id:
+        updates["session_id"] = light.session_id
+    if light.matter_id:
+        updates["matter_id"] = light.matter_id
+    if light.environment:
+        updates["environment"] = light.environment
+    if light.tags:
+        updates["tags"] = list(light.tags)
+    if light.filename:
+        updates["filename"] = light.filename
+    if light.user_id:
+        updates["user_id"] = light.user_id
+    if light.release:
+        updates["release"] = light.release
+    session_moved = bool(
+        light.session_id and full.session_id and light.session_id != full.session_id
+    )
+    # Span progress lives on get_run observations. Overlay stage from the
+    # light list only when the trace id was reused for a new session —
+    # otherwise a cached list row would pin an in-flight envelope to INGEST.
+    if session_moved:
+        if light.stage:
+            updates["stage"] = light.stage
+            updates["phase"] = light.phase
+        if light.doc_type:
+            updates["doc_type"] = light.doc_type
+        if light.doc_subclass:
+            updates["doc_subclass"] = light.doc_subclass
+        if light.review_causes:
+            updates["review_causes"] = list(light.review_causes)
+        if light.updated_at:
+            updates["updated_at"] = light.updated_at
+        updates["error_message"] = light.error_message
+    if not updates:
+        return full
+    return full.model_copy(update=updates)
 
 
 def is_conveyor_hot(run: PipelineRun) -> bool:
@@ -196,6 +245,13 @@ class PollHub:
         ts, _payload, fp = cached
         if fp != run_fingerprint(light):
             return True
+        if (
+            prev is not None
+            and light.session_id
+            and prev.session_id
+            and prev.session_id != light.session_id
+        ):
+            return True
         age = now - ts
         probe = prev or light
         if is_conveyor_hot(probe) or is_conveyor_hot(light):
@@ -228,10 +284,11 @@ class PollHub:
             cached = self._details.get(run.trace_id)
             prev = prev_by_id.get(run.trace_id)
             chosen: PipelineRun = run
-            payload: Optional[dict[str, Any]] = None
             if not self._needs_refresh(run, cached, now, prev):
-                payload = cached[1]
-                chosen = prev or run
+                chosen = apply_light_identity(prev, run) if prev is not None else run
+                payload = floor_payload(chosen)
+                ts = cached[0] if cached else now
+                self._details[run.trace_id] = (ts, payload, run_fingerprint(run))
             else:
                 force = cached is not None
                 try:
@@ -249,7 +306,7 @@ class PollHub:
                         full = None
                 except Exception:
                     full = None
-                chosen = full if full is not None else run
+                chosen = apply_light_identity(full, run) if full is not None else run
                 payload = floor_payload(chosen)
                 self._details[run.trace_id] = (now, payload, run_fingerprint(run))
             full_runs.append(chosen)

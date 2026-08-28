@@ -234,6 +234,52 @@ def test_server_source_ttl_follows_poll_interval():
     assert "ttl = max(0.0, POLL_INTERVAL)" in text
 
 
+def test_poller_overlays_light_session_on_reused_trace_id():
+    """HF pilots reuse deterministic Langfuse ids; list session_id is live."""
+    now = datetime.now(timezone.utc) - timedelta(minutes=5)
+    first = make_trace(
+        "t-reuse",
+        stage="archived",
+        session_id="pilot-old",
+        matter_id="pilot-old",
+        base_time=now,
+    )
+    client = FakeClient([first])
+    src = LangfuseSource(client=client, cache_ttl=0, poll_cache_ttl=0, run_cache_ttl=60)
+    hub = PollHub(src, interval=3, window=3600, limit=10, inflight_ttl=0)
+    snap1 = hub._fetch()
+    assert snap1 is not None
+    assert hub.runs[0].session_id == "pilot-old"
+    assert snap1[0]["session_id"] == "pilot-old"
+
+    later = now + timedelta(minutes=3)
+    client.traces[:] = [make_trace(
+        "t-reuse",
+        stage="review",
+        doc_type="insurance_claim",
+        session_id="pilot-hf-50",
+        matter_id="pilot-hf-50",
+        base_time=later,
+    )]
+    snap2 = hub._fetch()
+    assert snap2[0]["session_id"] == "pilot-hf-50"
+    assert snap2[0]["stage"] == "review"
+    assert hub.runs[0].session_id == "pilot-hf-50"
+    assert hub.runs[0].needs_human is True
+
+
+def test_list_traces_merges_into_harvest():
+    now = datetime.now(timezone.utc) - timedelta(minutes=5)
+    src = LangfuseSource(
+        client=FakeClient([make_trace("t-h", session_id="s1", base_time=now)]),
+        cache_ttl=60, poll_cache_ttl=60, run_cache_ttl=60,
+    )
+    src.list_traces(since=now - timedelta(hours=1), limit=10)
+    harvest = src.cache.get("list-harvest")
+    assert isinstance(harvest, dict)
+    assert harvest["t-h"]["session_id"] == "s1"
+
+
 def test_pipeline_ops_unconfigured_without_url(monkeypatch):
     from mailroom_ui.pipeline_ops import fetch_pipeline_ops
 

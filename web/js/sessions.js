@@ -30,7 +30,7 @@ const SessionsView = (() => {
     }
     listEl.innerHTML = sessions
       .map((s) => {
-        const runs = (s.runs || []).slice(0, 20);
+        const runs = s.runs || [];
         const rows = runs
           .map((r) => `<div class="run-row" data-trace="${Mailroom.esc(r.trace_id)}">
             <span class="run-file">${Mailroom.esc(r.filename || r.trace_id)}</span>

@@ -428,7 +428,7 @@ class PhoenixSource:
     def invalidate_run(self, trace_id: str) -> None:
         if not trace_id:
             return
-        for prefix in ("run:", "obs:", "scores:", "trace:"):
+        for prefix in ("run:", "obs:", "scores:"):
             self.cache.delete(f"{prefix}{trace_id}")
 
     def get_run(self, trace_id: str, *, force_refresh: bool = False) -> Optional[PipelineRun]:

@@ -233,6 +233,7 @@ class LangfuseSource:
                 break
             page += 1
         self.cache.set(key, out, self.poll_cache_ttl)
+        self._merge_list_harvest(out)
         return out
 
     def _light_traces_from_list(self) -> dict[str, dict[str, Any]]:
@@ -266,6 +267,22 @@ class LangfuseSource:
                     break
         self.cache.set(key, out, self.cache_ttl)
         return out
+
+    def _merge_list_harvest(self, traces: list[dict[str, Any]]) -> None:
+        """Keep drill-down harvest in lockstep with the poller list payload.
+
+        Pilot re-runs reuse deterministic trace ids. A stale list-harvest
+        (or trace:{id} entry) keeps the first-write session_id, so SESSIONS
+        and REVIEW split one 50-doc matter across old and new session ids.
+        """
+        harvest = self.cache.get("list-harvest")
+        merged: dict[str, dict[str, Any]] = dict(harvest) if isinstance(harvest, dict) else {}
+        for t in traces:
+            tid = t.get("id")
+            if tid:
+                merged[tid] = t
+                self.cache.set(f"trace:{tid}", t, self.cache_ttl)
+        self.cache.set("list-harvest", merged, self.cache_ttl)
 
     def get_trace(self, trace_id: str) -> Optional[dict[str, Any]]:
         key = f"trace:{trace_id}"
@@ -378,10 +395,17 @@ class LangfuseSource:
         return out
 
     def invalidate_run(self, trace_id: str) -> None:
-        """Drop cached trace/obs/scores/run so the next get_run is live."""
+        """Drop cached obs/scores/run so the next get_run is live.
+
+        Leave ``trace:{id}`` and ``list-harvest`` alone — ``list_traces``
+        merges the current list payload into those keys. Deleting them here
+        made force-refresh fall through to the rate-limited GET /traces/{id}
+        (or a first-write harvest) and kept reused-id pilots on the old
+        session_id.
+        """
         if not trace_id:
             return
-        for prefix in ("run:", "obs:", "scores:", "trace:"):
+        for prefix in ("run:", "obs:", "scores:"):
             self.cache.delete(f"{prefix}{trace_id}")
 
     def get_run(self, trace_id: str, *, force_refresh: bool = False) -> Optional[PipelineRun]:

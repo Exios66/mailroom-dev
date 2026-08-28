@@ -218,7 +218,11 @@ main { min-height: 520px; }
 .session-head .ses-id { font-weight: 700; color: var(--gold); }
 .session-head .ses-count { color: var(--gray); }
 
-.session-runs { padding: 4px 0; }
+.session-runs {
+  padding: 4px 0;
+  max-height: 480px;
+  overflow-y: auto;
+}
 
 .run-row {
   display: grid;

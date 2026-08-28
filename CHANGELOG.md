@@ -68,6 +68,20 @@ All notable changes to The-Mailroom are documented here, following
   not catalog-gate `doc_subclass`; the proxy now passes parked tokens such as
   insurance `fnol` through so Complete / Resume still work.
 
+- **50-doc reused-trace pilots group as one matter.** Deterministic Langfuse
+  trace ids reused by a later HF session kept the first-write `session_id` on
+  cached `get_run` rows, so SESSIONS/REVIEW split 50 documents across old and
+  new session ids and the pixel desk sliced each matter to 20 rows.
+  `list_traces` now merges into `list-harvest`, the poller overlays list
+  identity (session / stage / `needs_human`) onto cached full runs, `/api/sessions`
+  embeds every run in the window as compact floor payloads (no 20-row cap;
+  list responses are `Cache-Control: no-store` so a stale 20-row fetch cannot
+  linger). `GET /api/sessions/{id}` reads the poller
+  desk instead of N+1 Langfuse (and falls back to the trace list, not
+  `sessions.get`, when the desk is still empty). Empty-desk SESSIONS/REVIEW/METRICS
+  fall back to the cheap trace list, not `enriched_recent_runs`. Pixel SESSIONS and
+  Observatory Matters scroll the full list.
+
 ## [0.3.0] - 2026-08-28
 
 > review resolve, live floor, skills, and reconsideration

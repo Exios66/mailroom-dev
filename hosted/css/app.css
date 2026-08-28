@@ -430,6 +430,11 @@ table.data tbody tr:hover { background: var(--bg-2); }
   margin-bottom: 0.8rem;
 }
 
+.matter ul {
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
 #metrics-grid { display: grid; gap: 0.7rem; }
 
 .metrics {

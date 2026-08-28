@@ -23,7 +23,6 @@ load_dotenv()
 
 from mailroom_ui.langfuse_source import (
     LangfuseSource,
-    enriched_recent_runs,
     list_recent_runs,
 )
 from mailroom_ui.metrics import compute_metrics
@@ -211,15 +210,50 @@ def create_app(source: Optional[object] = None) -> FastAPI:
                 created_at=min(stamps_c) if stamps_c else None,
                 updated_at=max(stamps_u) if stamps_u else None,
                 trace_count=len(rs),
-                runs=rs[:20],
+                runs=rs,
             ))
         out.sort(key=lambda s: s.updated_at or datetime.min, reverse=True)
-        return {"count": len(out[:limit]), "source": _source_names(src),
-                "sessions": [s.model_dump() for s in out[:limit]]}
+        return JSONResponse(
+            {
+                "count": len(out[:limit]),
+                "source": _source_names(src),
+                "sessions": [
+                    {
+                        **s.model_dump(mode="json", exclude={"runs"}),
+                        "runs": [floor_payload(r) for r in s.runs],
+                    }
+                    for s in out[:limit]
+                ],
+            },
+            headers=_NO_CACHE,
+        )
 
     @app.get("/api/sessions/{session_id}")
     def session_detail(session_id: str):
-        runs = _session_runs(src, session_id, limit=200)
+        # Prefer the poller's already-enriched window. A 50-doc pilot used to
+        # N+1 get_session_traces × get_run and time out against Langfuse.
+        desk = [
+            r for r in (hub.runs or [])
+            if (r.session_id or r.matter_id) == session_id
+        ]
+        if not desk:
+            cutoff = _utcnow() - timedelta(seconds=7 * 86400)
+            desk = [
+                r for r in list_recent_runs(src, since=cutoff, limit=TRACE_LIMIT)
+                if (r.session_id or r.matter_id) == session_id
+            ]
+        if desk:
+            desk.sort(
+                key=lambda r: (r.updated_at or r.created_at or datetime.min),
+                reverse=True,
+            )
+            return {
+                "session_id": session_id,
+                "count": len(desk),
+                "source": _source_names(src),
+                "runs": [_serialize(r) for r in desk],
+            }
+        runs = _session_runs(src, session_id, limit=TRACE_LIMIT)
         return {
             "session_id": session_id,
             "count": len(runs),
@@ -503,15 +537,20 @@ def _desk_runs(src, hub: PollHub, *, since_seconds: int, limit: int) -> list[Pip
     The poller already called get_run() for the live window. Reusing that
     list keeps those desks instant and leaves the inspector able to fetch
     /api/traces/{id} instead of waiting behind a sequential Langfuse walk.
-    Fall back to enriched_recent_runs when the poller has not produced a
-    snapshot yet (tests, first second after boot).
+    Fall back to the cheap trace-list (light runs) when the poller has not
+    produced a snapshot yet — never enriched_recent_runs, which N+1s get_run
+    and hung a 50-doc SESSIONS load.
     """
     cutoff = _utcnow() - timedelta(seconds=since_seconds)
     cached = [r for r in (hub.runs or [])
               if (r.updated_at or r.created_at or cutoff) >= cutoff]
     if cached:
         return cached[:limit]
-    return enriched_recent_runs(src, since=cutoff, limit=limit)
+    # Never N+1 Langfuse here. A 50-doc window used to hang SESSIONS/REVIEW
+    # for minutes while the poller was still filling hub.runs. Light list
+    # rows carry session_id / stage / needs_human; the next poller tick
+    # replaces this with enriched desk runs.
+    return list_recent_runs(src, since=cutoff, limit=limit)
 
 
 def _session_runs(src: LangfuseSource, session_id: str, limit: int) -> list[PipelineRun]:

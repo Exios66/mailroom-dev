@@ -64,11 +64,35 @@ def test_sessions_serve_enriched_runs():
         assert run["llm_call_count"] > 0
 
 
+def test_sessions_embed_all_runs_not_capped_at_20():
+    now = datetime.now(timezone.utc) - timedelta(hours=1)
+    traces = [
+        make_trace(
+            f"t-big-{i:02d}",
+            session_id="pilot-hf-50",
+            matter_id="pilot-hf-50",
+            base_time=now,
+        )
+        for i in range(25)
+    ]
+    src = LangfuseSource(client=FakeClient(traces))
+    with TestClient(create_app(src)) as c:
+        s = c.get("/api/sessions?limit=10").json()
+        sid = s["sessions"][0]["id"]
+        assert s["sessions"][0]["trace_count"] == 25
+        assert len(s["sessions"][0]["runs"]) == 25
+        one = c.get(f"/api/sessions/{sid}").json()
+        assert one["count"] == 25
+        assert len(one["runs"]) == 25
+        compact = s["sessions"][0]["runs"][0]
+        assert "spans" not in compact
+        assert "generations" not in compact
+        assert compact["total_tokens"] > 0
+
+
 def test_desk_runs_prefer_poller_snapshot():
     """SESSIONS/REVIEW/METRICS must reuse the poller's enriched list instead
     of walking Langfuse again (that blocked the inspector overlay)."""
-    from unittest.mock import patch
-
     from server.main import _desk_runs
     from server.poller import PollHub
 
@@ -76,10 +100,24 @@ def test_desk_runs_prefer_poller_snapshot():
     hub = PollHub(src, interval=60, window=21600, limit=100)
     assert hub._fetch() is not None
     assert len(hub.runs) == 3
-    with patch("server.main.enriched_recent_runs",
-               side_effect=AssertionError("must not re-walk Langfuse")):
-        runs = _desk_runs(src, hub, since_seconds=7 * 86400, limit=200)
+    runs = _desk_runs(src, hub, since_seconds=7 * 86400, limit=200)
     assert len(runs) == 3
+    assert {r.trace_id for r in runs} == {"t1", "t2", "t3"}
+
+
+def test_desk_runs_fall_back_to_light_list_not_enrich():
+    """An empty poller desk must not N+1 get_run (50-doc SESSIONS hang)."""
+    from unittest.mock import patch
+
+    from server.main import _desk_runs
+    from server.poller import PollHub
+
+    src = LangfuseSource(client=FakeClient(_fresh_traces()))
+    hub = PollHub(src, interval=60, window=21600, limit=100)
+    assert hub.runs == []
+    with patch("mailroom_ui.langfuse_source.enriched_recent_runs",
+               side_effect=AssertionError("must not enrich on empty desk")):
+        runs = _desk_runs(src, hub, since_seconds=7 * 86400, limit=200)
     assert {r.trace_id for r in runs} == {"t1", "t2", "t3"}
 
 
