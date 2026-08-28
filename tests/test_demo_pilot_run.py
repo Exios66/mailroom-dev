@@ -16,14 +16,15 @@ def test_fake_client_keeps_caller_owned_empty_list():
 
 def test_pilot_schedule_covers_stations_and_cast():
     stages = {extra.get("stage") for _, action, key, extra in SCHEDULE}
-    assert {"ingest", "classify", "extract", "judge_verify", "arbiter",
+    assert {"inbox", "ingest", "classify", "extract", "judge_verify", "arbiter",
             "report", "catalog", "archived", "review", "failed"} <= stages
     assert {key for _, _, key, _ in SCHEDULE} == set(CAST)
     traces: list[dict] = []
     for _, action, key, extra in SCHEDULE:
         apply_event(traces, action, key, extra)
-    assert len(traces) == 5
+    assert len(traces) == 6
     by_id = {t["id"]: t for t in traces}
+    assert by_id["pilot-incoming"]["output"]["stage"] == "inbox"
     assert by_id["pilot-contract"]["output"]["stage"] == "archived"
     assert by_id["pilot-merger"]["output"]["stage"] == "review"
     assert by_id["pilot-articles"]["output"]["stage"] == "failed"

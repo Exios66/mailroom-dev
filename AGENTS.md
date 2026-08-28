@@ -166,11 +166,12 @@ scripts/publish_pages.sh       # build site/ + push gh-pages:/docs (NO Actions;
   model registry (qwen/deepseek); in-flight runs now refine the generic
   `processing` marker with span progress instead of pinning to INGEST;
   metrics date-bomb test fixed.
-- **v0.3.0 — GH Pages edition (in flight)**: static Pages site via
+- **v0.3.0 — released 2026-08-28**: GH Pages edition plus everything since
+  v0.2.0 — human-review resolve (pixel / Observatory / TUI `--resolve`),
+  Agent Skills, live-floor hopper + watcher lamp, Observatory Inbox tray,
+  reconsideration beyond self-reported confidence, dojo 0.9–0.11 / Langfuse
+  data-model mirrors, hosted Observatory, production HF eval, and release
+  demos (`docs/demos/v030-*.mp4`). Static Pages still deploys via
   `scripts/publish_pages.sh` → `gh-pages:/docs` (deploy-from-branch, NO
-  Actions); snapshot exporter (`scripts/export_snapshot.py`) bundles
-  `data/*.json`; SPA gained configurable API base (`?api=`), snapshot
-  fallback mode, and an agent debug layer (`window.__MAILROOM_DEBUG__`,
-  `/api/debug/logs`, `/api/debug/source`, DEBUG toggle); new Phoenix source
-  (`mailroom_ui/phoenix_source.py`, local Arize Phoenix via
-  `MAILROOM_SOURCE=phoenix|both`, CORS via `MAILROOM_CORS_ORIGINS`).
+  Actions). Snapshot exporter, `?api=` live/snapshot dual mode, debug
+  layer, and Phoenix (`MAILROOM_SOURCE=phoenix|both`) ship in this cut.

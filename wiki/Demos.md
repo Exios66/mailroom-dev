@@ -7,6 +7,18 @@ The pixel console, hosted Observatory, and TUI share one display API.
 These captures document those desks. **Langfuse is still the sole display
 source** — nothing here is canned data served to the UI.
 
+## v0.3.0 release demos
+
+Full-screen recordings of the new desks (INBOX hopper, REVIEW resolve,
+RECONSIDER, Observatory Inbox). Cast: `scripts/demo_v030_cast.py`.
+
+- [Pixel desks (~42s)](https://github.com/Exios66/The-Mailroom/blob/main/docs/demos/v030-pixel-desks-review-resolve.mp4)
+  — FLOOR hopper, inspector, REVIEW Approve (honest 503), other pixel tabs.
+  [Poster](https://github.com/Exios66/The-Mailroom/blob/main/docs/demos/v030-pixel-poster.png)
+- [Observatory (~52s)](https://github.com/Exios66/The-Mailroom/blob/main/docs/demos/v030-observatory-review-resolve.mp4)
+  — Inbox tray, Review resolve, inspect dialog, History / Matters / Metrics / Debug.
+  [Poster](https://github.com/Exios66/The-Mailroom/blob/main/docs/demos/v030-observatory-poster.png)
+
 ## Walkthrough video (PR recording)
 
 ~56 seconds, 1920×1200: FLOOR → REVIEW → SESSIONS → HISTORY → METRICS →
@@ -37,7 +49,7 @@ agreement peels to REVIEW, a corporate record fails).
 | [floor.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/floor.png) | FLOOR conveyor |
 | [pilot-floor.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/pilot-floor.png) | PILOT RUN — envelopes in motion |
 | [inspector.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/inspector.png) | INSPECTOR |
-| [review.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/review.png) | REVIEW siding |
+| [review.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/review.png) | REVIEW siding — Approve / Reject / Requeue + RECONSIDER |
 | [sessions.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/sessions.png) | SESSIONS / matters |
 | [history.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/history.png) | HISTORY + REPLAY |
 | [metrics.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/metrics.png) | METRICS |
@@ -47,8 +59,8 @@ agreement peels to REVIEW, a corporate record fails).
 
 | Still | Desk |
 |---|---|
-| [observatory-pipeline.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/observatory-pipeline.png) | Pipeline trays |
-| [observatory-review.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/observatory-review.png) | Review |
+| [observatory-pipeline.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/observatory-pipeline.png) | Pipeline trays (incl. Inbox) |
+| [observatory-review.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/observatory-review.png) | Review resolve forms |
 | [observatory-history.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/observatory-history.png) | History + Replay |
 | [observatory-matters.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/observatory-matters.png) | Matters |
 | [observatory-metrics.png](https://github.com/Exios66/The-Mailroom/blob/main/docs/screenshots/observatory-metrics.png) | Metrics |

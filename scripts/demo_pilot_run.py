@@ -73,11 +73,20 @@ CAST: dict[str, dict[str, Any]] = {
         "quality": 0.22,
         "error": "extraction failed: LLM output not valid JSON",
     },
+    "incoming": {
+        "filename": "inbox_scan_correspondence_07.pdf",
+        "doc_type": "correspondence",
+        "class_conf": 0.0,
+        "extract_conf": 0.0,
+        "verdict": None,
+        "quality": None,
+    },
 }
 
 # (seconds_from_go, action, cast_key, extra)
 # action: spawn | stage
 SCHEDULE: list[tuple[float, str, str, dict[str, Any]]] = [
+    (0.0, "spawn", "incoming", {"stage": "inbox"}),
     (0.0, "spawn", "contract", {"stage": "ingest"}),
     (2.2, "stage", "contract", {"stage": "classify"}),
     (3.0, "spawn", "claim", {"stage": "ingest"}),

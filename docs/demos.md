@@ -7,6 +7,28 @@ The pixel console, hosted Observatory, and TUI share one display API.
 These captures document those desks. **Langfuse is still the sole display
 source** — nothing here is canned data served to the UI.
 
+## v0.3.0 release demos
+
+Full-screen recordings of the new desks (INBOX hopper, REVIEW resolve,
+RECONSIDER, Observatory Inbox tray). FakeClient traces via
+`scripts/demo_v030_cast.py` — Langfuse remains the display contract; resolve
+posts show the honest 503 when `MAILROOM_PIPELINE_URL` is unset.
+
+**Pixel desks** (~42s): FLOOR → inspector → REVIEW Approve → SESSIONS /
+HISTORY / METRICS / CONSOLE.
+
+[![v0.3.0 pixel REVIEW](demos/v030-pixel-poster.png)](demos/v030-pixel-desks-review-resolve.mp4)
+
+- Video: [`docs/demos/v030-pixel-desks-review-resolve.mp4`](demos/v030-pixel-desks-review-resolve.mp4)
+- Re-record: `PYTHONPATH=. python scripts/demo_v030_cast.py --port 8006`
+
+**Observatory** (~52s): Pipeline (Inbox tray) → Review resolve + inspect
+dialog → History / Matters / Metrics / Debug.
+
+[![v0.3.0 Observatory Pipeline](demos/v030-observatory-poster.png)](demos/v030-observatory-review-resolve.mp4)
+
+- Video: [`docs/demos/v030-observatory-review-resolve.mp4`](demos/v030-observatory-review-resolve.mp4)
+
 ## Walkthrough video (PR recording)
 
 ~56 seconds, 1920×1200: FLOOR → REVIEW → SESSIONS → HISTORY → METRICS →
@@ -44,7 +66,7 @@ PYTHONPATH=. python scripts/demo_pilot_run.py --port 8005 --delay 8
 | [floor.png](screenshots/floor.png) | FLOOR conveyor |
 | [pilot-floor.png](screenshots/pilot-floor.png) | PILOT RUN — envelopes in motion |
 | [inspector.png](screenshots/inspector.png) | INSPECTOR |
-| [review.png](screenshots/review.png) | REVIEW siding |
+| [review.png](screenshots/review.png) | REVIEW siding — Approve / Reject / Requeue + RECONSIDER |
 | [sessions.png](screenshots/sessions.png) | SESSIONS / matters |
 | [history.png](screenshots/history.png) | HISTORY + REPLAY |
 | [metrics.png](screenshots/metrics.png) | METRICS |
@@ -54,8 +76,8 @@ PYTHONPATH=. python scripts/demo_pilot_run.py --port 8005 --delay 8
 
 | Still | Desk |
 |---|---|
-| [observatory-pipeline.png](screenshots/observatory-pipeline.png) | Pipeline trays |
-| [observatory-review.png](screenshots/observatory-review.png) | Review |
+| [observatory-pipeline.png](screenshots/observatory-pipeline.png) | Pipeline trays (incl. Inbox) |
+| [observatory-review.png](screenshots/observatory-review.png) | Review resolve forms |
 | [observatory-history.png](screenshots/observatory-history.png) | History + Replay |
 | [observatory-matters.png](screenshots/observatory-matters.png) | Matters |
 | [observatory-metrics.png](screenshots/observatory-metrics.png) | Metrics |

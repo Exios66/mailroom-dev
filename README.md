@@ -1,7 +1,7 @@
 # The-Mailroom
 
-![version](https://img.shields.io/badge/version-0.2.0-blue)
-[![release](https://img.shields.io/badge/release-v0.2.0-blue)](https://github.com/Exios66/The-Mailroom/releases/tag/v0.2.0)
+![version](https://img.shields.io/badge/version-0.3.0-blue)
+[![release](https://img.shields.io/badge/release-v0.3.0-blue)](https://github.com/Exios66/The-Mailroom/releases/tag/v0.3.0)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![data source](https://img.shields.io/badge/data%20source-Langfuse%20only-6C5CE7)
 
@@ -117,6 +117,18 @@ Langfuse remains the sole display source. The full gallery, including the
 PR screen recording, lives in the **[demos notebook](docs/demos/The-Mailroom-Demos.ipynb)**
 and [`docs/demos.md`](docs/demos.md).
 
+**v0.3.0 pixel desks** (~42s) — FLOOR hopper, inspector resolve form, REVIEW
+Approve → honest 503, then SESSIONS / HISTORY / METRICS / CONSOLE:
+[v030-pixel-desks-review-resolve.mp4](docs/demos/v030-pixel-desks-review-resolve.mp4)
+
+[![v0.3.0 pixel REVIEW](docs/demos/v030-pixel-poster.png)](docs/demos/v030-pixel-desks-review-resolve.mp4)
+
+**v0.3.0 Observatory** (~52s) — Inbox tray, Review resolve, inspect dialog,
+History / Matters / Metrics / Debug:
+[v030-observatory-review-resolve.mp4](docs/demos/v030-observatory-review-resolve.mp4)
+
+[![v0.3.0 Observatory Pipeline](docs/demos/v030-observatory-poster.png)](docs/demos/v030-observatory-review-resolve.mp4)
+
 **Walkthrough video** (~56s, pixel desks then Observatory):
 [tui-server-observatory-desk-walkthrough.mp4](docs/demos/tui-server-observatory-desk-walkthrough.mp4)
 — click the file on GitHub to play it.
@@ -144,7 +156,7 @@ Open a section below to expand the stills.
 | ![Inspector overlay on the floor](docs/screenshots/inspector.png) |
 | **INSPECTOR** — node spans, LLM generations, classification / extraction / judge scores. |
 | ![REVIEW siding — human-review queue](docs/screenshots/review.png) |
-| **REVIEW** — runs waiting on a human, with escalation reasons and confidence. |
+| **REVIEW** — parked + RECONSIDER cards with Approve / Reject / Requeue (disposition resume/record/requeue). |
 | ![SESSIONS / matters](docs/screenshots/sessions.png) |
 | **SESSIONS** — Langfuse matters with their traces, stages, and verdicts. |
 | ![HISTORY with replay](docs/screenshots/history.png) |
@@ -162,9 +174,9 @@ Open a section below to expand the stills.
 | | |
 |---|---|
 | ![Observatory pipeline trays](docs/screenshots/observatory-pipeline.png) |
-| **Pipeline** — live trays for Sorter · Extract · Judge · Boss · Report · Archive · Review · Completed. |
+| **Pipeline** — live trays including INBOX hopper, Sorter · Extract · Judge · Boss · Report · Archive · Review · Completed. |
 | ![Observatory review queue](docs/screenshots/observatory-review.png) |
-| **Review** — human-review queue with why / extract / verdict. |
+| **Review** — human-review queue with inline resolve (Approve / Reject / Requeue). |
 | ![Observatory run history](docs/screenshots/observatory-history.png) |
 | **History** — recent runs with paced Replay of stored span sequences. |
 | ![Observatory matters](docs/screenshots/observatory-matters.png) |

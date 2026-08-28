@@ -76,17 +76,29 @@ def write_version(version: tuple[int, int, int], root: Path = ROOT) -> None:
 
 
 def release_changelog(version: tuple[int, int, int], note: str, root: Path = ROOT) -> None:
+    """Move the Unreleased body under ``## [X.Y.Z] - date``; leave Unreleased empty.
+
+    The previous implementation inserted the new header *above* the Unreleased
+    bullets without removing them, so every cut duplicated the section.
+    """
     path = root / "CHANGELOG.md"
     text = path.read_text()
-    bullets, _ = parse_changelog(root)
+    m = re.search(r"^## \[Unreleased\]\s*\n(.*?)(?=^## )", text, re.M | re.S)
+    if not m:
+        fail("CHANGELOG.md has no '## [Unreleased]' section")
+    unreleased_body = m.group(1).strip()
     ver = f"{version[0]}.{version[1]}.{version[2]}"
     today = _dt.date.today().isoformat()
-    body = "\n".join(bullets) if bullets else ""
-    if body and not body.startswith("###"):
+    body = unreleased_body
+    if body and not body.startswith("###") and not body.startswith(">"):
         body = f"### Added\n\n{body}"
-    section = f"## [{ver}] - {today}\n\n{body}\n" if body else f"## [{ver}] - {today}\n"
-    note_line = f"\n> {note}\n" if note else ""
-    new_text = text.replace("## [Unreleased]", f"## [Unreleased]\n{note_line}\n{section}", 1)
+    note_line = f"> {note}\n\n" if note else ""
+    if body:
+        section = f"## [{ver}] - {today}\n\n{note_line}{body}\n"
+    else:
+        section = f"## [{ver}] - {today}\n\n{note_line}".rstrip() + "\n"
+    replacement = f"## [Unreleased]\n\n{section}\n"
+    new_text = text[: m.start()] + replacement + text[m.end() :]
     if new_text == text:
         fail("failed to rewrite CHANGELOG.md")
     path.write_text(new_text)

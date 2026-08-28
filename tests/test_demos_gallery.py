@@ -14,7 +14,9 @@ WIKI = ROOT / "wiki" / "Demos.md"
 README = ROOT / "README.md"
 VIDEO = "tui-server-observatory-desk-walkthrough.mp4"
 PILOT_VIDEO = "pilot-run-documents-through-pipeline.mp4"
-VIDEOS = (VIDEO, PILOT_VIDEO)
+V030_PIXEL = "v030-pixel-desks-review-resolve.mp4"
+V030_OBS = "v030-observatory-review-resolve.mp4"
+VIDEOS = (VIDEO, PILOT_VIDEO, V030_PIXEL, V030_OBS)
 
 
 def _notebook_text() -> str:

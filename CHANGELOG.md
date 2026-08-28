@@ -6,7 +6,21 @@ All notable changes to The-Mailroom are documented here, following
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-28
+
+> review resolve, live floor, skills, and reconsideration
+
 ### Added
+
+- **v0.3.0 GitHub-release demos.** `scripts/demo_v030_cast.py` holds a
+  FakeClient floor covering the INBOX hopper, parked REVIEW (with `doc_id`
+  so Approve / Reject / Requeue render), archived judge-MISS RECONSIDER,
+  and a failed bin. Recordings live in `docs/demos/`
+  (`v030-pixel-desks-review-resolve.mp4` and
+  `v030-observatory-review-resolve.mp4`; the pilot director now parks a
+  scan in INBOX so the hopper is visible).
+  `scripts/release.py` now *moves* `[Unreleased]` under the new version
+  header instead of duplicating the bullets above it.
 
 - **Human-review resolve on the REVIEW desk.** Pixel REVIEW cards, the
   inspector, Observatory Review, and `mailroom-tui --resolve` can approve,
