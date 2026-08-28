@@ -139,6 +139,39 @@ def test_api_review_resolve_rejects_unknown_class(monkeypatch):
     assert "unknown doc_type" in (r.json().get("error") or "")
 
 
+def test_api_review_resolve_passes_parked_noncatalog_subclass(monkeypatch):
+    """Producer main does not catalog-gate subclass; parked tokens like fnol must resolve."""
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")
+
+    posted = {}
+
+    def fake_request(method, url, *, token="", body=None, timeout=8.0):
+        if method == "GET" and "/v1/lookup?" in url:
+            return {"document": {"doc_id": "doc-fnol"}}
+        if method == "POST" and "/v1/review/" in url:
+            posted.update(body or {})
+            return {"status": "ok", "doc_id": "doc-fnol", "disposition": "complete"}
+        raise AssertionError(url)
+
+    from mailroom_ui import review_actions
+
+    src = LangfuseSource(client=FakeClient([make_trace("t-fnol", stage="review")]))
+    with patch.object(review_actions, "_request_json", side_effect=fake_request):
+        with TestClient(create_app(src)) as c:
+            r = c.post("/api/review/resolve", json={
+                "doc_id": "doc-fnol",
+                "decision": "approved",
+                "disposition": "complete",
+                "doc_type": "insurance_claim",
+                "doc_subclass": "fnol",
+                "extracted_data": {"claim_number": "CL-4419"},
+            })
+    assert r.status_code == 200, r.text
+    assert posted["doc_subclass"] == "fnol"
+    assert posted["override_doc_type"] == "insurance_claim"
+
+
 def test_api_review_source_unconfigured():
     src = LangfuseSource(client=FakeClient([make_trace("t1", stage="review")]))
     with TestClient(create_app(src)) as c:

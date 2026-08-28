@@ -45,7 +45,7 @@ board, one discussion log, and one trace contract:
 
 | Repository | Role | Relationship to The-Mailroom |
 |---|---|---|
-| [llm-mailroom](https://github.com/Exios66/llm-mailroom) | LangGraph state machine processing legal documents through specialist LLM agents (classify → extract → report → archive) | **Upstream** — its Langfuse project is this visualizer's sole data source |
+| [llm-mailroom](https://github.com/Exios66/llm-mailroom) | LangGraph state machine processing legal documents through specialist LLM agents (classify → extract → report → archive); pin `@2c0bcac` (package `mailroom` 0.5.0) | **Upstream** — its Langfuse project is this visualizer's sole data source; optional `pip install -e ".[pipeline]"` imports `pipeline.review_resolve` |
 | [llm-entity-extraction](https://github.com/Exios66/llm-entity-extraction) | Prompt-experiment loop (prompt versions × models, paired-bootstrap ablations) | Breeds the pipeline's sorter/specialist prompts; hosts the shared kanban board + governance log for the whole chain |
 | [llm-dojo-scoring](https://github.com/Exios66/llm-dojo-scoring) | Deterministic, field-type-aware scoring engine (`@v0.11.0`) | Upstream governed dependency of both pipeline repos |
 | [Enron-Evaluation-Environment](https://github.com/Exios66/Enron-Evaluation-Environment) | EDA + pipeline-ready correspondence dataset (CMU Enron corpus) | Corpus feed for the pipeline's `correspondence` doc class |
@@ -61,6 +61,7 @@ Full relationship map: [`llm-mailroom/docs/sister-repos.md`](https://github.com/
 
 ```bash
 pip install -e ".[dev]"
+pip install -e ".[pipeline]"  # optional: import llm-mailroom @ 2c0bcac
 cp .env.example .env      # add LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY
 mailroom-web              # → http://127.0.0.1:8001  (pixel-art console)
                           #    Observatory is also at /live on the same server
@@ -120,6 +121,13 @@ Langfuse remains the sole display source. The full gallery, including the
 PR screen recording, lives in the **[demos notebook](docs/demos/The-Mailroom-Demos.ipynb)**
 and [`docs/demos.md`](docs/demos.md).
 
+**Working REVIEW tray** (Approve / Record / Requeue / Complete against a `/v1` stub):
+
+```bash
+PYTHONPATH=. python scripts/demo_review_tray.py --port 8006
+# http://127.0.0.1:8006/?api=  and  /live?api=
+```
+
 **v0.3.0 pixel desks** (~42s) — FLOOR hopper, inspector resolve form, REVIEW
 Approve → honest 503, then SESSIONS / HISTORY / METRICS / CONSOLE:
 [v030-pixel-desks-review-resolve.mp4](docs/demos/v030-pixel-desks-review-resolve.mp4)
@@ -159,7 +167,7 @@ Open a section below to expand the stills.
 | ![Inspector overlay on the floor](docs/screenshots/inspector.png) |
 | **INSPECTOR** — node spans, LLM generations, classification / extraction / judge scores. |
 | ![REVIEW siding — human-review queue](docs/screenshots/review.png) |
-| **REVIEW** — parked + RECONSIDER cards with Approve / Reject / Requeue (disposition resume/record/requeue). |
+| **REVIEW** — parked + RECONSIDER cards with Approve / Reject / Requeue / Complete (disposition resume/record/requeue/complete). |
 | ![SESSIONS / matters](docs/screenshots/sessions.png) |
 | **SESSIONS** — Langfuse matters with their traces, stages, and verdicts. |
 | ![HISTORY with replay](docs/screenshots/history.png) |
@@ -179,7 +187,7 @@ Open a section below to expand the stills.
 | ![Observatory pipeline trays](docs/screenshots/observatory-pipeline.png) |
 | **Pipeline** — live trays including INBOX hopper, Sorter · Extract · Judge · Boss · Report · Archive · Review · Completed. |
 | ![Observatory review queue](docs/screenshots/observatory-review.png) |
-| **Review** — human-review queue with inline resolve (Approve / Reject / Requeue). |
+| **Review** — human-review queue with inline resolve (Approve / Reject / Requeue / Complete). |
 | ![Observatory run history](docs/screenshots/observatory-history.png) |
 | **History** — recent runs with paced Replay of stored span sequences. |
 | ![Observatory matters](docs/screenshots/observatory-matters.png) |
@@ -240,8 +248,10 @@ envelopes are opt-in (`?demo=1`) and only when the trace source is down.
 - Python 3.11+
 - A Langfuse project (the `llm-mailroom` project on US cloud by default)
   with project-scoped API keys in `.env`
-- The sister pipeline repo `../llm-mailroom` (optional — only needed to use
-  the `MAILROOM_TAXONOMY` live-config override; see `AGENTS.md`)
+- The sister pipeline repo `../llm-mailroom` (optional — `MAILROOM_TAXONOMY`
+  live override, production-pilot scripts, or `mailroom_ui/producer.py`
+  checkout import). Prefer `pip install -e ".[pipeline]"` to pin dist
+  `mailroom` @ `2c0bcac` when you want to import `pipeline.review_resolve`.
 - `arize-phoenix-client` (optional — only for the Phoenix trace source)
 
 </details>

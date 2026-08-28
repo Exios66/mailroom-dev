@@ -20,12 +20,13 @@ CONSOLE tabs, `web/js/*.js`, `theme.css`, `index.html` cache-bust `?v=`.
 | `web/js/review.js` / `sessions.js` / `history.js` / `metrics.js` / `console.js` | Desks |
 
 REVIEW is not display-only: `Mailroom.reviewPanel` / `bindReviewForms` in
-`api.js` post `POST /api/review/resolve` (resume / record / requeue) with
-optional `doc_type` / `doc_subclass` (proxy maps `doc_type` → producer
-`override_doc_type`), and fetch `GET /api/review/source` for the parked-file
-text pane (lookup fallback on producer main). Snapshot mode must stay
+`api.js` post `POST /api/review/resolve` (resume / record / requeue / complete)
+with optional `doc_type` / `doc_subclass` (proxy maps `doc_type` → producer
+`override_doc_type`) and `extracted_data`, and fetch `GET /api/review/source` for
+the parked-file text pane (lookup fallback on producer main). Snapshot mode must stay
 read-only. Producer URL/token live on the server
-(`MAILROOM_PIPELINE_URL` = `:8000`, `/v1`).
+(`MAILROOM_PIPELINE_URL` = `:8000`, `/v1`). Working demo:
+`PYTHONPATH=. python scripts/demo_review_tray.py --port 8006`.
 
 Entry: `mailroom-web` / `python -m server.main` → `http://127.0.0.1:8001/`.
 

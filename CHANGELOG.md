@@ -8,6 +8,24 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- **Pinned llm-mailroom as an importable extra.** `pip install -e ".[pipeline]"`
+  installs dist `mailroom` from
+  `git+https://github.com/Exios66/llm-mailroom.git@2c0bcac` (package 0.5.0).
+  `mailroom_ui/producer.py` imports `pipeline.review_resolve` /
+  `schemas.manifest` (dispositions, `serialize_document`, tray actions) from
+  that extra, a sibling checkout, or a git-archive of the pin SHA when the
+  live sibling branch has moved on. Missing extra falls back to the same
+  contract. The visualizer never imports `api.main` or `llm_dojo_scoring`.
+  `/api/meta`, `/api/health`, and `/api/debug/source` surface the pin.
+
+- **Working REVIEW-tray demo.** `scripts/demo_review_tray.py` boots a FakeClient
+  floor plus an in-process llm-mailroom stub (`/v1` lookup, resolve, audit,
+  health) so Approve / Reject / Record / Requeue / Complete, class correction,
+  and the parked-text pane actually round-trip `POST /api/review/resolve` and
+  `GET /api/review/source` (lookup fallback). `--check` / `--check-api` verify
+  the cast without a browser. Pixel + Observatory REVIEW gained a Complete
+  action and `extracted_data` JSON field. Snapshot / GH Pages stay read-only.
+
 - **REVIEW tray class correction and document viewer.** Pixel REVIEW, inspector,
   and Observatory Review can correct `doc_type` / `doc_subclass` on a parked
   item and read parked text (extracted text pane + Open original) while
@@ -45,6 +63,10 @@ All notable changes to The-Mailroom are documented here, following
   `>= 400` as well as thrown fetches. Pixel and Observatory REVIEW still
   show the `MAILROOM_PIPELINE_URL` setup hint when the Langfuse review
   queue returns 503.
+
+- **Parked non-catalog subclasses no longer 400 Complete.** Producer main does
+  not catalog-gate `doc_subclass`; the proxy now passes parked tokens such as
+  insurance `fnol` through so Complete / Resume still work.
 
 ## [0.3.0] - 2026-08-28
 

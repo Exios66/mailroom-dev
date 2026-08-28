@@ -36,6 +36,8 @@ def test_review_queue_dispatch_uses_object_key():
     assert "review-source-text" in API
     assert 'name="doc_type"' in API
     assert 'name="doc_subclass"' in API
+    assert 'name="extracted_data"' in API
+    assert 'data-disposition="complete"' in API
 
 
 def test_snapshot_fetches_are_same_origin_not_api_base():
@@ -114,6 +116,8 @@ def test_live_poll_matches_server_interval_and_pipeline_ops():
     assert 'data-decision="approved"' in hosted_app
     assert 'name="doc_type"' in hosted_app
     assert "review-source-text" in hosted_app
+    assert 'name="extracted_data"' in hosted_app
+    assert 'data-disposition="complete"' in hosted_app
 
 
 def test_error_banner_is_outside_overflow_hidden_screen():

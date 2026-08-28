@@ -25,24 +25,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from mailroom_ui.producer import pipeline_checkout
 
 
 def _pipeline_root() -> Path | None:
-    env = os.environ.get("MAILROOM_PIPELINE_ROOT")
-    candidates = []
-    if env:
-        candidates.append(Path(env))
-    candidates.extend([
-        ROOT.parent / "llm-mailroom",
-        Path("/home/ubuntu/src/llm-mailroom"),
-        Path.home() / "src" / "llm-mailroom",
-    ])
-    for path in candidates:
-        if (path / "src" / "scripts" / "run_hf_pilot.py").is_file():
-            return path
-        if (path / "src" / "graph" / "build_graph.py").is_file():
-            return path
-    return None
+    return pipeline_checkout()
 
 
 def main() -> int:

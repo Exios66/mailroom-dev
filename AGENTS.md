@@ -29,6 +29,13 @@ open exactly one specialty skill. Companion to
 ## Sister repo: `llm-mailroom` (the pipeline)
 
 - **Expected location**: a sibling of this repo, i.e. `../llm-mailroom` from this checkout (e.g. `/Users/luciusjmorningstar/Downloads/llm-mailroom`). It is **not currently present on this machine** — clone it before relying on `MAILROOM_TAXONOMY`.
+- **Import pin**: optional extra `[pipeline]` installs dist `mailroom` from
+  `git+https://github.com/Exios66/llm-mailroom.git@2c0bcac` (package 0.5.0).
+  `mailroom_ui/producer.py` is the only import adapter — `pipeline.review_resolve`
+  + `schemas.manifest` for REVIEW dispositions / `serialize_document`. Default
+  `pip install -e ".[dev]"` stays light; missing extra falls back to the same
+  contract constants. **Never** import `api.main` (import-time watcher) or
+  `llm_dojo_scoring`. Bump `MAILROOM_GIT_SHA` and the extra together.
 - It is the **upstream**: The-Mailroom reads *its* Langfuse project (US cloud, project `llm-mailroom`). Its `AGENTS.md` is authoritative for pipeline internals; consult it whenever the pipeline's tracing contract is in doubt.
 - **What we mirror from it, and must keep in sync (the #1 maintenance duty)** — when the pipeline changes, update all of these in one change:
   - `mailroom_ui/pipeline_schema.py` — mirrors `src/graph/routing.py` + `src/config/taxonomy.yaml` + `src/observability/tracing.py`: node/span names (`SPAN_STAGE_MAP` incl. `normalize-intake`), **`NODE_OBSERVATION_TYPES`** (chain/agent/evaluator/retriever/generation/span), stage→phase map, node order, agent roster (incl. `intake`, `sorter_reviewer`, `arbiter`, `judge`, `compliance_specialist`, `insurance_claims_specialist`), live `DOC_CLASSES` (5 extract classes + `merger_agreement` display/HF alias + `unknown` routing token; retired `court_opinion` / `due_diligence` stay off the roster), Hub `DOC_SUBCLASS_BY_CLASS` + CUAD `CONTRACT_SUBTYPE_KEYS`, Langfuse score aliases (`extraction_verified_precision`), `SUITE_EXTRA_SCORES` (Enron/MAUD), `SPECIALIST_BY_DOC_CLASS`, confidence thresholds (+ `judge_band_high`).
@@ -42,11 +49,13 @@ open exactly one specialty skill. Companion to
 
 ```bash
 pip install -e ".[dev]"        # install (deps NOT vendored; no venv in repo)
+pip install -e ".[pipeline]"   # pin llm-mailroom @ 2c0bcac (optional import)
 python -m pytest tests/ -q     # whole suite (never hits real Langfuse)
 python -m server.main          # FastAPI web server on :8001 (also: mailroom-web)
 mailroom-hosted                # Observatory on 0.0.0.0 (public /live UI)
 mailroom-tui                   # TUI console (planned, M4)
 python scripts/seed_demo.py    # seed demo traces INTO Langfuse (planned, M5)
+python scripts/demo_review_tray.py --check-api  # working REVIEW tray vs fake /v1 producer
 python scripts/run_production_pilot.py --check   # HF subset + eval scorer (needs sibling llm-mailroom)
 python scripts/run_production_pilot.py --real    # live Qwen 3.7-Flash pilot → Langfuse, then eval
 python scripts/eval_pipeline.py --session pilot-hf-...   # score existing traces vs docclass-merged GT
@@ -68,10 +77,11 @@ scripts/publish_pages.sh       # build site/ + push gh-pages:/docs (NO Actions;
   - `langfuse_source.py` — Langfuse SDK adapter: `client.api.trace.list/get`, `client.api.observations.get_many`, `client.api.scores.get_many`, `client.api.sessions.list/get`; `TTLCache`; `LangfuseUnavailable`. `list_recent_runs()` uses trace-list responses only (cheap "light" runs for the floor); `get_run()` fetches observations+scores for drill-down.
   - `trace_interpreter.py` — `interpret_trace(trace, observations?, scores?)` → `PipelineRun`. Accepts **both v2/v3 snake_case and v4 camelCase** observation shapes (see SDK tolerance). Light runs (no observations arg) have empty span/generation detail. Re-run clustering: deterministic trace ids are reused by pilot/attempt re-runs, so a trace can carry several full runs — observations are clustered by time gaps (`RUN_GAP_S`) and only the latest cluster is kept.
   - `pipeline_schema.py` — topology mirror (see sister-repo section).
+  - `producer.py` — pinned llm-mailroom import adapter (`[pipeline]` extra @ `2c0bcac`).
   - `models.py` — pydantic: `PipelineRun` (`doc_id`, `review_causes`, `needs_reconsideration`, `needs_human` includes archived objective misses), `NodeSpan`, `Generation`, `Score`, `SessionSummary`, `Metrics`, `Stage`, `Phase`.
   - `reconsideration.py` — objective review causes (GT miss, judge MISS/PARTIAL, extraction score floor, schema/guardrail/parse, incomplete reporting). Never uses self-reported confidence.
   - `pipeline_ops.py` — producer watcher/inbox liveness (`MAILROOM_PIPELINE_URL`).
-  - `review_actions.py` — server-side proxy to llm-mailroom `GET /v1/lookup`, `POST /v1/review/{doc_id}/resolve` (`disposition=resume|record|requeue|complete`, UI `doc_type` mapped to producer `override_doc_type`, optional `doc_subclass` / `extracted_data`), `GET /v1/audit/{doc_id}`. Parked text: try `GET /v1/documents/{doc_id}/source`, else catalog lookup fallback (`original_filename` / `extracted_data`). Prefix via `MAILROOM_PIPELINE_API_PREFIX` (default `/v1`). Missing URL/token is a clear error, never a fabricated catalog row.
+  - `review_actions.py` — server-side proxy to llm-mailroom `GET /v1/lookup`, `POST /v1/review/{doc_id}/resolve` (`disposition=resume|record|requeue|complete` from `mailroom_ui.producer.DISPOSITIONS`, UI `doc_type` mapped to producer `override_doc_type`, optional `doc_subclass` / `extracted_data`), `GET /v1/audit/{doc_id}`. Parked text: try `GET /v1/documents/{doc_id}/source`, else catalog lookup fallback (`original_filename` / `extracted_data`). Prefix via `MAILROOM_PIPELINE_API_PREFIX` (default `/v1`). Missing URL/token is a clear error, never a fabricated catalog row.
   - `metrics.py` — `compute_metrics()` aggregations (counts by stage/verdict, cost, tokens, p95 generation latency, per-doc-type).
 - `server/` — FastAPI (Langfuse reads + producer operator proxy):
   - `main.py` — `/api/health`, `/api/traces[?since&limit&stage&environment]`, `/api/traces/{id}` (full), `/api/metrics`, `/api/sessions[/{id}]`, `/api/review-queue`, `/api/review/context`, `POST /api/review/resolve`, `/api/review/source`, `/api/review/audit`, `/api/meta`, `/api/debug/{logs,source,bundle,client}`, `/api/pipeline`, WebSocket `/ws`; mounts `web/` at `/static` (pixel console at `/`) and `hosted/` at `/live` + `/live/static`. `MAILROOM_EDITION=hosted` serves the Observatory on `/`. Browser never holds Langfuse or producer keys — the backend proxies everything, including human-review resolve and parked-file source to llm-mailroom.

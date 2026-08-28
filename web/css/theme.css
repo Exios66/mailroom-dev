@@ -515,6 +515,7 @@ main { min-height: 520px; }
 .review-resolve-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .review-approve { background: var(--green-light); }
 .review-reject { background: var(--red-light); }
+.review-complete { background: var(--gold); }
 .review-resolve-status {
   margin-top: 8px;
   color: var(--amber);

@@ -33,6 +33,11 @@ Cached at process level — **restart** after edits.
 Do **not** import `llm-dojo-scoring` at runtime; catalogs stay copied constants
 (pin documented `@v0.11.0`).
 
+Producer **code** pin (separate from the topology mirror): extra `[pipeline]`
+installs dist `mailroom` `@2c0bcac`. Import only through
+`mailroom_ui/producer.py` (`pipeline.review_resolve`, `schemas.manifest`).
+Never import `api.main`. Bump `MAILROOM_GIT_SHA` and `pyproject.toml` together.
+
 ## Related
 
 - Router: [mailroom-tool-router](../mailroom-tool-router/SKILL.md)

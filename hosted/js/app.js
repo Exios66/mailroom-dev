@@ -274,8 +274,8 @@ const App = (() => {
     const parked = run.stage === "review";
     const disp = parked ? "resume" : "record";
     const hint = parked
-      ? "Correct the class if the sorter missed. Resume re-extracts with that class. Record writes an audit row only. Requeue copies the file to the inbox."
-      : "Not parked in the review bin — Resume is disabled. Record or requeue instead.";
+      ? "Correct the class if the sorter missed. Resume re-extracts with that class. Record writes an audit row only. Requeue copies the file to the inbox. Complete archives operator extracted_data without another LLM pass."
+      : "Not parked in the review bin — Resume and Complete are disabled. Record or requeue instead.";
     const currentType = run.doc_type || "";
     const currentSub = run.doc_subclass || run.contract_subtype || "";
     const subs = subclassOptions(currentType, currentSub);
@@ -306,12 +306,17 @@ const App = (() => {
           <option value="resume" ${disp === "resume" ? "selected" : ""} ${parked ? "" : "disabled"}>Resume pipeline</option>
           <option value="record" ${disp === "record" ? "selected" : ""}>Record only (audit)</option>
           <option value="requeue">Requeue to inbox</option>
+          <option value="complete" ${parked ? "" : "disabled"}>Complete (human extraction)</option>
         </select>
+      </label>
+      <label class="review-extracted-wrap"${parked ? "" : " hidden"}>extracted_data (JSON)
+        <textarea name="extracted_data" rows="4" placeholder='{"claim_number": "…"}'></textarea>
       </label>
       <div class="toolbar" role="group" aria-label="Review decision">
         <button type="submit" class="btn" data-decision="approved">Approve</button>
         <button type="submit" class="btn btn-quiet" data-decision="rejected">Reject</button>
         <button type="submit" class="btn btn-quiet" data-decision="approved" data-disposition="requeue">Requeue</button>
+        <button type="submit" class="btn" data-decision="approved" data-disposition="complete" ${parked ? "" : "disabled"}>Complete</button>
       </div>
       <p class="review-status" role="status"></p>
     </form>`;
@@ -344,6 +349,7 @@ const App = (() => {
       }
       pane.textContent = src.text || "(empty document text)";
       if (badge) badge.hidden = !src.truncated;
+      if (open) open.hidden = src.source === "lookup" || !src.filename;
     }).catch((err) => {
       pane.textContent = err.message || String(err);
     });
@@ -358,6 +364,17 @@ const App = (() => {
       const typeSel = form.querySelector("select[name='doc_type']");
       if (typeSel) typeSel.addEventListener("change", () => fillHostedSubclass(form));
       bindReviewSource(form);
+      Obs.api.reviewContext({
+        trace_id: form.dataset.trace,
+        filename: form.dataset.filename,
+        doc_id: form.dataset.docId,
+      }).then((ctx) => {
+        const extracted = ctx && ctx.document && ctx.document.extracted_data;
+        const ta = form.querySelector("textarea[name='extracted_data']");
+        if (ta && extracted && !ta.value) {
+          ta.value = typeof extracted === "string" ? extracted : JSON.stringify(extracted, null, 2);
+        }
+      }).catch(() => { /* catalog probe is best-effort */ });
       form.addEventListener("submit", async (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
@@ -370,9 +387,23 @@ const App = (() => {
         const notes = (form.notes && form.notes.value) || "";
         const docType = (form.doc_type && form.doc_type.value) || "";
         const docSubclass = (form.doc_subclass && form.doc_subclass.value) || "";
+        let extractedData;
+        const rawExtracted = (form.extracted_data && form.extracted_data.value) || "";
+        if (disposition === "complete" || rawExtracted.trim()) {
+          try {
+            extractedData = rawExtracted.trim() ? JSON.parse(rawExtracted) : undefined;
+          } catch (_err) {
+            if (status) status.textContent = "extracted_data is not valid JSON";
+            return;
+          }
+          if (disposition === "complete" && (!extractedData || typeof extractedData !== "object" || Array.isArray(extractedData))) {
+            if (status) status.textContent = "Complete needs an extracted_data JSON object";
+            return;
+          }
+        }
         if (status) status.textContent = "Submitting…";
         try {
-          const result = await Obs.api.reviewResolve({
+          const payload = {
             trace_id: form.dataset.trace,
             filename: form.dataset.filename,
             doc_id: form.dataset.docId,
@@ -381,7 +412,9 @@ const App = (() => {
             notes,
             doc_type: docType,
             doc_subclass: docSubclass,
-          });
+          };
+          if (extractedData) payload.extracted_data = extractedData;
+          const result = await Obs.api.reviewResolve(payload);
           if (status) {
             status.textContent = `Saved — ${result.disposition || disposition} ${result.decision || decision}`;
           }
