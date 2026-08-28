@@ -24,6 +24,8 @@ def test_review_queue_dispatch_uses_object_key():
     assert 'get(`/api/traces?since=${since}&limit=${limit}`)' in API
     assert "pullServer" in API and "pushClient" in API
     assert 'url("/api/debug/bundle")' in API
+    assert "href: location.href" in API
+    assert "eventCount: dbgEvents.length" in API
     assert 'dispatch("review-queue"' not in API
     assert 'dispatch("reviewResolve"' in API
     assert 'post("/api/review/resolve"' in API
@@ -135,6 +137,7 @@ def test_desk_tabs_show_loading_placeholder():
     history = (ROOT / "web" / "js" / "history.js").read_text()
     assert "LOADING REVIEW QUEUE FROM LANGFUSE" in review
     assert "Mailroom.reviewPanel(r)" in review
+    assert "producerBanner().catch" in review
     assert 'data-decision="approved"' in API
     assert "stopPropagation" in API
     assert "LOADING SESSIONS FROM LANGFUSE" in sessions

@@ -71,6 +71,20 @@ def test_debug_bundle_is_one_pull():
     assert body["source"]["sources"] == ["langfuse"]
 
 
+def test_debug_client_accepts_pixel_location_field():
+    """Pixel dumps used `location` while Observatory dumps used `href`;
+    the store must keep the page URL from either shape."""
+    with _client() as c:
+        posted = c.post("/api/debug/client", json={
+            "location": "http://test/?debug=1",
+            "eventCount": 1,
+            "events": [{"kind": "boot"}],
+        })
+        assert posted.status_code == 200
+        listed = c.get("/api/debug/client").json()
+        assert listed["reports"][0]["href"] == "http://test/?debug=1"
+
+
 def test_debug_client_roundtrip():
     with _client() as c:
         posted = c.post("/api/debug/client", json={
@@ -110,6 +124,9 @@ def test_hosted_js_visual_and_debug_contracts():
     assert "repeat(4, minmax(0, 1fr))" in css
     assert 'id="replay-bar"' in html and 'id="view-debug"' in html
     assert "__OBSERVATORY_DEBUG__" in dbg and "KINDS" in dbg
+    assert 'lastError = null' in dbg
+    assert "or returned HTTP status >= 400" in dbg
+    assert "Obs.api.reviewContext()" in js
     with _client() as c:
         m = c.get("/api/meta").json()
     paths = [e["path"] for e in m["endpoints"]]

@@ -405,7 +405,7 @@ def create_app(source: Optional[object] = None) -> FastAPI:
         events = body.get("events") or []
         entry = {
             "received_at": datetime.now(timezone.utc).isoformat(),
-            "href": body.get("href"),
+            "href": body.get("href") or body.get("location"),
             "event_count": body.get("eventCount") if body.get("eventCount") is not None else len(events),
             "last_error": body.get("lastError"),
             "report": body,

@@ -423,7 +423,14 @@ const App = (() => {
       dbg("traces", { where: "review", count: (data.runs || []).length });
     } catch (err) {
       dbg("review-error", { message: err.message });
-      el.innerHTML = `<p class="empty" role="alert">Review queue unavailable — ${Obs.esc(err.message)}</p>`;
+      let setup = "";
+      try {
+        const ctx = await Obs.api.reviewContext();
+        if (ctx && ctx.configured === false) {
+          setup = `<p class="empty" role="status">${Obs.esc(ctx.error || "Set MAILROOM_PIPELINE_URL to resolve reviews.")}</p>`;
+        }
+      } catch (_e) { /* producer probe is best-effort */ }
+      el.innerHTML = `${setup}<p class="empty" role="alert">Review queue unavailable — ${Obs.esc(err.message)}</p>`;
     }
   }
 

@@ -83,7 +83,8 @@ const ReviewView = (() => {
       render(data.runs || [], hint);
       return data;
     } catch (err) {
-      listEl.innerHTML = `<div class="insp-error">review queue unavailable — ${Mailroom.esc(err.message || String(err))}</div>`;
+      const hint = await producerBanner().catch(() => "");
+      listEl.innerHTML = `${hint}<div class="insp-error">review queue unavailable — ${Mailroom.esc(err.message || String(err))}</div>`;
       throw err;
     }
   }
