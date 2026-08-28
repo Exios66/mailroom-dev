@@ -1,6 +1,6 @@
 # llm-mailroom-graph
 
-Interactive knowledge graph of [llm-mailroom](https://github.com/Exios66/llm-mailroom), rebuilt 2026-08-27 from commit [`13346a92`](https://github.com/Exios66/llm-mailroom/commit/13346a9270eccbbd85851642ffe99b216947b046).
+Interactive knowledge graph of [llm-mailroom](https://github.com/Exios66/llm-mailroom), rebuilt 2026-08-28 from commit [`7dc57874`](https://github.com/Exios66/llm-mailroom/commit/7dc57874cd4206fa6470a887c38b566f2168daf8).
 
 Live site: https://exios66.github.io/llm-mailroom-graph/
 
