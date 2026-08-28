@@ -54,6 +54,16 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Fixed
 
+- **Debug dumps and REVIEW hints from a closed Langfuse.** Pixel
+  `__MAILROOM_DEBUG__.dump()` now includes `href` / `eventCount` so
+  `POST /api/debug/client` stores the page URL (the Observatory dump already
+  did; the server also accepts `location` as a fallback). Observatory
+  Debug **Clear ring** resets `lastError` instead of leaving a stale
+  fetch-error after `errors: 0`. The `fetch-error` glossary covers HTTP
+  `>= 400` as well as thrown fetches. Pixel and Observatory REVIEW still
+  show the `MAILROOM_PIPELINE_URL` setup hint when the Langfuse review
+  queue returns 503.
+
 - **Parked non-catalog subclasses no longer 400 Complete.** Producer main does
   not catalog-gate `doc_subclass`; the proxy now passes parked tokens such as
   insurance `fnol` through so Complete / Resume still work.

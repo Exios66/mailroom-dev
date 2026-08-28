@@ -50,10 +50,12 @@ const Mailroom = (() => {
   function dumpDebug(pretty = true) {
     const payload = {
       generated_at: new Date().toISOString(),
+      href: location.href,
       location: location.href,
       api_base: BASE,
       static_mode: staticMode,
       debug_verbose: debugVerbose,
+      eventCount: dbgEvents.length,
       user_agent: navigator.userAgent,
       events: dbgEvents.slice(),
     };

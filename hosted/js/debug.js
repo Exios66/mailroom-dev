@@ -42,7 +42,7 @@ const ObservatoryDebug = (() => {
     "matters-error": "GET /api/sessions failed.",
     "metrics-error": "GET /api/metrics failed.",
     fetch: "Any HTTP request the page made (status + duration).",
-    "fetch-error": "A fetch threw (network down, CORS, aborted). Not an HTTP error status.",
+    "fetch-error": "A fetch threw (network down, CORS, aborted) or returned HTTP status >= 400.",
     ws: "WebSocket lifecycle or a parsed snapshot.",
     "ws-error": "WebSocket onerror / bad JSON / unexpected close.",
     replay: "Replay overlay applied a stage to one run.",
@@ -213,7 +213,11 @@ const ObservatoryDebug = (() => {
       export: exportAll,
       pullServer,
       pushClient,
-      clear() { events.length = 0; record("cleared", {}); },
+      clear() {
+        events.length = 0;
+        lastError = null;
+        record("cleared", {});
+      },
       setVerbose(v) { verbose = !!v; record("verbose", { on: verbose }); },
       events: () => events.slice(),
       explain,
