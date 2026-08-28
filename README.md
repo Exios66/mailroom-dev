@@ -359,7 +359,8 @@ All knobs live in `.env` (see `.env.example`): Langfuse keys/host
 optional tag/env filters, `MAILROOM_PORT` (default `8001`),
 `MAILROOM_TAXONOMY`, and `MAILROOM_PIPELINE_URL` + `MAILROOM_PIPELINE_TOKEN`
 (producer on `:8000` — watcher/inbox liveness, human-review resolve, class
-correction, parked-file source). `MAILROOM_API_URL` is the TUI → this
+correction mapped to `override_doc_type`, parked-file source via `/v1`).
+`MAILROOM_PIPELINE_API_PREFIX` defaults to `/v1`. `MAILROOM_API_URL` is the TUI → this
 visualizer (`:8001`), not the producer. The GH Pages edition adds `MAILROOM_SOURCE`
 (`langfuse|phoenix|both`), `PHOENIX_ENDPOINT` / `PHOENIX_API_KEY` /
 `MAILROOM_PHOENIX_PROJECT`, `MAILROOM_CORS_ORIGINS`, and `MAILROOM_DEBUG`.

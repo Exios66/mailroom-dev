@@ -113,7 +113,7 @@ def test_pipeline_ops_reads_health(monkeypatch):
     monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
 
     def fake_get(url, *, timeout=1.5, token=""):
-        assert url.endswith("/health")
+        assert url.endswith("/v1/health")
         return {
             "status": "ok",
             "checks": {
@@ -129,6 +129,39 @@ def test_pipeline_ops_reads_health(monkeypatch):
     assert ops["watcher"] == "live"
     assert ops["inbox_pending"] == 2
     assert ops["ok"] is True
+
+
+def test_pipeline_ops_queue_uses_v1(monkeypatch):
+    from mailroom_ui import pipeline_ops
+
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "tok")
+    urls = []
+
+    def fake_get(url, *, timeout=1.5, token=""):
+        urls.append((url, token))
+        if url.endswith("/v1/health"):
+            return {"status": "ok", "checks": {"watcher": "live", "watcher_heartbeat_seconds_ago": 0.1}}
+        if url.endswith("/v1/queue"):
+            return {"queued": [{"file": "a.pdf", "matter_id": "M", "uploaded_at": "t"}]}
+        raise AssertionError(url)
+
+    monkeypatch.setattr(pipeline_ops, "_get_json", fake_get)
+    ops = pipeline_ops.fetch_pipeline_ops()
+    assert ops["queued"][0]["file"] == "a.pdf"
+    assert any(u.endswith("/v1/queue") and t == "tok" for u, t in urls)
+
+
+def test_producer_url_prefix_helpers(monkeypatch):
+    from mailroom_ui.pipeline_ops import pipeline_api_prefix, producer_url
+
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
+    monkeypatch.delenv("MAILROOM_PIPELINE_API_PREFIX", raising=False)
+    assert pipeline_api_prefix() == "/v1"
+    assert producer_url("/lookup") == "http://pipeline.test:8000/v1/lookup"
+    monkeypatch.setenv("MAILROOM_PIPELINE_API_PREFIX", "")
+    assert pipeline_api_prefix() == ""
+    assert producer_url("health") == "http://pipeline.test:8000/health"
 
 
 def test_ws_snapshot_includes_pipeline_and_poll_interval():

@@ -10,15 +10,29 @@ All notable changes to The-Mailroom are documented here, following
 
 - **REVIEW tray class correction and document viewer.** Pixel REVIEW, inspector,
   and Observatory Review can correct `doc_type` / `doc_subclass` on a parked
-  item and read the raw parked file (extracted text pane + Open original)
-  while deciding. `POST /api/review/resolve` forwards those fields; new
-  `GET /api/review/source` proxies producer `GET /documents/{doc_id}/source`.
-  `mailroom-tui --resolve` gained `--doc-type` / `--doc-subclass`; `--source`
-  prints parked text. `/api/health` and `/api/meta` now surface
-  `pipeline_configured` (boolean only) plus `doc_subclasses`. Snapshot / GH
-  Pages stay read-only. Requires `MAILROOM_PIPELINE_URL` +
-  `MAILROOM_PIPELINE_TOKEN` pointing at llm-mailroom `:8000` — not
-  `MAILROOM_API_URL` (TUI → this visualizer `:8001`).
+  item and read parked text (extracted text pane + Open original) while
+  deciding. `POST /api/review/resolve` forwards those fields; new
+  `GET /api/review/source` proxies producer source when present, else the
+  catalog lookup row. `mailroom-tui --resolve` gained `--doc-type` /
+  `--doc-subclass`; `--source` prints parked text. `/api/health` and
+  `/api/meta` now surface `pipeline_configured` (boolean only) plus
+  `doc_subclasses`. Snapshot / GH Pages stay read-only. Requires
+  `MAILROOM_PIPELINE_URL` + `MAILROOM_PIPELINE_TOKEN` pointing at
+  llm-mailroom `:8000` — not `MAILROOM_API_URL` (TUI → this visualizer
+  `:8001`).
+
+### Changed
+
+- **Aligned the producer proxy with llm-mailroom `main`.** Calls go through
+  `/v1` (`MAILROOM_PIPELINE_API_PREFIX`, default `/v1`; empty/`/` uses the
+  unversioned aliases). Class correction is posted as `override_doc_type`
+  (the UI/TUI still send `doc_type`; the proxy maps it). `disposition=complete`
+  and `extracted_data` are forwarded. `GET /api/review/source` tries
+  `GET /v1/documents/{doc_id}/source` and, on 404 (the route is not on
+  producer main), falls back to `GET /v1/lookup` (`original_filename`,
+  `extracted_data`, `escalation_reason`). Binary download 404s honestly
+  instead of synthesizing a file. Watcher/inbox liveness uses
+  `GET /v1/health` and `GET /v1/queue`.
 
 ## [0.3.0] - 2026-08-28
 

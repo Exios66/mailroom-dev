@@ -15,8 +15,9 @@ Views:
 Keys: f floor · r review · s sessions · m metrics · i inspect · [ ] cycle
       d debug · c clear log · q quit
 `--once --view floor|review|metrics|sessions|inspect|debug` for scripting.
-`--resolve TRACE --decision approved|rejected --disposition resume|record|requeue --notes "..." [--doc-type X --doc-subclass Y]`
-posts through the visualizer (`MAILROOM_API_URL`, default :8001) to the producer.
+`--resolve TRACE --decision approved|rejected --disposition resume|record|requeue|complete --notes "..." [--doc-type X --doc-subclass Y]`
+posts through the visualizer (`MAILROOM_API_URL`, default :8001) to the producer
+(``doc_type`` is mapped to producer ``override_doc_type``).
 `--source TRACE` prints parked document text via `GET /api/review/source`.
 """
 
@@ -495,14 +496,16 @@ def run() -> None:
                         choices=["approved", "rejected"],
                         help="review decision used with --resolve")
     parser.add_argument("--disposition", default="resume",
-                        choices=["resume", "record", "requeue"],
-                        help="resume pipeline, record-only audit, or requeue to inbox")
+                        choices=["resume", "record", "requeue", "complete"],
+                        help="resume pipeline, record-only audit, requeue to inbox, or complete with --extracted-data")
     parser.add_argument("--notes", default="",
                         help="reviewer notes stored on the producer audit chain")
     parser.add_argument("--doc-type", default="", dest="doc_type",
                         help="human class correction used with --resolve")
     parser.add_argument("--doc-subclass", default="", dest="doc_subclass",
                         help="human subtype correction used with --resolve")
+    parser.add_argument("--extracted-data", default="", dest="extracted_data",
+                        help="JSON object for disposition=complete (producer archives without another LLM pass)")
     parser.add_argument("--source", default="",
                         help="print parked document text via GET /api/review/source")
     args = parser.parse_args()
@@ -545,6 +548,12 @@ def run() -> None:
             body["doc_type"] = args.doc_type
         if args.doc_subclass:
             body["doc_subclass"] = args.doc_subclass
+        if args.extracted_data:
+            try:
+                body["extracted_data"] = json.loads(args.extracted_data)
+            except json.JSONDecodeError as exc:
+                console.print(Panel(Text(f"--extracted-data is not valid JSON: {exc}", style="bright_red")))
+                raise SystemExit(2)
         if "." in ident and "/" not in ident:
             body["filename"] = ident
         else:

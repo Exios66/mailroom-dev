@@ -19,7 +19,7 @@ fallback mismatch, `MAILROOM_PIPELINE_URL`, inbox pending, watcher live/stale.
 | Review parked | 15s `review_ttl` |
 | WS | `/ws` snapshot includes `poll_interval_s` + `pipeline` |
 | HTTP fallback | same interval as the hub (pixel + Observatory); retune if interval changes |
-| Watcher | `GET /api/pipeline` ← producer `GET /health` (`checks.watcher`, inbox_pending) |
+| Watcher | `GET /api/pipeline` ← producer `GET /v1/health` (`checks.watcher`, inbox_pending) |
 
 `mailroom_ui/pipeline_ops.py` never fabricates queue rows. Missing
 `MAILROOM_PIPELINE_URL` → `configured: false`.

@@ -74,8 +74,8 @@ API_ENDPOINTS = [
     {"method": "POST", "path": "/api/debug/client", "desc": "store a browser debug dump for the next agent pull"},
     {"method": "GET", "path": "/api/pipeline", "desc": "producer watcher/inbox liveness (MAILROOM_PIPELINE_URL)"},
     {"method": "GET", "path": "/api/review/context", "desc": "producer catalog+audit for a review item; ?trace_id=&filename=&doc_id="},
-    {"method": "POST", "path": "/api/review/resolve", "desc": "proxy approve/reject/record/requeue (+ optional doc_type/doc_subclass) to llm-mailroom"},
-    {"method": "GET", "path": "/api/review/source", "desc": "parked document text from producer; ?trace_id=&filename=&doc_id=&download=1"},
+    {"method": "POST", "path": "/api/review/resolve", "desc": "proxy approve/reject/record/requeue/complete (+ doc_type mapped to override_doc_type) to llm-mailroom /v1"},
+    {"method": "GET", "path": "/api/review/source", "desc": "parked document text from producer (lookup fallback if no /documents/{id}/source); ?trace_id=&filename=&doc_id=&download=1"},
     {"method": "GET", "path": "/api/review/audit", "desc": "hash-chained producer audit; ?doc_id="},
     {"method": "WS", "path": "/ws", "desc": "floor snapshots (live mode only)"},
     {"method": "GET", "path": "/live", "desc": "hosted Observatory UI (modern, accessible, public)"},
@@ -262,6 +262,8 @@ def create_app(source: Optional[object] = None) -> FastAPI:
                 doc_id=str(payload.get("doc_id") or ""),
                 doc_type=str(payload.get("doc_type") or ""),
                 doc_subclass=str(payload.get("doc_subclass") or ""),
+                override_doc_type=str(payload.get("override_doc_type") or ""),
+                extracted_data=payload.get("extracted_data"),
             )
         except ReviewActionError as exc:
             return JSONResponse(

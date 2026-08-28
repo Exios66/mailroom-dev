@@ -88,6 +88,8 @@ def test_tui_resolve_flags_include_class_and_source():
     src = (Path(__file__).resolve().parent.parent / "tui" / "mailroom_console.py").read_text()
     assert "--doc-type" in src
     assert "--doc-subclass" in src
+    assert "--extracted-data" in src
+    assert '"complete"' in src
     assert 'help="print parked document text via GET /api/review/source"' in src
     assert "doc_type" in src and "doc_subclass" in src
 

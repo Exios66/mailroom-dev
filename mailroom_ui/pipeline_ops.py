@@ -28,6 +28,30 @@ def pipeline_base_url() -> str:
     ).strip().rstrip("/")
 
 
+def pipeline_api_prefix() -> str:
+    """Path prefix for llm-mailroom routes. Default ``/v1`` (producer README).
+
+    Set ``MAILROOM_PIPELINE_API_PREFIX`` empty (or ``/``) to use the unversioned
+    aliases still mounted during the producer's deprecation window.
+    """
+    raw = os.environ.get("MAILROOM_PIPELINE_API_PREFIX")
+    if raw is None:
+        return "/v1"
+    text = raw.strip()
+    if not text or text in (".", "/"):
+        return ""
+    if not text.startswith("/"):
+        text = "/" + text
+    return text.rstrip("/")
+
+
+def producer_url(path: str) -> str:
+    """Absolute producer URL: ``{MAILROOM_PIPELINE_URL}{/v1}{path}``."""
+    if not path.startswith("/"):
+        path = "/" + path
+    return f"{pipeline_base_url()}{pipeline_api_prefix()}{path}"
+
+
 def _token() -> str:
     return (
         os.environ.get("MAILROOM_PIPELINE_TOKEN")
@@ -73,9 +97,10 @@ def _watcher_state(age: Optional[float], declared: Any = None) -> str:
 def fetch_pipeline_ops(*, timeout: float = 1.5) -> dict[str, Any]:
     """Snapshot of producer watcher/inbox health.
 
-    Hits llm-mailroom ``GET /health`` (no token). Optionally ``GET /queue``
-    when ``MAILROOM_PIPELINE_TOKEN`` is set, for filenames still sitting in
-    the inbox before a Langfuse trace exists.
+    Hits llm-mailroom ``GET /v1/health`` (no token; unversioned ``/health``
+    is aliased). Optionally ``GET /v1/queue`` when ``MAILROOM_PIPELINE_TOKEN``
+    is set, for filenames still sitting in the inbox before a Langfuse
+    trace exists.
     """
     base = pipeline_base_url()
     if not base:
@@ -95,7 +120,7 @@ def fetch_pipeline_ops(*, timeout: float = 1.5) -> dict[str, Any]:
         "token_configured": bool(token),
     }
     try:
-        health = _get_json(f"{base}/health", timeout=timeout)
+        health = _get_json(producer_url("/health"), timeout=timeout)
     except Exception as exc:
         log.warning("pipeline health failed: %s", exc)
         out["error"] = str(exc)[:200]
@@ -121,7 +146,7 @@ def fetch_pipeline_ops(*, timeout: float = 1.5) -> dict[str, Any]:
     })
     if token:
         try:
-            queue = _get_json(f"{base}/queue", timeout=timeout, token=token)
+            queue = _get_json(producer_url("/queue"), timeout=timeout, token=token)
             queued = queue.get("queued") if isinstance(queue, dict) else None
             processing = queue.get("processing") if isinstance(queue, dict) else None
             if isinstance(queued, list):

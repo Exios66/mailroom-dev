@@ -38,8 +38,9 @@ Canonical default in `.env.example`: **`langfuse`**.
 4. Unreachable Langfuse → **MAILROOM CLOSED**, not stale/canned data.
 
 Operator liveness (watcher heartbeat, inbox pending) and **human-review
-resolve** (`POST /api/review/resolve` → approve / reject / record / requeue,
-optional class/subtype; `GET /api/review/source` for parked text)
+resolve** (`POST /api/review/resolve` → approve / reject / record / requeue /
+complete; optional `doc_type` mapped to producer `override_doc_type`;
+`GET /api/review/source` for parked text, with catalog lookup fallback)
 may go through `MAILROOM_PIPELINE_URL` on the visualizer server. That is
 **not** document display data; the browser never holds the producer token.
 

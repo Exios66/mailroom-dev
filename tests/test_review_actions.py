@@ -82,16 +82,18 @@ def test_api_review_resolve_proxies(monkeypatch):
 
     def fake_request(method, url, *, token="", body=None, timeout=8.0):
         calls.append({"method": method, "url": url, "token": token, "body": body})
-        if method == "GET" and "/lookup" in url:
-            return {"status": "ok", "document": {"doc_id": "doc-xyz", "trace_id": "t-rev"}}
-        if method == "POST" and "/review/" in url:
+        if method == "GET" and "/v1/lookup?" in url:
+            return {"document": {"doc_id": "doc-xyz", "trace_id": "t-rev"}}
+        if method == "POST" and "/v1/review/" in url:
             return {
                 "status": "ok",
                 "doc_id": "doc-xyz",
                 "decision": body["decision"],
                 "disposition": body["disposition"],
                 "notes": body["notes"],
-                "class_override": {k: body[k] for k in ("doc_type", "doc_subclass") if k in body},
+                "class_override": {
+                    k: body[k] for k in ("override_doc_type", "doc_subclass") if k in body
+                },
             }
         raise AssertionError(url)
 
@@ -115,12 +117,14 @@ def test_api_review_resolve_proxies(monkeypatch):
     body = r.json()
     assert body["doc_id"] == "doc-xyz"
     assert body["disposition"] == "resume"
-    assert any(c["method"] == "POST" and "/review/doc-xyz/resolve" in c["url"] for c in calls)
+    assert any(c["method"] == "POST" and c["url"].endswith("/v1/review/doc-xyz/resolve") for c in calls)
     posted = next(c for c in calls if c["method"] == "POST")
     assert posted["token"] == "secret-token"
     assert posted["body"]["notes"] == "looks good"
-    assert posted["body"]["doc_type"] == "insurance_claim"
+    assert posted["body"]["override_doc_type"] == "insurance_claim"
+    assert "doc_type" not in posted["body"]
     assert posted["body"]["doc_subclass"] == "pde"
+    assert any(c["method"] == "GET" and "/v1/lookup?" in c["url"] for c in calls)
 
 
 def test_api_review_resolve_rejects_unknown_class(monkeypatch):
@@ -150,9 +154,9 @@ def test_api_review_source_proxies(monkeypatch):
     monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")
 
     def fake_request(method, url, *, token="", body=None, timeout=8.0):
-        if method == "GET" and "/lookup" in url:
-            return {"status": "ok", "document": {"doc_id": "doc-src", "file": "claim.txt"}}
-        if method == "GET" and "/documents/doc-src/source" in url and "download" not in url:
+        if method == "GET" and "/v1/lookup?" in url:
+            return {"document": {"doc_id": "doc-src", "original_filename": "claim.txt"}}
+        if method == "GET" and "/v1/documents/doc-src/source" in url and "download" not in url:
             return {
                 "status": "ok",
                 "doc_id": "doc-src",
@@ -183,13 +187,13 @@ def test_api_review_source_download(monkeypatch):
     monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")
 
     def fake_json(method, url, *, token="", body=None, timeout=8.0):
-        if method == "GET" and "/lookup" in url:
-            return {"status": "ok", "document": {"doc_id": "doc-dl", "file": "msa.pdf"}}
+        if method == "GET" and "/v1/lookup?" in url:
+            return {"document": {"doc_id": "doc-dl", "original_filename": "msa.pdf"}}
         raise AssertionError(url)
 
     def fake_bytes(method, url, *, token="", timeout=8.0):
         assert "download=1" in url
-        assert "/documents/doc-dl/source" in url
+        assert url.endswith("/v1/documents/doc-dl/source?download=1")
         return b"%PDF-1.4 test", "application/pdf", "msa.pdf"
 
     from mailroom_ui import review_actions
@@ -224,3 +228,125 @@ def test_review_queue_includes_doc_id():
         r = c.get("/api/review-queue").json()
     assert r["count"] == 1
     assert r["runs"][0]["doc_id"] == "doc-q"
+
+
+def test_api_review_source_falls_back_to_lookup(monkeypatch):
+    """llm-mailroom main has no GET /documents/{id}/source — use catalog JSON."""
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")
+
+    from mailroom_ui.review_actions import ReviewActionError
+
+    def fake_request(method, url, *, token="", body=None, timeout=8.0):
+        if method == "GET" and "/v1/lookup?" in url:
+            return {
+                "document": {
+                    "doc_id": "doc-fb",
+                    "original_filename": "claim.txt",
+                    "extracted_data": {"claim_number": "CL-9"},
+                    "escalation_reason": "low extraction confidence",
+                }
+            }
+        if method == "GET" and "/v1/documents/doc-fb/source" in url:
+            raise ReviewActionError("Not Found", status=404)
+        raise AssertionError(url)
+
+    from mailroom_ui import review_actions
+
+    src = LangfuseSource(client=FakeClient([make_trace("t-fb", stage="review")]))
+    with patch.object(review_actions, "_request_json", side_effect=fake_request):
+        with TestClient(create_app(src)) as c:
+            r = c.get("/api/review/source", params={"trace_id": "t-fb", "filename": "claim.txt"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["configured"] is True
+    assert body["source"] == "lookup"
+    assert body["filename"] == "claim.txt"
+    assert "CL-9" in (body.get("text") or "")
+    assert "low extraction confidence" in (body.get("text") or "")
+
+
+def test_api_review_source_download_404_is_honest(monkeypatch):
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")
+
+    from mailroom_ui.review_actions import ReviewActionError
+
+    def fake_json(method, url, *, token="", body=None, timeout=8.0):
+        if method == "GET" and "/v1/lookup?" in url:
+            return {"document": {"doc_id": "doc-nf", "original_filename": "gone.pdf"}}
+        raise AssertionError(url)
+
+    def fake_bytes(method, url, *, token="", timeout=8.0):
+        raise ReviewActionError("Not Found", status=404)
+
+    from mailroom_ui import review_actions
+
+    src = LangfuseSource(client=FakeClient([make_trace("t-nf")]))
+    with patch.object(review_actions, "_request_json", side_effect=fake_json):
+        with patch.object(review_actions, "_request_bytes", side_effect=fake_bytes):
+            with TestClient(create_app(src)) as c:
+                r = c.get("/api/review/source", params={"doc_id": "doc-nf", "download": True})
+    assert r.status_code == 404
+    assert "no GET /documents" in (r.json().get("error") or "")
+
+
+def test_api_review_resolve_complete_forwards_extracted_data(monkeypatch):
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")
+
+    posted = {}
+
+    def fake_request(method, url, *, token="", body=None, timeout=8.0):
+        if method == "GET" and "/v1/lookup?" in url:
+            return {"document": {"doc_id": "doc-c"}}
+        if method == "POST" and url.endswith("/v1/review/doc-c/resolve"):
+            posted.update(body or {})
+            return {"status": "ok", "doc_id": "doc-c", "disposition": "complete"}
+        raise AssertionError(url)
+
+    from mailroom_ui import review_actions
+
+    src = LangfuseSource(client=FakeClient([make_trace("t-c", stage="review")]))
+    with patch.object(review_actions, "_request_json", side_effect=fake_request):
+        with TestClient(create_app(src)) as c:
+            r = c.post("/api/review/resolve", json={
+                "doc_id": "doc-c",
+                "decision": "approved",
+                "disposition": "complete",
+                "override_doc_type": "contract",
+                "extracted_data": {"parties": ["A", "B"]},
+            })
+    assert r.status_code == 200, r.text
+    assert posted["disposition"] == "complete"
+    assert posted["override_doc_type"] == "contract"
+    assert posted["extracted_data"] == {"parties": ["A", "B"]}
+
+
+def test_producer_urls_honor_empty_api_prefix(monkeypatch):
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")
+    monkeypatch.setenv("MAILROOM_PIPELINE_API_PREFIX", "")
+
+    urls = []
+
+    def fake_request(method, url, *, token="", body=None, timeout=8.0):
+        urls.append(url)
+        if method == "GET" and "/lookup?" in url:
+            return {"document": {"doc_id": "doc-u"}}
+        if method == "POST" and url.endswith("/review/doc-u/resolve"):
+            return {"status": "ok", "doc_id": "doc-u", "disposition": "record"}
+        raise AssertionError(url)
+
+    from mailroom_ui import review_actions
+
+    src = LangfuseSource(client=FakeClient([make_trace("t-u")]))
+    with patch.object(review_actions, "_request_json", side_effect=fake_request):
+        with TestClient(create_app(src)) as c:
+            r = c.post("/api/review/resolve", json={
+                "doc_id": "doc-u", "decision": "approved", "disposition": "record",
+            })
+    assert r.status_code == 200, r.text
+    assert any(u.endswith("/lookup?doc_id=doc-u") for u in urls)
+    assert any(u.endswith("/review/doc-u/resolve") for u in urls)
+    assert not any("/v1/" in u for u in urls)

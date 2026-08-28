@@ -30,9 +30,10 @@ Same 7-day window as the pixel/Observatory HTTP clients
 - Do not invent a second data path; fetch `/api/traces` + `/api/pipeline`.
 - Do not point `MAILROOM_API_URL` at the producer “to resolve review-queue”
   (that was the old docs mix-up). Resolve with
-  `mailroom-tui --resolve TRACE --decision approved|rejected --disposition resume|record|requeue [--doc-type X --doc-subclass Y]`
+  `mailroom-tui --resolve TRACE --decision approved|rejected --disposition resume|record|requeue|complete [--doc-type X --doc-subclass Y]`
   against **this visualizer** (`POST /api/review/resolve`). `--source TRACE`
-  prints parked text (`GET /api/review/source`).
+  prints parked text (`GET /api/review/source`). `--doc-type` is mapped to
+  producer `override_doc_type` by the visualizer proxy.
 - Closed state when the visualizer/Langfuse is down — no canned tables.
 
 ## Related

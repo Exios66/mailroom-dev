@@ -47,7 +47,7 @@ keys).
 2. Each light run is interpreted by `trace_interpreter.interpret_trace` and
    compacted by `poller.floor_payload` (stage, doc type, confidences, verdict,
    cost, …). Optional `MAILROOM_PIPELINE_URL` is fetched the same tick
-   (`GET /health`) and attached as `pipeline` on the WS snapshot — watcher
+   (`GET /v1/health`) and attached as `pipeline` on the WS snapshot — watcher
    heartbeat and inbox pending, never fabricated envelopes.
 3. Full drill-down (`/api/traces/{id}`) fetches observations + scores on
    demand via `LangfuseSource.get_run()`; pass `force_refresh` for in-flight.
@@ -199,15 +199,18 @@ and withholds catalog writes when `compile_report` fails).
 
 Operators resolve those items from the REVIEW desk (pixel cards, inspector,
 Observatory, or `mailroom-tui --resolve`). The visualizer proxies
-`POST /api/review/resolve` to llm-mailroom: `disposition=resume` re-extracts
-a parked `stage=review` document (optional `doc_type` / `doc_subclass`
-override is written onto the parked manifest first); `record` appends a
-hash-chained audit row without moving the file; `requeue` copies the source
-file back to the inbox (class override stamped on the sidecar).
-`GET /api/review/source` re-reads the parked file (text JSON, or
-`?download=1` for original bytes). Requires `MAILROOM_PIPELINE_URL` +
-`MAILROOM_PIPELINE_TOKEN` on the visualizer (`:8000` producer — not
-`MAILROOM_API_URL`, which is TUI → this process `:8001`). Display data
+`POST /api/review/resolve` to llm-mailroom `/v1/review/{doc_id}/resolve`:
+`disposition=resume` re-extracts a parked `stage=review` document (optional
+`doc_type` is mapped to producer `override_doc_type`; `doc_subclass` /
+`contract_subtype` pass through); `record` appends a hash-chained audit row
+without moving the file; `requeue` copies the source file back to the inbox;
+`complete` archives operator-supplied `extracted_data` without another LLM
+pass. `GET /api/review/source` tries producer `GET /v1/documents/{doc_id}/source`
+and, on 404, falls back to `GET /v1/lookup` catalog JSON (`original_filename`,
+`extracted_data`). Binary `?download=1` 404s when that route is missing.
+Requires `MAILROOM_PIPELINE_URL` + `MAILROOM_PIPELINE_TOKEN` on the visualizer
+(`:8000` producer — not `MAILROOM_API_URL`, which is TUI → this process
+`:8001`). `MAILROOM_PIPELINE_API_PREFIX` defaults to `/v1`. Display data
 stays Langfuse-only — the producer token never leaves the visualizer server.
 
 ## Demos & screenshots
