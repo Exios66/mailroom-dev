@@ -223,7 +223,10 @@ def check_api(producer_host: str, producer_port: int) -> None:
                 "doc_id": "doc-claim-fnol",
                 "decision": "approved",
                 "disposition": "complete",
-                "extracted_data": {"claim_number": "CL-4419", "status": "closed-by-human"},
+                "extracted_data": {
+                    "claim_number": "CL-4419",
+                    "coverage_determination": "approved",
+                },
             }).json()
             assert done["disposition"] == "complete", done
             audit = c.get("/api/review/audit", params={"doc_id": "doc-claim-fnol"}).json()

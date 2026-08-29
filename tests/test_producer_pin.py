@@ -27,6 +27,24 @@ def test_pin_matches_pyproject_extra():
     assert "[pipeline]" in text or "pipeline = [" in text
 
 
+def test_bundled_validate_operator_extraction_rejects_foreign_keys():
+    from mailroom_ui.pipeline_schema import (
+        FAILURE_CLASSES,
+        failure_class_from_text,
+        validate_operator_extraction,
+    )
+
+    assert "llm_timeout" in FAILURE_CLASSES
+    assert failure_class_from_text("run aborted [llm_timeout]: boom") == "llm_timeout"
+    ok = validate_operator_extraction("contract", {"parties": ["A", "B"]})
+    assert ok["parties"] == ["A", "B"]
+    try:
+        validate_operator_extraction("contract", {"sender": "A Corp", "parties": ["A"]})
+        raise AssertionError("expected foreign-key rejection")
+    except ValueError as exc:
+        assert "another specialist" in str(exc)
+
+
 def test_contract_dispositions_match_producer_main():
     assert DISPOSITIONS == frozenset({"resume", "record", "requeue", "complete"})
     assert DECISIONS == frozenset({"approved", "rejected"})

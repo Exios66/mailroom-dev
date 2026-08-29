@@ -441,7 +441,7 @@ const App = (() => {
       const rows = (data.runs || []).map((r) => `<tr>
         <th scope="row"><button type="button" class="row-btn" data-trace="${Obs.esc(r.trace_id)}">${Obs.esc(r.filename || r.trace_id)}</button></th>
         <td>${Obs.esc((r.doc_type || "—").replaceAll("_", " "))}${r.doc_subclass || r.contract_subtype ? ` / ${Obs.esc(r.doc_subclass || r.contract_subtype)}` : ""}</td>
-        <td>${Obs.esc(r.escalation_reason || r.review_decision || "—")}${
+        <td>${Obs.esc(r.failure_class ? String(r.failure_class).replaceAll("_", " ") : (r.escalation_reason || r.review_decision || "—"))}${
           Array.isArray(r.review_causes) && r.review_causes.length
             ? ` (${r.review_causes.join(", ")})`
             : ""
@@ -638,6 +638,8 @@ const App = (() => {
         ["Created", Obs.fmt.when(run.created_at)],
       ];
       if (run.escalation_reason) rows.push(["Escalation", run.escalation_reason]);
+      if (run.failure_class) rows.push(["Failure class", String(run.failure_class).replaceAll("_", " ")]);
+      if (run.run_aborted) rows.push(["Aborted", "yes"]);
       if (Array.isArray(run.review_causes) && run.review_causes.length) {
         rows.push(["Reconsider", run.review_causes.join(", ")]);
       }

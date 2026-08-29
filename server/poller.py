@@ -51,6 +51,8 @@ def floor_payload(run: PipelineRun) -> dict[str, Any]:
         "review_causes": run.review_causes,
         "needs_reconsideration": run.needs_reconsideration,
         "error_message": run.error_message,
+        "run_aborted": run.run_aborted,
+        "failure_class": run.failure_class,
         "verdict": run.verdict,
         "quality": run.quality,
         "latency": run.latency,
@@ -101,6 +103,10 @@ def apply_light_identity(full: PipelineRun, light: PipelineRun) -> PipelineRun:
         updates["user_id"] = light.user_id
     if light.release:
         updates["release"] = light.release
+    if light.failure_class:
+        updates["failure_class"] = light.failure_class
+    if light.run_aborted:
+        updates["run_aborted"] = True
     session_moved = bool(
         light.session_id and full.session_id and light.session_id != full.session_id
     )

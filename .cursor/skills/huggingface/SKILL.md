@@ -43,4 +43,4 @@ python scripts/eval_pipeline.py --session pilot-hf-...
 - Schema mirror: [pipeline-schema-sync](../pipeline-schema-sync/SKILL.md)
 - Router: [mailroom-tool-router](../mailroom-tool-router/SKILL.md)
 - Pin: README constellation table (`llm-dojo-scoring` `@v0.11.0`;
-  llm-mailroom dist `mailroom` `@2c0bcac` via extra `[pipeline]`)
+  llm-mailroom dist `mailroom` `@0928de1` via extra `[pipeline]`)

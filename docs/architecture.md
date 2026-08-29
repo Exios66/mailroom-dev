@@ -205,7 +205,10 @@ Observatory, or `mailroom-tui --resolve`). The visualizer proxies
 `contract_subtype` pass through); `record` appends a hash-chained audit row
 without moving the file; `requeue` copies the source file back to the inbox;
 `complete` archives operator-supplied `extracted_data` without another LLM
-pass. `GET /api/review/source` tries producer `GET /v1/documents/{doc_id}/source`
+pass after a specialist-schema check (llm-mailroom #53 — correspondence
+fields on a contract 400). Aborted runs carry `failure_class` on the
+Langfuse output or as `run aborted [<class>]: …` in `error_message`.
+`GET /api/review/source` tries producer `GET /v1/documents/{doc_id}/source`
 and, on 404, falls back to `GET /v1/lookup` catalog JSON (`original_filename`,
 `extracted_data`). Binary `?download=1` 404s when that route is missing.
 Requires `MAILROOM_PIPELINE_URL` + `MAILROOM_PIPELINE_TOKEN` on the visualizer
@@ -214,7 +217,7 @@ Requires `MAILROOM_PIPELINE_URL` + `MAILROOM_PIPELINE_TOKEN` on the visualizer
 stays Langfuse-only — the producer token never leaves the visualizer server.
 
 The producer **code** pin is optional extra `[pipeline]`
-(`mailroom @ git+https://github.com/Exios66/llm-mailroom.git@2c0bcac`).
+(`mailroom @ git+https://github.com/Exios66/llm-mailroom.git@0928de1`).
 `mailroom_ui/producer.py` imports `pipeline.review_resolve` and
 `schemas.manifest` when that extra or a sibling checkout is present; the
 REVIEW proxy and `tests/fake_producer.py` use those contract helpers

@@ -23,7 +23,9 @@ from .pipeline_schema import (
     STAGE_PHASE,
     PipelineSchema,
     canonical_score_name,
+    failure_class_from_text,
     langfuse_score_name,
+    normalize_failure_class,
     observation_type_for,
 )
 from .reconsideration import collect_review_causes, format_causes
@@ -548,6 +550,26 @@ def _latest_cluster(items: list[Any], *, get_start) -> list[Any]:
     return ordered[gap_at:]
 
 
+def _resolve_failure_class(
+    t_output: dict[str, Any],
+    metadata: dict[str, Any],
+    score_map: dict[str, Any],
+) -> Optional[str]:
+    """llm-mailroom PR #53: abort class on output, metadata, or tagged error."""
+    for raw in (
+        t_output.get("failure_class"),
+        metadata.get("failure_class"),
+        score_map.get("failure_class"),
+    ):
+        found = normalize_failure_class(_clean(raw) if not isinstance(raw, (int, float)) else str(raw))
+        if found:
+            return found
+    return (
+        failure_class_from_text(_clean(t_output.get("error_message")))
+        or failure_class_from_text(_clean(t_output.get("escalation_reason")))
+    )
+
+
 def interpret_trace(
     trace: dict[str, Any],
     observations: Optional[list[dict[str, Any]]] = None,
@@ -787,6 +809,7 @@ def interpret_trace(
         review_causes=[],
         error_message=_clean(t_output.get("error_message")),
         run_aborted=bool(t_output.get("run_aborted") or score_map.get("run_aborted")),
+        failure_class=_resolve_failure_class(t_output, metadata, score_map),
         spans=spans,
         generations=generations,
         scores=score_map,

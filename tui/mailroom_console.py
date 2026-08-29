@@ -257,7 +257,8 @@ def review_table(runs: list[dict]) -> Table:
             _fmt(r.get("classification_confidence")),
             _fmt(r.get("extraction_confidence")),
             Text(verdict, style=style),
-            r.get("escalation_reason")
+            r.get("failure_class")
+            or r.get("escalation_reason")
             or (", ".join(r.get("review_causes") or []))
             or r.get("review_decision")
             or r.get("error_message")
@@ -335,13 +336,15 @@ def inspect_panels(run: dict) -> list[Panel]:
         "intake_changed": "INTAKE CHANGED",
         "intake_method": "INTAKE METHOD",
         "intake_chars": "INTAKE CHARS",
+        "failure_class": "FAILURE CLASS",
+        "run_aborted": "ABORTED",
     }
     for key in ("doc_id", "session_id", "matter_id", "user_id", "release", "attempt", "environment",
                 "doc_subclass", "contract_subtype", "expected_hf_class", "expected_subclass",
                 "intake_messy", "intake_changed", "intake_method", "intake_chars",
                 "classification_confidence", "extraction_confidence", "latency",
                 "llm_call_count", "total_tokens", "cost_usd", "created_at",
-                "escalation_reason", "error_message"):
+                "escalation_reason", "failure_class", "run_aborted", "error_message"):
         value = run.get(key)
         if value is not None:
             kv.add_row(labels.get(key, key), str(value))

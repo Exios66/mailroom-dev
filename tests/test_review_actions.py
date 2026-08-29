@@ -356,6 +356,37 @@ def test_api_review_resolve_complete_forwards_extracted_data(monkeypatch):
     assert posted["extracted_data"] == {"parties": ["A", "B"]}
 
 
+def test_api_review_resolve_complete_rejects_foreign_specialist_fields(monkeypatch):
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")
+
+    posted = {}
+
+    def fake_request(method, url, *, token="", body=None, timeout=8.0):
+        if method == "GET" and "/v1/lookup?" in url:
+            return {"document": {"doc_id": "doc-c", "doc_type": "contract"}}
+        if method == "POST":
+            posted.update(body or {})
+            return {"status": "ok"}
+        raise AssertionError(url)
+
+    from mailroom_ui import review_actions
+
+    src = LangfuseSource(client=FakeClient([make_trace("t-c", stage="review")]))
+    with patch.object(review_actions, "_request_json", side_effect=fake_request):
+        with TestClient(create_app(src)) as c:
+            r = c.post("/api/review/resolve", json={
+                "doc_id": "doc-c",
+                "decision": "approved",
+                "disposition": "complete",
+                "override_doc_type": "contract",
+                "extracted_data": {"sender": "A Corp", "parties": ["A", "B"]},
+            })
+    assert r.status_code == 400, r.text
+    assert "another specialist" in (r.json().get("error") or r.text)
+    assert posted == {}
+
+
 def test_producer_urls_honor_empty_api_prefix(monkeypatch):
     monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
     monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")

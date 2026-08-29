@@ -230,6 +230,7 @@ def make_trace_v4(
     classify_generation_output: object | None = None,
     doc_subclass: str | None = None,
     contract_subtype: str | None = None,
+    output_extra: dict | None = None,
 ) -> dict:
     """A trace shaped like the Langfuse v4 SDK (camelCase observations).
 
@@ -329,6 +330,8 @@ def make_trace_v4(
     inp = {"filename": filename, "matter_id": matter_id, "attempt": 0}
     if extra_input:
         inp.update(extra_input)
+    if output_extra:
+        output.update(output_extra)
     return {
         "id": trace_id,
         "name": "document-pipeline",

@@ -7,9 +7,9 @@ checkout is available:
 
     pip install -e ".[pipeline]"
 
-Pin: ``git+https://github.com/Exios66/llm-mailroom.git@2c0bcac`` (package
-version 0.5.0 on ``origin/main``). Bump ``MAILROOM_GIT_SHA`` and the extra
-together.
+Pin: ``git+https://github.com/Exios66/llm-mailroom.git@0928de1`` (package
+version 0.5.0 on ``origin/main``, llm-mailroom #53). Bump
+``MAILROOM_GIT_SHA`` and the extra together.
 
 Never import ``api.main`` (watcher / embeddings / graph warm-up at import
 time) or ``llm_dojo_scoring``.
@@ -24,8 +24,8 @@ import sys
 from pathlib import Path
 from typing import Any, Optional
 
-# origin/main 2c0bcac — "Add REVIEW resolve, audit analysis, and Parquet warehouse export (#48)"
-MAILROOM_GIT_SHA = "2c0bcac"
+# origin/main 0928de1 — "Harden aborted runs, review Complete, and stale-claim requeue (#53)"
+MAILROOM_GIT_SHA = "0928de1"
 MAILROOM_GIT_URL = "https://github.com/Exios66/llm-mailroom.git"
 MAILROOM_DIST_NAME = "mailroom"
 MAILROOM_DIST_VERSION = "0.5.0"
@@ -322,3 +322,23 @@ def serialize_catalog_row(doc: Any) -> dict[str, Any]:
 
         return serialize_document(SimpleNamespace(**doc))
     return serialize_document(doc)
+
+
+def validate_operator_extraction(
+    doc_type: str, extracted_data: dict[str, Any]
+) -> dict[str, Any]:
+    """Reject specialist-schema collisions before Complete (llm-mailroom #53).
+
+    Prefer the live producer helper when the checkout or pin is new enough;
+    fall back to the bundled field-map check so older imports still block
+    foreign keys (e.g. correspondence ``sender`` on a contract).
+    """
+    review = (_LOADED or {}).get("review") if _LOADED else None
+    live = getattr(review, "validate_operator_extraction", None)
+    if callable(live):
+        return live(doc_type, extracted_data)
+    from mailroom_ui.pipeline_schema import (
+        validate_operator_extraction as _bundled,
+    )
+
+    return _bundled(doc_type, extracted_data)

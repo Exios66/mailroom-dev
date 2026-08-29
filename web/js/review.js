@@ -44,6 +44,11 @@ const ReviewView = (() => {
           <div style="color:var(--paper-dim)">doc: <span style="color:var(--paper)">${Mailroom.esc(r.doc_type || "—")}${r.doc_subclass || r.contract_subtype ? ` / ${Mailroom.esc(r.doc_subclass || r.contract_subtype)}` : ""}</span>${r.doc_id ? ` · id ${Mailroom.esc(r.doc_id)}` : ""}</div>
           ${causeLine(r)}
           ${
+            r.failure_class
+              ? `<div style="color:var(--red-light);margin-top:4px">fail: ${Mailroom.esc(String(r.failure_class).replaceAll("_", " "))}</div>`
+              : ""
+          }
+          ${
             r.error_message
               ? `<div style="color:var(--red-light);margin-top:4px">error: ${Mailroom.esc(r.error_message)}</div>`
               : ""

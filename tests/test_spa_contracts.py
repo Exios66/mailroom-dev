@@ -118,6 +118,8 @@ def test_live_poll_matches_server_interval_and_pipeline_ops():
     assert "review-source-text" in hosted_app
     assert 'name="extracted_data"' in hosted_app
     assert 'data-disposition="complete"' in hosted_app
+    assert "run.failure_class" in hosted_app
+    assert "run.run_aborted" in hosted_app
 
 
 def test_error_banner_is_outside_overflow_hidden_screen():
@@ -140,6 +142,7 @@ def test_desk_tabs_show_loading_placeholder():
     metrics = (ROOT / "web" / "js" / "metrics.js").read_text()
     history = (ROOT / "web" / "js" / "history.js").read_text()
     assert "LOADING REVIEW QUEUE FROM LANGFUSE" in review
+    assert "r.failure_class" in review
     assert "Mailroom.reviewPanel(r)" in review
     assert "producerBanner().catch" in review
     assert 'data-decision="approved"' in API
@@ -166,6 +169,8 @@ def test_inspector_renders_typed_observations():
     assert "Mailroom.reviewPanel(run)" in inspector
     assert "run.expected_subclass" in inspector
     assert "run.intake_messy" in inspector
+    assert "run.failure_class" in inspector
+    assert "run.run_aborted" in inspector
     assert "SUITE EXTRAS" in inspector
     assert "content_topic_accuracy" in inspector
     assert ".chip.obs-agent" in theme

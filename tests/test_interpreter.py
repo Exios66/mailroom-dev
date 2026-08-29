@@ -292,6 +292,55 @@ def test_run_aborted_and_error_message_from_output():
     assert run.error_message == "LLM timeout"
 
 
+def test_failure_class_from_output_and_tagged_error():
+    from server.poller import floor_payload
+
+    direct = _run(make_trace(
+        "t-fail-out",
+        stage="failed",
+        verdict=None,
+        output_extra={
+            "run_aborted": True,
+            "failure_class": "llm_timeout",
+            "error_message": "run aborted [llm_timeout]: TimeoutError: deadline",
+        },
+    ))
+    assert direct.failure_class == "llm_timeout"
+    assert floor_payload(direct)["failure_class"] == "llm_timeout"
+    assert floor_payload(direct)["run_aborted"] is True
+
+    tagged = _run(make_trace(
+        "t-fail-text",
+        stage="failed",
+        verdict=None,
+        output_extra={
+            "run_aborted": True,
+            "error_message": "run aborted [llm_auth]: Unauthorized",
+        },
+    ))
+    assert tagged.failure_class == "llm_auth"
+
+    v4 = _run(make_trace_v4(
+        "t-fail-v4",
+        stage="failed",
+        output_extra={
+            "run_aborted": True,
+            "failure_class": "run_budget",
+            "error_message": "run aborted [run_budget]: RunDeadlineExceeded",
+        },
+    ))
+    assert v4.failure_class == "run_budget"
+
+    meta = _run(make_trace(
+        "t-fail-meta",
+        stage="failed",
+        verdict=None,
+        extra_metadata={"failure_class": "io_error"},
+        output_extra={"error_message": "run aborted: PermissionError"},
+    ))
+    assert meta.failure_class == "io_error"
+
+
 def test_review_decision_and_escalation_reason():
     trace = make_trace(
         "t-boss",

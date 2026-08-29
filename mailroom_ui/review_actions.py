@@ -23,7 +23,12 @@ from typing import Any, Optional
 
 from .pipeline_ops import _token, pipeline_base_url, producer_url
 from .pipeline_schema import normalize_review_doc_type, normalize_review_subclass
-from .producer import DECISIONS, DISPOSITIONS, tray_actions_for
+from .producer import (
+    DECISIONS,
+    DISPOSITIONS,
+    tray_actions_for,
+    validate_operator_extraction,
+)
 
 log = logging.getLogger("mailroom.review_actions")
 
@@ -474,9 +479,16 @@ def resolve_review(
     extracted = _coerce_extracted_data(extracted_data)
     _require_pipeline()
     token = _token()
-    resolved, _document = _lookup_or_id(
+    resolved, document = _lookup_or_id(
         trace_id=trace_id, filename=filename, doc_id=doc_id, timeout=min(timeout, 8.0),
     )
+    if disposition == "complete" and extracted:
+        kind = extra.get("override_doc_type") or (document or {}).get("doc_type")
+        if kind:
+            try:
+                extracted = validate_operator_extraction(str(kind), extracted)
+            except ValueError as exc:
+                raise ReviewActionError(str(exc), status=400) from exc
     body: dict[str, Any] = {
         "decision": decision,
         "notes": notes or "",

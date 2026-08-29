@@ -291,6 +291,14 @@ def create_fake_producer(store: Optional[FakeProducerStore] = None, *, token: st
             extracted = body.get("extracted_data")
             if not isinstance(extracted, dict) or not extracted:
                 raise HTTPException(400, "disposition=complete requires extracted_data object")
+            kind = rec.get("doc_type")
+            if kind:
+                try:
+                    from mailroom_ui.pipeline_schema import validate_operator_extraction
+
+                    extracted = validate_operator_extraction(str(kind), extracted)
+                except ValueError as exc:
+                    raise HTTPException(400, str(exc)) from exc
             rec["extracted_data"] = extracted
             rec["stage"] = "archived"
             rec["review_decision"] = "approved"

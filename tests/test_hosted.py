@@ -49,6 +49,8 @@ def test_live_assets_are_mounted():
     assert "review-source-text" in js.text
     assert 'name="extracted_data"' in js.text
     assert 'data-disposition="complete"' in js.text
+    assert "Failure class" in js.text
+    assert "run.failure_class" in js.text
     assert ".review-source" in css.text
     assert debug.status_code == 200 and "__OBSERVATORY_DEBUG__" in debug.text
 

@@ -53,12 +53,31 @@ def test_fake_producer_complete_requires_extracted_data():
             json={
                 "decision": "approved",
                 "disposition": "complete",
-                "extracted_data": {"claim_number": "CL-4419", "status": "closed"},
+                "extracted_data": {
+                    "claim_number": "CL-4419",
+                    "coverage_determination": "approved",
+                },
             },
         )
         assert ok.status_code == 200
         assert ok.json()["disposition"] == "complete"
         assert store.documents["doc-claim-fnol"]["stage"] == "archived"
+
+
+def test_fake_producer_complete_rejects_foreign_specialist_fields():
+    store = FakeProducerStore()
+    with TestClient(create_fake_producer(store)) as c:
+        bad = c.post(
+            "/v1/review/doc-merger-42/resolve",
+            headers=_auth(),
+            json={
+                "decision": "approved",
+                "disposition": "complete",
+                "extracted_data": {"sender": "A Corp", "parties": ["A", "B"]},
+            },
+        )
+        assert bad.status_code == 400
+        assert "another specialist" in (bad.json().get("detail") or bad.text)
 
 
 def test_fake_producer_record_on_reconsider():

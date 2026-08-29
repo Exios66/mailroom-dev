@@ -70,7 +70,7 @@ read-only FastAPI on `:8001`.
 
 ```bash
 pip install -e ".[dev]"
-pip install -e ".[pipeline]"  # optional llm-mailroom pin @ 2c0bcac
+pip install -e ".[pipeline]"  # optional llm-mailroom pin @ 0928de1
 cp .env.example .env          # LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY
 python -m pytest tests/ -q    # never hits real Langfuse
 python -m server.main         # pixel :8001 + Observatory /live

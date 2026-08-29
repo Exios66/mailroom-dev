@@ -82,6 +82,20 @@ def test_review_table_shows_reconsider_causes():
     assert "mailroom-tui --resolve" in text
 
 
+def test_review_table_shows_failure_class():
+    table = review_table([
+        dict(
+            RUN,
+            stage="failed",
+            needs_human=True,
+            failure_class="llm_timeout",
+            error_message="run aborted [llm_timeout]: TimeoutError",
+        )
+    ])
+    text = render(table)
+    assert "llm_timeout" in text
+
+
 def test_tui_resolve_flags_include_class_and_source():
     from pathlib import Path
 
@@ -149,6 +163,16 @@ def test_inspect_panels_show_doc_id():
     text = "\n".join(render(p) for p in inspect_panels(dict(RUN, doc_id="doc-abc")))
     assert "DOC ID" in text
     assert "doc-abc" in text
+
+
+def test_inspect_panels_show_failure_class():
+    text = "\n".join(render(p) for p in inspect_panels(dict(
+        RUN, failure_class="llm_timeout", run_aborted=True,
+        error_message="run aborted [llm_timeout]: TimeoutError",
+    )))
+    assert "FAILURE CLASS" in text
+    assert "llm_timeout" in text
+    assert "ABORTED" in text
 
 
 def test_post_json_is_exported():

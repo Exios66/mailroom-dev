@@ -9,6 +9,7 @@ are read from there instead (the topology above is data-driven there too).
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -180,6 +181,118 @@ DOC_CLASSES: dict[str, str] = {
 }
 
 DEFAULT_DOC_CLASSES: dict[str, str] = dict(DOC_CLASSES)
+
+# llm-mailroom pipeline.failures (PR #53) — stamped on aborted state /
+# manifest / audit. Trace output may carry the token, or embed it as
+# ``run aborted [llm_timeout]: …`` in error_message.
+FAILURE_CLASSES: tuple[str, ...] = (
+    "llm_timeout",
+    "llm_auth",
+    "llm_rate_limit",
+    "llm_transient",
+    "io_error",
+    "schema_error",
+    "run_budget",
+    "unexpected",
+)
+FAILURE_CLASS_LABELS: dict[str, str] = {
+    "llm_timeout": "LLM timeout",
+    "llm_auth": "LLM auth",
+    "llm_rate_limit": "LLM rate limit",
+    "llm_transient": "LLM transient",
+    "io_error": "I/O error",
+    "schema_error": "schema error",
+    "run_budget": "run budget",
+    "unexpected": "unexpected",
+}
+
+# Mirror of llm-mailroom schemas.documents EXTRACTION_SCHEMAS field names
+# (PR #53 REVIEW Complete rejects keys that belong to another specialist).
+_META_EXTRACT_KEYS = frozenset({"confidence", "reasoning", "mock_extraction"})
+EXTRACTION_FIELD_KEYS_BY_CLASS: dict[str, frozenset[str]] = {
+    "contract": frozenset({
+        "document_name", "parties", "effective_date", "term_length",
+        "termination_clauses", "governing_law", "key_obligations",
+        "contract_value", "renewal_terms", "cuad_family",
+        "merger_consideration", "cuad_clauses", "maud_clauses", "reasoning",
+    }),
+    "corporate_record": frozenset({
+        "entity_name", "record_type", "effective_date", "key_provisions",
+        "signatories", "jurisdiction", "filing_number",
+    }),
+    "correspondence": frozenset({
+        "sender", "recipient", "additional_recipients", "communication_type",
+        "communication_date", "key_points", "demand_amount", "action_items",
+        "urgency", "referenced_communications", "confidence",
+    }),
+    "compliance_filing": frozenset({
+        "filing_type", "regulatory_body", "filing_date", "due_date",
+        "entity_name", "key_requirements", "status", "reference_number",
+    }),
+    "insurance_claim": frozenset({
+        "claim_number", "policy_number", "insurer", "insured_party",
+        "claim_type", "date_of_loss", "date_filed", "claimed_amount",
+        "adjuster", "damages_description", "coverage_determination",
+        "denial_reasons", "supporting_documents", "confidence",
+    }),
+}
+EXTRACTION_FIELD_KEYS_BY_CLASS["merger_agreement"] = EXTRACTION_FIELD_KEYS_BY_CLASS["contract"]
+
+_ABORT_CLASS_RE = re.compile(r"run aborted \[([a-z_]+)\]", re.I)
+
+
+def all_specialist_field_keys() -> frozenset[str]:
+    names: set[str] = set()
+    for keys in EXTRACTION_FIELD_KEYS_BY_CLASS.values():
+        names.update(keys)
+    return frozenset(names) - _META_EXTRACT_KEYS
+
+
+def normalize_failure_class(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    key = str(value).strip().lower().replace("-", "_")
+    return key if key in FAILURE_CLASSES else None
+
+
+def failure_class_from_text(text: Optional[str]) -> Optional[str]:
+    """Parse ``run aborted [llm_timeout]: …`` from error / escalation text."""
+    if not text:
+        return None
+    match = _ABORT_CLASS_RE.search(str(text))
+    if not match:
+        return None
+    return normalize_failure_class(match.group(1))
+
+
+def validate_operator_extraction(doc_type: str, extracted: dict) -> dict:
+    """Reject Complete payloads whose keys belong to another specialist.
+
+    Mirrors llm-mailroom ``pipeline.review_resolve.validate_operator_extraction``
+    foreign-key check (PR #53). Full pydantic schema_valid stays on the
+    producer when the live extra is present.
+    """
+    payload = dict(extracted)
+    kind = EXTRACT_CLASS_ALIASES.get(doc_type, doc_type)
+    allowed = (
+        EXTRACTION_FIELD_KEYS_BY_CLASS.get(doc_type)
+        or EXTRACTION_FIELD_KEYS_BY_CLASS.get(kind)
+        or frozenset()
+    ) | _META_EXTRACT_KEYS
+    foreign = sorted(
+        key
+        for key in payload
+        if key not in allowed
+        and not str(key).startswith("_")
+        and key in all_specialist_field_keys()
+    )
+    if foreign:
+        raise ValueError(
+            f"extracted_data fields {foreign} belong to another specialist, "
+            f"not {doc_type}"
+        )
+    return payload
+
 
 SPECIALIST_BY_DOC_CLASS: dict[str, str] = {
     "contract": "contracts_specialist",

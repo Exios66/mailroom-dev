@@ -126,6 +126,7 @@ class PipelineRun(BaseModel):
     review_causes: list[str] = Field(default_factory=list)
     error_message: Optional[str] = None
     run_aborted: bool = False
+    failure_class: Optional[str] = None  # llm-mailroom PR #53 abort class
 
     spans: list[NodeSpan] = Field(default_factory=list)
     generations: list[Generation] = Field(default_factory=list)

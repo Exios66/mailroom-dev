@@ -162,6 +162,8 @@ const Inspector = (() => {
     ];
     if (run.review_decision) rows.push(["review decision", run.review_decision]);
     if (run.escalation_reason) rows.push(["escalation", run.escalation_reason]);
+    if (run.failure_class) rows.push(["failure class", String(run.failure_class).replaceAll("_", " ")]);
+    if (run.run_aborted) rows.push(["aborted", "yes"]);
     if (Array.isArray(run.review_causes) && run.review_causes.length) {
       rows.push(["reconsider", run.review_causes.join(", ")]);
     }

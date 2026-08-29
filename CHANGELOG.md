@@ -8,9 +8,19 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- **llm-mailroom #53 abort class and REVIEW Complete schema.** Aborted
+  traces now surface `failure_class` (`llm_timeout` / `llm_auth` /
+  `llm_rate_limit` / `llm_transient` / `io_error` / `schema_error` /
+  `run_budget` / `unexpected`) on `PipelineRun`, the floor payload, and
+  the pixel / Observatory / TUI inspect desks. The token is read from
+  Langfuse output or metadata, or parsed from `run aborted [<class>]: …`
+  on `error_message` / `escalation_reason`. `disposition=complete` rejects
+  operator `extracted_data` keys that belong to another specialist schema
+  (HTTP 400) before the producer call.
+
 - **Pinned llm-mailroom as an importable extra.** `pip install -e ".[pipeline]"`
   installs dist `mailroom` from
-  `git+https://github.com/Exios66/llm-mailroom.git@2c0bcac` (package 0.5.0).
+  `git+https://github.com/Exios66/llm-mailroom.git@0928de1` (package 0.5.0).
   `mailroom_ui/producer.py` imports `pipeline.review_resolve` /
   `schemas.manifest` (dispositions, `serialize_document`, tray actions) from
   that extra, a sibling checkout, or a git-archive of the pin SHA when the
@@ -40,6 +50,12 @@ All notable changes to The-Mailroom are documented here, following
   `:8001`).
 
 ### Changed
+
+- **Producer pin `2c0bcac` → `0928de1`.** Optional extra `[pipeline]`
+  tracks llm-mailroom #53 (abort classification, REVIEW Complete
+  specialist-schema check, stale-claim requeue on the producer, API token
+  rotation). The visualizer still sends a single
+  `MAILROOM_PIPELINE_TOKEN`; bins requeue stays on the producer.
 
 - **Aligned the producer proxy with llm-mailroom `main`.** Calls go through
   `/v1` (`MAILROOM_PIPELINE_API_PREFIX`, default `/v1`; empty/`/` uses the
