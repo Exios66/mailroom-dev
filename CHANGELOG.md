@@ -6,6 +6,14 @@ All notable changes to The-Mailroom are documented here, following
 
 ## [Unreleased]
 
+### Changed
+
+- **Full browser QA against live Langfuse (2026-08-29).** Pixel console
+  (`/?debug=1`) and Observatory (`/live?debug=1`) desks, inspector,
+  History replay, mobile FLOOR/REVIEW, and debug dump/push were exercised
+  on `:8001` with Langfuse up and the producer unset. Review resolve
+  returns an honest HTTP 503. No SPA regressions required a code change.
+
 ### Added
 
 - **llm-mailroom #53 abort class and REVIEW Complete schema.** Aborted
