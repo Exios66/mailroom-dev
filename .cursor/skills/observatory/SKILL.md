@@ -24,6 +24,7 @@ description: Mailroom Observatory hosted desk (hosted/ vanilla SPA at /live, mai
 | Hosted live | `mailroom-hosted` (binds `0.0.0.0`) | Langfuse via `/api` + `/ws` |
 | Pixel + /live | `mailroom-web` | Same API; Observatory still at `/live` |
 | GH Pages | `publish_pages.sh` | Static snapshot — **not** this UI |
+| Hugging Face Space | `scripts/publish_space.py` | Same live Langfuse desk; Docker, port 7860 |
 
 When the WebSocket drops, HTTP fallback must poll traces + `/api/pipeline` at
 `poll_interval_s` (see [live-floor](../live-floor/SKILL.md)).
@@ -34,6 +35,14 @@ to producer `override_doc_type`), Complete + `extracted_data`, and
 `Obs.api.reviewSource` for parked text (lookup fallback on producer main).
 Unconfigured producer → setup hint, not a fabricated catalog write.
 Working demo: `scripts/demo_review_tray.py`.
+
+## Hugging Face Space
+
+SDK **Docker**, root directory empty, `app_port` 7860. Secrets:
+`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST` (US cloud
+`https://us.cloud.langfuse.com`; `LANGFUSE_BASE_URL` is an alias).
+`python scripts/publish_space.py --check` is offline. Do not configure
+the Space as FastAPI/Vercel and do not bake keys into the image.
 
 ## Related
 

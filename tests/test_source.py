@@ -5,13 +5,29 @@ from unittest.mock import patch
 
 import pytest
 
-from mailroom_ui.langfuse_source import LangfuseSource, LangfuseUnavailable, list_recent_runs
+from mailroom_ui.langfuse_source import (
+    DEFAULT_LANGFUSE_HOST,
+    LangfuseSource,
+    LangfuseUnavailable,
+    langfuse_host,
+    list_recent_runs,
+)
 from mailroom_ui.models import PipelineRun
 from tests.fake_langfuse import FakeClient, Obj, make_trace
 
 
 def _source(traces, cache_ttl=0, poll_cache_ttl=0):
     return LangfuseSource(client=FakeClient(traces), cache_ttl=cache_ttl, poll_cache_ttl=poll_cache_ttl)
+
+
+def test_langfuse_host_accepts_base_url_alias(monkeypatch):
+    monkeypatch.delenv("LANGFUSE_HOST", raising=False)
+    monkeypatch.delenv("LANGFUSE_BASE_URL", raising=False)
+    assert langfuse_host() == DEFAULT_LANGFUSE_HOST
+    monkeypatch.setenv("LANGFUSE_BASE_URL", "https://us.cloud.langfuse.com")
+    assert langfuse_host() == "https://us.cloud.langfuse.com"
+    monkeypatch.setenv("LANGFUSE_HOST", "https://example.invalid")
+    assert langfuse_host() == "https://example.invalid"
 
 
 def test_list_traces_returns_dicts():

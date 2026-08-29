@@ -22,6 +22,7 @@ this visualizer.
 | Remote GPU vLLM | sandbox `modal-vllm` | [modal](../modal/SKILL.md) | Modal deploy from this repo |
 | Pixel conveyor / SPA | `web/` vanilla HTML/CSS/JS | [pixel-console](../pixel-console/SKILL.md) | npm / webpack / React |
 | Public hosted desk | `hosted/` + `mailroom-hosted` | [observatory](../observatory/SKILL.md) | Treating GH Pages as the Observatory |
+| Hugging Face Space (live Observatory) | `scripts/publish_space.py` + root `Dockerfile` | [observatory](../observatory/SKILL.md) | Gradio/FastAPI/Vercel Space SDK; baking Langfuse keys into git |
 | Live poll, WS, watcher lamp | `server/poller.py`, `/api/pipeline` | [live-floor](../live-floor/SKILL.md) | Fabricated envelopes while Langfuse is down |
 | Human review resolve | Pixel/Observatory REVIEW + `mailroom-tui --resolve` | [pixel-console](../pixel-console/SKILL.md) / [observatory](../observatory/SKILL.md) / [tui](../tui/SKILL.md) | Pointing `MAILROOM_API_URL` at producer `:8000`; resolving from snapshot mode |
 | Span/stage/taxonomy drift | `mailroom_ui/pipeline_schema.py` | [pipeline-schema-sync](../pipeline-schema-sync/SKILL.md) | Editing schema without interpreter + tests + CHANGELOG |
@@ -79,4 +80,5 @@ python -m pytest tests/ -q    # never hits real Langfuse
 python -m server.main         # pixel :8001 + Observatory /live
 mailroom-hosted               # Observatory on 0.0.0.0
 mailroom-tui
+python scripts/publish_space.py --check
 ```

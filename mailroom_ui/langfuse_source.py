@@ -23,6 +23,21 @@ from .trace_interpreter import interpret_trace
 
 log = logging.getLogger("mailroom.langfuse_source")
 
+DEFAULT_LANGFUSE_HOST = "https://us.cloud.langfuse.com"
+
+
+def langfuse_host() -> str:
+    """Resolve the Langfuse API host.
+
+    This repo's knob is ``LANGFUSE_HOST`` (SDK convention). Langfuse docs
+    and some dashboards export ``LANGFUSE_BASE_URL`` instead — accept that
+    alias so a Space / VPS secret copied from the Langfuse UI still works.
+    """
+    host = (os.environ.get("LANGFUSE_HOST") or "").strip()
+    if not host:
+        host = (os.environ.get("LANGFUSE_BASE_URL") or "").strip()
+    return host or DEFAULT_LANGFUSE_HOST
+
 
 class LangfuseUnavailable(TraceSourceUnavailable):
     """Back-compat alias: the shared TraceSourceUnavailable base is what the
@@ -133,7 +148,7 @@ class LangfuseSource:
             return Langfuse(
                 public_key=os.environ.get("LANGFUSE_PUBLIC_KEY"),
                 secret_key=os.environ.get("LANGFUSE_SECRET_KEY"),
-                host=os.environ.get("LANGFUSE_HOST", "https://us.cloud.langfuse.com"),
+                host=langfuse_host(),
                 timeout=15,
                 max_retries=1,
             )
@@ -143,7 +158,7 @@ class LangfuseSource:
                 return Langfuse(
                     public_key=os.environ.get("LANGFUSE_PUBLIC_KEY"),
                     secret_key=os.environ.get("LANGFUSE_SECRET_KEY"),
-                    host=os.environ.get("LANGFUSE_HOST", "https://us.cloud.langfuse.com"),
+                    host=langfuse_host(),
                 )
             except Exception:
                 return None

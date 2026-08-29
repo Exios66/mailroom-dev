@@ -25,7 +25,8 @@ is the LegalBench eval sibling. Full map:
   SESSIONS · HISTORY · METRICS · CONSOLE)
 - **Observatory** (`/live`, `mailroom-hosted`) — public modern accessible desk
   (Pipeline · Review · History · Matters · Metrics · Debug;
-  `GET /api/debug/bundle`)
+  `GET /api/debug/bundle`). Hugging Face Space: Docker + port 7860
+  (`scripts/publish_space.py`, `hosted/SPACE_README.md`)
 - **TUI** (`mailroom-tui`) — terminal (floor · review · sessions · metrics ·
   inspect · debug)
 - **GitHub Pages** — static snapshot of the pixel SPA (not the Observatory)

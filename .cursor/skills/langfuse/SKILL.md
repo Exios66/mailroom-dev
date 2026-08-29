@@ -15,7 +15,7 @@ source). This viewer **reads**; it never constructs a write client or flushes.
 | Knob | Value |
 | --- | --- |
 | Project | US cloud `llm-mailroom` (producer writes; we read) |
-| Host env | **`LANGFUSE_HOST`** (not `LANGFUSE_BASE_URL`) |
+| Host env | **`LANGFUSE_HOST`** (`LANGFUSE_BASE_URL` accepted as an alias) |
 | Default host | `https://us.cloud.langfuse.com` |
 | Keys | `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` |
 | Root trace | `document-pipeline` (**CHAIN**) |

@@ -34,11 +34,43 @@ bake keys into the image.
 
 ### Hugging Face Spaces (Docker)
 
-1. Create a Space, SDK **Docker**.
-2. Point it at this repo (or push the `Dockerfile` + source).
-3. Space secrets: `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, optional
-   `LANGFUSE_HOST`, `MAILROOM_SOURCE`, `MAILROOM_TRACE_ENVIRONMENTS`.
-4. The Space URL is the Observatory (`/` inside the container is `/live`).
+The committed root `Dockerfile` **is** the Space image
+(`MAILROOM_EDITION=hosted`, `0.0.0.0:7860`, `python -m server.hosted`).
+Do not pick FastAPI / Gradio / a subdirectory as the Space SDK.
+
+**Dashboard (one-time):**
+
+| Field | Set to |
+|---|---|
+| SDK | **Docker** |
+| Root directory | *(leave empty — Dockerfile is at the repo/Space root)* |
+| App port | **7860** (also `app_port` in [`SPACE_README.md`](SPACE_README.md)) |
+| Hardware | CPU basic (no GPU) |
+| Secrets | `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST` |
+| Variables | `MAILROOM_SOURCE=langfuse` (optional) |
+
+This repo's knob is **`LANGFUSE_HOST`**. Langfuse's UI label
+`LANGFUSE_BASE_URL` is accepted as an alias. Production US cloud:
+
+```
+LANGFUSE_HOST=https://us.cloud.langfuse.com
+```
+
+**Publish** (never bake keys into git; `HF_TOKEN` stays on your machine):
+
+```bash
+pip install huggingface_hub
+python scripts/publish_space.py --check
+HF_TOKEN=hf_... \
+  LANGFUSE_PUBLIC_KEY=pk-lf-... \
+  LANGFUSE_SECRET_KEY=sk-lf-... \
+  LANGFUSE_HOST=https://us.cloud.langfuse.com \
+  python scripts/publish_space.py --repo <user>/mailroom-observatory
+```
+
+The Space URL is the Observatory (`/` inside the container). Pixel assets
+remain at `/static`. REVIEW resolve still needs `MAILROOM_PIPELINE_URL` on
+a reachable producer — the Space shows the live Langfuse floor without it.
 
 ### Any Docker host (Fly, Render, Cloud Run, a VPS)
 

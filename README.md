@@ -271,10 +271,23 @@ Pages snapshot and not the pixel-art console.
 mailroom-hosted                          # 0.0.0.0:8001  →  / and /live
 docker build -t mailroom-observatory .
 docker run --rm -p 7860:7860 --env-file .env mailroom-observatory
+python scripts/publish_space.py --check  # Hugging Face Docker Space payload
+```
+
+Hugging Face Space: SDK **Docker**, root directory **empty** (repo-root
+`Dockerfile`), port **7860**. Secrets: `LANGFUSE_PUBLIC_KEY`,
+`LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST=https://us.cloud.langfuse.com`
+(`LANGFUSE_BASE_URL` is accepted as an alias). Do not configure the Space
+as FastAPI/Vercel — the image is `python -m server.hosted`.
+
+```bash
+HF_TOKEN=hf_... LANGFUSE_PUBLIC_KEY=pk-lf-... LANGFUSE_SECRET_KEY=sk-lf-... \
+  python scripts/publish_space.py --repo <user>/mailroom-observatory
 ```
 
 Full deploy notes (Spaces secrets, keyboard map, how it differs from the
-other surfaces): [`hosted/README.md`](hosted/README.md).
+other surfaces): [`hosted/README.md`](hosted/README.md) and
+[`hosted/SPACE_README.md`](hosted/SPACE_README.md).
 
 </details>
 

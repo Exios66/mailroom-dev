@@ -16,6 +16,13 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- **Hugging Face Docker Space publisher.** `scripts/publish_space.py`
+  ships the committed Observatory image (`Dockerfile`,
+  `MAILROOM_EDITION=hosted`, port 7860) to a Hub Space, sets Langfuse
+  keys as Space **secrets** (never the git tree), and accepts
+  `LANGFUSE_BASE_URL` as an alias of `LANGFUSE_HOST`. Dashboard
+  checklist lives in `hosted/SPACE_README.md`. `--check` is offline.
+
 - **Operator desk submodule (`operator_desk/`).** Dedicated FastAPI package
   for JWT auth (`/v1/auth`), local archive list/download/preview/verify
   (`/v1/archive`), Langfuse-backed ops snapshots (`/v1/ops`), and
