@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -43,6 +44,9 @@ from mailroom_ui.phoenix_source import PhoenixSource
 from mailroom_ui.producer import producer_status
 from mailroom_ui.sources import TraceSourceUnavailable
 from mailroom_ui.trace_interpreter import interpret_trace
+from operator_desk import OPERATOR_ENDPOINTS, mount_operator, operator_status
+from operator_desk.observer import start_observer
+from operator_desk.observer import observer_enabled as operator_observer_enabled
 from server.debug_log import DebugLog, DebugLogMiddleware
 from server.poller import PollHub, floor_payload
 
@@ -80,6 +84,7 @@ API_ENDPOINTS = [
     {"method": "WS", "path": "/ws", "desc": "floor snapshots (live mode only)"},
     {"method": "GET", "path": "/live", "desc": "hosted Observatory UI (modern, accessible, public)"},
 ]
+API_ENDPOINTS = API_ENDPOINTS + list(OPERATOR_ENDPOINTS)
 
 
 def _build_default_source() -> object:
@@ -106,7 +111,14 @@ def create_app(source: Optional[object] = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         await hub.start()
+        watcher = (
+            start_observer(loop=asyncio.get_running_loop())
+            if operator_observer_enabled()
+            else None
+        )
         yield
+        if watcher is not None:
+            watcher.stop()
         await hub.stop()
 
     app = FastAPI(title="The-Mailroom", version="0.3.0", lifespan=lifespan)
@@ -137,6 +149,11 @@ def create_app(source: Optional[object] = None) -> FastAPI:
     # discarded it, leaving a silent blank/zeroed screen.
     @app.exception_handler(Exception)
     async def generic_error_handler(request, exc):
+        from fastapi.exceptions import RequestValidationError
+        from starlette.exceptions import HTTPException as StarletteHTTPException
+
+        if isinstance(exc, (StarletteHTTPException, RequestValidationError)):
+            raise exc
         return JSONResponse(
             status_code=500,
             content={"error": "internal server error", "detail": str(exc)[:300]},
@@ -149,6 +166,7 @@ def create_app(source: Optional[object] = None) -> FastAPI:
             payload = dict(payload)
             payload["pipeline_configured"] = pipeline_configured()
             payload["mailroom"] = producer_status()
+            payload["operator"] = operator_status()
         return payload
 
     @app.get("/api/traces")
@@ -368,6 +386,7 @@ def create_app(source: Optional[object] = None) -> FastAPI:
             "doc_subclasses": subclasses,
             "pipeline_configured": pipeline_configured(),
             "mailroom": producer_status(),
+            "operator": operator_status(),
             "source": _source_names(src),
             "mode": "api",
             "edition": _edition(),
@@ -404,6 +423,7 @@ def create_app(source: Optional[object] = None) -> FastAPI:
             "pipeline_configured": pipeline_configured(),
         }
         info["mailroom"] = producer_status()
+        info["operator"] = operator_status()
         for attr in ("project",):
             if hasattr(src, attr):
                 info["phoenix_project"] = getattr(src, attr)
@@ -470,6 +490,15 @@ def create_app(source: Optional[object] = None) -> FastAPI:
             hub.disconnect(ws)
         except Exception:
             hub.disconnect(ws)
+
+    def _operator_runs():
+        if hub.runs:
+            return list(hub.runs)
+        return list_recent_runs(
+            src, since=_utcnow() - timedelta(seconds=RECENT_WINDOW), limit=TRACE_LIMIT
+        )
+
+    mount_operator(app, runs_provider=_operator_runs)
 
     def _page(path: Path) -> FileResponse:
         return FileResponse(path, headers=_NO_CACHE)

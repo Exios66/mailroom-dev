@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "httpx>=0.27"]
+dev = ["pytest>=8.0", "httpx>=0.27", "bcrypt", "PyJWT", "watchdog"]
 # Pinned llm-mailroom (PyPI / dist name: mailroom) @ origin/main 0928de1
 # (package 0.5.0, llm-mailroom #53). Pulls langgraph, Phoenix, and
 # llm-dojo-scoring — the visualizer display path never imports those.
@@ -28,14 +28,27 @@ pipeline = [
     "structlog>=24.0",
     "pyyaml>=6.0",
 ]
+# Operator desk (auth / archive / bin observer). Display path stays Langfuse.
+# bcrypt + PyJWT preferred; stdlib pbkdf2/HMAC fallbacks exist without them.
+operator = [
+    "bcrypt",
+    "PyJWT",
+    "watchdog",
+    "pymupdf",
+]
+# Optional React operator desk (`ui/`). Marker only — Node 22+ is required
+# separately (`cd ui && npm install && npm run build`). Default [dev] never
+# installs npm. Built assets mount at /desk when ui/dist exists.
+ui = []
 
 [project.scripts]
 mailroom-web = "server.main:run"
 mailroom-hosted = "server.hosted:run"
 mailroom-tui = "tui.mailroom_console:run"
+mailroom-observer = "operator_desk.observer:run"
 
 [tool.setuptools.packages.find]
-include = ["mailroom_ui*", "server*", "tui*"]
+include = ["mailroom_ui*", "server*", "tui*", "operator_desk*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -24,5 +24,7 @@ rewritten for **this** repo’s job — rendering `document-pipeline` traces.
 | [pipeline-schema-sync](pipeline-schema-sync/SKILL.md) | Mirror `llm-mailroom` topology |
 | [gh-pages](gh-pages/SKILL.md) | Deploy-from-branch snapshot |
 | [tui](tui/SKILL.md) | `mailroom-tui` |
+| [operator-desk](operator-desk/SKILL.md) | JWT auth, archive, ops, bin observer (`operator_desk/`) |
+| [optional-ui](optional-ui/SKILL.md) | Optional React desk (`ui/`, `/desk`) — never the pixel CRT |
 
 Also see root [`AGENTS.md`](../../AGENTS.md).

@@ -29,6 +29,10 @@ is the LegalBench eval sibling. Full map:
 - **TUI** (`mailroom-tui`) — terminal (floor · review · sessions · metrics ·
   inspect · debug)
 - **GitHub Pages** — static snapshot of the pixel SPA (not the Observatory)
+- **Operator desk** (`operator_desk/`) — JWT auth, local archive, Langfuse-backed
+  ops, `/ws/pipeline` (not a display source)
+- **Optional React desk** (`ui/`) — `/desk` when built; Node never required for
+  `mailroom-web`
 
 ## Agent skills
 
@@ -37,7 +41,7 @@ stacks match
 [local-mailroom-sandbox](https://github.com/Exios66/local-mailroom-sandbox/tree/main/.cursor/skills)
 (Langfuse default; Phoenix optional; Braintrust/Ollama/Modal are not this
 visualizer). Extra skills cover pixel console, Observatory, live floor, schema
-sync, Pages, and TUI. Index: repo `.cursor/skills/README.md`.
+sync, Pages, TUI, and operator desk. Index: repo `.cursor/skills/README.md`.
 
 ## Pages
 
@@ -45,3 +49,4 @@ sync, Pages, and TUI. Index: repo `.cursor/skills/README.md`.
 - [Architecture](Architecture) — how traces become pixels
 - [Demos](Demos) — stills of every desk + the PR walkthrough video
 - [Releases](Releases) — semantic versioning, changelog, tagging process
+- [Operator Desk](Operator-Desk) — JWT / archive / ops / bin observer

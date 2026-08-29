@@ -12,6 +12,7 @@ COPY server ./server
 COPY hosted ./hosted
 COPY web ./web
 COPY tui ./tui
+COPY operator_desk ./operator_desk
 
 RUN pip install --no-cache-dir .
 

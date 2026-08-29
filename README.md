@@ -19,7 +19,7 @@ Three live surfaces share one display API (`/api/*` + `/ws`):
 | TUI | `mailroom-tui` | terminal (`MAILROOM_API_URL`) |
 
 Agent skills (Langfuse / Phoenix / Braintrust / Ollama / Modal / Hugging Face
-plus pixel, Observatory, live floor, schema sync, Pages, TUI):
+plus pixel, Observatory, live floor, schema sync, Pages, TUI, operator desk):
 [`.cursor/skills/README.md`](.cursor/skills/README.md).
 
 ---
@@ -67,6 +67,10 @@ mailroom-web              # → http://127.0.0.1:8001  (pixel-art console)
                           #    Observatory is also at /live on the same server
 mailroom-hosted           # → public Observatory on 0.0.0.0 (container-ready)
 mailroom-tui              # AgentLab-style live console (same data, in a terminal)
+pip install -e ".[operator]"  # optional: operator desk (auth / archive / observer)
+pip install -e ".[ui]"        # marker only; React desk still needs Node
+mailroom-observer         # bin watcher (or MAILROOM_OBSERVER=1 on mailroom-web)
+# optional React desk: cd ui && npm install && npm run build  →  /desk
 ```
 
 <details>
@@ -371,7 +375,9 @@ optional tag/env filters, `MAILROOM_PORT` (default `8001`),
 (producer on `:8000` — watcher/inbox liveness, human-review resolve, class
 correction mapped to `override_doc_type`, parked-file source via `/v1`).
 `MAILROOM_PIPELINE_API_PREFIX` defaults to `/v1`. `MAILROOM_API_URL` is the TUI → this
-visualizer (`:8001`), not the producer. The GH Pages edition adds `MAILROOM_SOURCE`
+visualizer (`:8001`), not the producer. The operator desk (`operator_desk/`)
+adds `MAILROOM_OPERATOR_*` (JWT, admin seed, ingest token) plus
+`MAILROOM_BASE_DIR`, `MAILROOM_OPERATOR_DB`, and `MAILROOM_OBSERVER`. The GH Pages edition adds `MAILROOM_SOURCE`
 (`langfuse|phoenix|both`), `PHOENIX_ENDPOINT` / `PHOENIX_API_KEY` /
 `MAILROOM_PHOENIX_PROJECT`, `MAILROOM_CORS_ORIGINS`, and `MAILROOM_DEBUG`.
 
@@ -412,6 +418,11 @@ authoritative for pipeline internals alongside the pipeline's own `AGENTS.md`.
 mailroom_ui/   data core — Langfuse + Phoenix adapters, trace interpreter,
                topology mirror, models, metrics (reads trace sources only)
 server/        FastAPI, read-only: /api/* + debug endpoints + WebSocket + serves web/
+               (also mounts operator_desk at /v1/* + /ws/pipeline)
+operator_desk/ operator submodule — JWT auth, local archive, Langfuse-backed
+               ops, bin observer (not a display source)
+ui/            optional React operator desk (npm; /desk when built — never
+               required for mailroom-web; pixel + Observatory stay vanilla)
 web/           pixel-art SPA (vanilla HTML/CSS/JS, no build step)
 hosted/        Observatory — public modern accessible desk
 tui/           rich console — the pipeline in a terminal (mailroom-tui)

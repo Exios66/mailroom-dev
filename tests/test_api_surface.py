@@ -28,7 +28,20 @@ def _client():
 
 
 def test_every_meta_endpoint_is_reachable():
-    skip = {"/ws", "/live", "/api/review/audit"}
+    skip = {
+        "/ws",
+        "/live",
+        "/api/review/audit",
+        "/v1/auth/me",
+        "/v1/auth/logout",
+        "/v1/archive/list",
+        "/v1/ops/status",
+        "/v1/ops/throughput",
+        "/v1/ops/distribution",
+        "/v1/ops/events",
+        "/ws/pipeline",
+        "/desk",
+    }
     with _client() as c:
         meta = c.get("/api/meta").json()
         listed = [e["path"] for e in meta["endpoints"]]
@@ -44,6 +57,10 @@ def test_every_meta_endpoint_is_reachable():
             elif method == "POST" and path == "/api/debug/client":
                 r = c.post(path, json={"href": "http://test", "events": []})
                 assert r.status_code == 200 and r.json()["ok"] is True
+            elif method == "POST" and path == "/v1/auth/login":
+                r = c.post(path, json={"username": "admin", "password": "changeme"})
+                assert r.status_code == 200, f"{path} -> {r.status_code} {r.text[:200]}"
+                assert r.json()["token_type"] == "bearer"
 
 
 def test_trace_detail_and_404():

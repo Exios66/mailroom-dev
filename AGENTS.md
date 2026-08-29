@@ -25,6 +25,8 @@ open exactly one specialty skill. Companion to
 | `pipeline-schema-sync` | Mirror `llm-mailroom` topology |
 | `gh-pages` | Deploy-from-branch snapshot (no Actions) |
 | `tui` | `mailroom-tui` (`MAILROOM_API_URL` → this visualizer; `--resolve` / `--source` via `/api/review/*`) |
+| `operator-desk` | `operator_desk/` JWT auth, archive, Langfuse-backed ops, `/ws/pipeline`, `mailroom-observer` |
+| `optional-ui` | Optional React desk `ui/` (`/desk` when built). Never replace `web/` / `hosted/` |
 
 ## Sister repo: `llm-mailroom` (the pipeline)
 
@@ -54,6 +56,12 @@ python -m pytest tests/ -q     # whole suite (never hits real Langfuse)
 python -m server.main          # FastAPI web server on :8001 (also: mailroom-web)
 mailroom-hosted                # Observatory on 0.0.0.0 (public /live UI)
 mailroom-tui                   # TUI console (planned, M4)
+mailroom-observer              # optional operator bin watcher (or MAILROOM_OBSERVER=1)
+pip install -e ".[operator]"   # bcrypt / PyJWT / watchdog / PyMuPDF
+python -m operator_desk        # migrate operator SQLite
+scripts/setup_operator.sh      # bins + migrate (no npm)
+# optional React desk (Node 22+; never required):
+#   cd ui && npm install && npm run build   # then GET /desk on mailroom-web
 python scripts/seed_demo.py    # seed demo traces INTO Langfuse (planned, M5)
 python scripts/demo_review_tray.py --check-api  # working REVIEW tray vs fake /v1 producer
 python scripts/run_production_pilot.py --check   # HF subset + eval scorer (needs sibling llm-mailroom)
@@ -84,12 +92,20 @@ scripts/publish_pages.sh       # build site/ + push gh-pages:/docs (NO Actions;
   - `review_actions.py` — server-side proxy to llm-mailroom `GET /v1/lookup`, `POST /v1/review/{doc_id}/resolve` (`disposition=resume|record|requeue|complete` from `mailroom_ui.producer.DISPOSITIONS`, UI `doc_type` mapped to producer `override_doc_type`, optional `doc_subclass` / `extracted_data`), `GET /v1/audit/{doc_id}`. Parked text: try `GET /v1/documents/{doc_id}/source`, else catalog lookup fallback (`original_filename` / `extracted_data`). Prefix via `MAILROOM_PIPELINE_API_PREFIX` (default `/v1`). Missing URL/token is a clear error, never a fabricated catalog row.
   - `metrics.py` — `compute_metrics()` aggregations (counts by stage/verdict, cost, tokens, p95 generation latency, per-doc-type).
 - `server/` — FastAPI (Langfuse reads + producer operator proxy):
-  - `main.py` — `/api/health`, `/api/traces[?since&limit&stage&environment]`, `/api/traces/{id}` (full), `/api/metrics`, `/api/sessions[/{id}]`, `/api/review-queue`, `/api/review/context`, `POST /api/review/resolve`, `/api/review/source`, `/api/review/audit`, `/api/meta`, `/api/debug/{logs,source,bundle,client}`, `/api/pipeline`, WebSocket `/ws`; mounts `web/` at `/static` (pixel console at `/`) and `hosted/` at `/live` + `/live/static`. `MAILROOM_EDITION=hosted` serves the Observatory on `/`. Browser never holds Langfuse or producer keys — the backend proxies everything, including human-review resolve and parked-file source to llm-mailroom.
+  - `main.py` — `/api/health`, `/api/traces[?since&limit&stage&environment]`, `/api/traces/{id}` (full), `/api/metrics`, `/api/sessions[/{id}]`, `/api/review-queue`, `/api/review/context`, `POST /api/review/resolve`, `/api/review/source`, `/api/review/audit`, `/api/meta`, `/api/debug/{logs,source,bundle,client}`, `/api/pipeline`, WebSocket `/ws`; mounts `operator_desk` at `/v1/auth`, `/v1/archive`, `/v1/ops`, `/ws/pipeline`; mounts `web/` at `/static` (pixel console at `/`) and `hosted/` at `/live` + `/live/static`. `MAILROOM_EDITION=hosted` serves the Observatory on `/`. Browser never holds Langfuse or producer keys — the backend proxies everything, including human-review resolve and parked-file source to llm-mailroom.
   - `hosted.py` — `mailroom-hosted` entry: binds `0.0.0.0`, edition=hosted.
   - `poller.py` — `PollHub`: background poll loop → compact `floor_payload` snapshots broadcast to all WS clients; full detail cached per trace with `detail_ttl`.
 - `hosted/` — Mailroom Observatory (public hosted edition): modern accessible SPA, distinct from the pixel console / TUI / GH Pages snapshot. Vanilla HTML/CSS/JS, no build step. Debug desk + `hosted/js/debug.js` (`window.__OBSERVATORY_DEBUG__`) records fetches, WebSocket frames, and uncaught errors.
 - `web/` — pixel-art SPA:
   - `js/floor.js` — canvas conveyor renderer (stations, rollers, envelope animation, review/failed sidings, RECONSIDER parked on REVIEW even when stage is archived, tombstones for clean archived/failed runs). `js/api.js` (fetch + WS with reconnect + global error banner), `js/inspector.js`, `js/sessions.js`, `js/history.js`, `js/metrics.js`, `js/review.js`, `js/console.js`, `js/main.js` (app shell).
+- `operator_desk/` — operator submodule (not a display source): JWT auth
+  (`/v1/auth`), local archive index (`/v1/archive`), Langfuse-backed ops
+  (`/v1/ops`), `/ws/pipeline`, and `mailroom-observer` (in-process via
+  `MAILROOM_OBSERVER=1`, or standalone POST to `/v1/ops/events`). Mounted
+  from `server/main.py` via `mount_operator`. Never imports `api.main`.
+  Extra `[operator]`; default `[dev]` uses stdlib password/JWT fallbacks.
+  Optional React desk lives in `ui/` (extra `[ui]` is a marker; Node is
+  separate). `/desk` mounts only when `ui/dist` or `MAILROOM_UI_DIST` exists.
 - `tui/` — planned rich-console (AgentLab-style `*** Beginning station: ... ***` banners, per-doc summary tables). Not yet built (M4).
 - `scripts/seed_demo.py` — planned (M5): generates demo traces **into Langfuse** (env `demo`), never served directly.
 
@@ -117,7 +133,7 @@ scripts/publish_pages.sh       # build site/ + push gh-pages:/docs (NO Actions;
 
 - `.env` is loaded by `server/main.py:run()` via `load_dotenv()`; if you launch uvicorn directly (`uvicorn server.main:app`) you must export the vars yourself. `LangfuseSource` reads `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST` (default `https://us.cloud.langfuse.com`).
 - This repo uses **`LANGFUSE_HOST`** (SDK convention) while Langfuse docs/CLI use `LANGFUSE_BASE_URL` — if your shell exports `BASE_URL`, set `HOST` to match.
-- All `MAILROOM_*` knobs (`MAILROOM_POLL_INTERVAL`, `MAILROOM_RECENT_WINDOW`, `MAILROOM_TRACE_LIMIT`, `MAILROOM_TRACE_TAGS`, `MAILROOM_TRACE_ENVIRONMENTS`, `MAILROOM_PORT`, `MAILROOM_TAXONOMY`, `MAILROOM_PIPELINE_URL`, `MAILROOM_PIPELINE_API_PREFIX`, `MAILROOM_API_URL`) are documented in `.env.example`; poller/server read them at startup — restart to change.
+- All `MAILROOM_*` knobs (`MAILROOM_POLL_INTERVAL`, `MAILROOM_RECENT_WINDOW`, `MAILROOM_TRACE_LIMIT`, `MAILROOM_TRACE_TAGS`, `MAILROOM_TRACE_ENVIRONMENTS`, `MAILROOM_PORT`, `MAILROOM_TAXONOMY`, `MAILROOM_PIPELINE_URL`, `MAILROOM_PIPELINE_API_PREFIX`, `MAILROOM_API_URL`, `MAILROOM_OPERATOR_*`, `MAILROOM_BASE_DIR`, `MAILROOM_OBSERVER`) are documented in `.env.example`; poller/server read them at startup — restart to change.
 - `pipeline_schema.py` is cached at process level — editing `taxonomy.yaml` or the mirror requires a restart.
 
 ## Testing quirks

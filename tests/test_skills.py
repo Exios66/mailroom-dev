@@ -22,6 +22,8 @@ REQUIRED = (
     "pipeline-schema-sync",
     "gh-pages",
     "tui",
+    "operator-desk",
+    "optional-ui",
 )
 
 _FRONTMATTER = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
