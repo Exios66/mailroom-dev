@@ -9,7 +9,13 @@ ROOT = Path(__file__).resolve().parent.parent
 # `scripts` package must not shadow this repo's `scripts/` directory.
 # mailroom_ui.producer imports pipeline.review_resolve from site-packages
 # (extra `[pipeline]`) or a temporary checkout path that is removed after load.
-sys.path[:] = [p for p in sys.path if "llm-mailroom" not in Path(p).as_posix()]
+# In the mailroom-hub monorepo the llm-mailroom path on sys.path IS the
+# workspace member (uv-managed editable install) — keep it so lazy imports in
+# pipeline.review_resolve (observability.*) resolve; ROOT at sys.path[0] still
+# protects `scripts/`. Standalone checkouts keep the full strip.
+_MONOREPO = (ROOT.parent / "uv.lock").is_file() and (ROOT.parent / "llm-mailroom").is_dir()
+if not _MONOREPO:
+    sys.path[:] = [p for p in sys.path if "llm-mailroom" not in Path(p).as_posix()]
 sys.path.insert(0, str(ROOT))
 
 

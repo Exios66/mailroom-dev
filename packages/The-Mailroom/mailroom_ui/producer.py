@@ -11,6 +11,12 @@ Pin: ``git+https://github.com/Exios66/llm-mailroom.git@3cf9fb9`` (package
 version 0.6.0 — tag ``v0.6.0``, pared LLM load). Bump
 ``MAILROOM_GIT_SHA`` and the extra together.
 
+In the mailroom-hub monorepo the workspace ``[pipeline]`` extra resolves
+``mailroom`` to ``packages/llm-mailroom`` (editable), so the direct import
+below wins; the sibling-checkout fallback also resolves to the same member
+(``ROOT.parent / "llm-mailroom"``). Standalone checkouts keep the old
+sibling/``MAILROOM_PIPELINE_ROOT`` behavior.
+
 Never import ``api.main`` (watcher / embeddings / graph warm-up at import
 time) or ``llm_dojo_scoring``.
 """

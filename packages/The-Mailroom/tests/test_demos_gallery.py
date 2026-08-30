@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent
 SHOTS = ROOT / "docs" / "screenshots"
 DEMOS = ROOT / "docs" / "demos"
@@ -28,6 +30,10 @@ def _notebook_text() -> str:
     return "".join(chunks)
 
 
+@pytest.mark.skipif(
+    not DEMOS.is_dir(),
+    reason="docs/demos pruned in the mailroom-hub monorepo (heavy assets live upstream)",
+)
 def test_walkthrough_video_is_in_demos():
     for name in VIDEOS:
         path = DEMOS / name
@@ -38,6 +44,10 @@ def test_walkthrough_video_is_in_demos():
     assert (DEMOS / "hf-space-observatory-poster.png").is_file()
 
 
+@pytest.mark.skipif(
+    not SHOTS.is_dir(),
+    reason="docs/screenshots pruned in the mailroom-hub monorepo (heavy assets live upstream)",
+)
 def test_notebook_and_indexes_cover_every_png():
     pngs = sorted(p.name for p in SHOTS.glob("*.png"))
     assert len(pngs) >= 17, pngs
