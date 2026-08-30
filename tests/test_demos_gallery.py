@@ -16,7 +16,8 @@ VIDEO = "tui-server-observatory-desk-walkthrough.mp4"
 PILOT_VIDEO = "pilot-run-documents-through-pipeline.mp4"
 V030_PIXEL = "v030-pixel-desks-review-resolve.mp4"
 V030_OBS = "v030-observatory-review-resolve.mp4"
-VIDEOS = (VIDEO, PILOT_VIDEO, V030_PIXEL, V030_OBS)
+HF_SPACE = "hf-space-observatory-live-walkthrough.mp4"
+VIDEOS = (VIDEO, PILOT_VIDEO, V030_PIXEL, V030_OBS, HF_SPACE)
 
 
 def _notebook_text() -> str:
@@ -34,6 +35,7 @@ def test_walkthrough_video_is_in_demos():
         assert path.stat().st_size > 1_000_000, name
     assert (DEMOS / "walkthrough-poster.png").is_file()
     assert (DEMOS / "pilot-run-poster.png").is_file()
+    assert (DEMOS / "hf-space-observatory-poster.png").is_file()
 
 
 def test_notebook_and_indexes_cover_every_png():

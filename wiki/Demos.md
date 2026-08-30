@@ -7,6 +7,20 @@ The pixel console, hosted Observatory, and TUI share one display API.
 These captures document those desks. **Langfuse is still the sole display
 source** — nothing here is canned data served to the UI.
 
+## Hugging Face Space — live Observatory (2026-08-30)
+
+~102 seconds, recorded against the public Docker Space after #30
+(classification cards, headline strip, inbox queue, snapshot cache).
+Langfuse is live. Producer knobs were unset, so Queue a document shows
+the honest setup hint. Approve / Reject were not clicked.
+
+- Live app: https://lucius-morningstar-mailroom-observatory.hf.space/
+- Hub card: https://huggingface.co/spaces/Lucius-Morningstar/mailroom-observatory
+- [Video (~102s)](https://github.com/Exios66/The-Mailroom/blob/main/docs/demos/hf-space-observatory-live-walkthrough.mp4)
+  — Pipeline inspect + filters + Export snapshot → Review → History
+  replay → Matters → Metrics → Debug.
+- [Poster](https://github.com/Exios66/The-Mailroom/blob/main/docs/demos/hf-space-observatory-poster.png)
+
 ## Working REVIEW tray (producer stub)
 
 `scripts/demo_v030_cast.py` still shows the honest 503 when the producer URL

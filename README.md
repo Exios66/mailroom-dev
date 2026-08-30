@@ -123,7 +123,15 @@ Live captures of the three surfaces against the same display API. Values on
 screen are interpreted traces (fixture-shaped exactly like the test suite);
 Langfuse remains the sole display source. The full gallery, including the
 PR screen recording, lives in the **[demos notebook](docs/demos/The-Mailroom-Demos.ipynb)**
-and [`docs/demos.md`](docs/demos.md).
+and [`docs/demos.md`](docs/demos.md) (wiki twin: [`Demos`](wiki/Demos.md)).
+
+**Hugging Face Space — live Observatory** (~102s) — public Docker Space
+after #30 (classification cards, headline strip, inbox setup hint, Export
+snapshot, then Review / History / Matters / Metrics / Debug). Live:
+https://lucius-morningstar-mailroom-observatory.hf.space/
+[hf-space-observatory-live-walkthrough.mp4](docs/demos/hf-space-observatory-live-walkthrough.mp4)
+
+[![HF Space Observatory Pipeline](docs/demos/hf-space-observatory-poster.png)](docs/demos/hf-space-observatory-live-walkthrough.mp4)
 
 **Working REVIEW tray** (Approve / Record / Requeue / Complete against a `/v1` stub):
 
@@ -450,7 +458,7 @@ scripts/       seed_demo (demo runs INTO Langfuse) · demo_pilot_run
                · render_tui_shots (README TUI SVGs)
 docs/ + wiki/  mirrored documentation (wiki/sync-wiki.sh publishes the wiki)
 docs/screenshots/  stills of every pixel / Observatory / TUI desk
-docs/demos/        walkthrough mp4 + pilot-run mp4 + The-Mailroom-Demos.ipynb
+docs/demos/        HF Space live walkthrough + v030/pilot mp4s + The-Mailroom-Demos.ipynb
 tests/         pytest suite against fake clients — never the real APIs
 ```
 

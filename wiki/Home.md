@@ -48,6 +48,7 @@ sync, Pages, TUI, and operator desk. Index: repo `.cursor/skills/README.md`.
 
 - [Home](Home) — overview, quick start, sister-repo pointer
 - [Architecture](Architecture) — how traces become pixels
-- [Demos](Demos) — stills of every desk + the PR walkthrough video
+- [Demos](Demos) — stills of every desk, the live Hugging Face Space
+  walkthrough, and the PR recordings
 - [Releases](Releases) — semantic versioning, changelog, tagging process
 - [Operator Desk](Operator-Desk) — JWT / archive / ops / bin observer

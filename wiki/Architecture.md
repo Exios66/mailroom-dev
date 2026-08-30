@@ -257,7 +257,9 @@ A working REVIEW-tray round-trip (FakeClient traces + `tests/fake_producer.py`
 `--check-api` hits lookup, source fallback, record, resume, and complete.
 
 Stills of every pixel / Observatory / TUI desk live in `docs/screenshots/`.
-The PR desk walkthrough (`docs/demos/tui-server-observatory-desk-walkthrough.mp4`)
+The live Hugging Face Space walkthrough
+(`docs/demos/hf-space-observatory-live-walkthrough.mp4`), the PR desk
+walkthrough (`docs/demos/tui-server-observatory-desk-walkthrough.mp4`),
 and the gallery notebook (`docs/demos/The-Mailroom-Demos.ipynb`) live next
 to them. Index: `docs/demos.md` / wiki `Demos`. These are
 documentation of the live surfaces — not a canned UI fallback.

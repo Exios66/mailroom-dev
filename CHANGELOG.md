@@ -16,6 +16,14 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- **Live Hugging Face Space Observatory demo.** Full-desk recording
+  (~102s) of
+  https://lucius-morningstar-mailroom-observatory.hf.space/ after #30
+  (classification cards, headline strip, inbox setup hint, Export
+  snapshot, Review / History / Matters / Metrics / Debug). Filed at
+  `docs/demos/hf-space-observatory-live-walkthrough.mp4` and indexed on
+  `docs/demos.md` / wiki `Demos`.
+
 - **Observatory cards show classification success.** Pipeline cards
   display primary / secondary class labels with hit · miss · pending
   (ground truth when present; otherwise “assigned a live roster class”).
