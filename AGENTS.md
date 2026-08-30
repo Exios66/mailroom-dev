@@ -71,6 +71,7 @@ python scripts/eval_pipeline.py --session pilot-hf-...   # score existing traces
 python scripts/release.py --help     # semver release workflow (see below)
 scripts/publish_pages.sh       # build site/ + push gh-pages:/docs (NO Actions;
                                # one-time UI toggle: Pages → gh-pages → /docs)
+# Railway Observatory: railway.json + docs/deployment.md (platform PORT wins)
 python scripts/publish_space.py --check  # Hugging Face Docker Space payload
 # HF_TOKEN + LANGFUSE_* in the env — never commit keys:
 # python scripts/publish_space.py --repo <user>/mailroom-observatory
@@ -137,7 +138,7 @@ python scripts/publish_space.py --check  # Hugging Face Docker Space payload
 
 - `.env` is loaded by `server/main.py:run()` via `load_dotenv()`; if you launch uvicorn directly (`uvicorn server.main:app`) you must export the vars yourself. `LangfuseSource` reads `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST` (default `https://us.cloud.langfuse.com`).
 - This repo uses **`LANGFUSE_HOST`** (SDK convention) while Langfuse docs/CLI use `LANGFUSE_BASE_URL`. `langfuse_host()` accepts `BASE_URL` as an alias when `HOST` is unset (Hugging Face Space secrets included).
-- All `MAILROOM_*` knobs (`MAILROOM_POLL_INTERVAL`, `MAILROOM_RECENT_WINDOW`, `MAILROOM_TRACE_LIMIT`, `MAILROOM_TRACE_TAGS`, `MAILROOM_TRACE_ENVIRONMENTS`, `MAILROOM_PORT`, `MAILROOM_TAXONOMY`, `MAILROOM_PIPELINE_URL`, `MAILROOM_PIPELINE_API_PREFIX`, `MAILROOM_API_URL`, `MAILROOM_OPERATOR_*`, `MAILROOM_BASE_DIR`, `MAILROOM_OBSERVER`) are documented in `.env.example`; poller/server read them at startup — restart to change.
+- All `MAILROOM_*` knobs (`MAILROOM_POLL_INTERVAL`, `MAILROOM_RECENT_WINDOW`, `MAILROOM_TRACE_LIMIT`, `MAILROOM_TRACE_TAGS`, `MAILROOM_TRACE_ENVIRONMENTS`, `MAILROOM_PORT`, `MAILROOM_TAXONOMY`, `MAILROOM_PIPELINE_URL`, `MAILROOM_PIPELINE_API_PREFIX`, `MAILROOM_API_URL`, `MAILROOM_OPERATOR_*`, `MAILROOM_BASE_DIR`, `MAILROOM_OBSERVER`) are documented in `.env.example`; poller/server read them at startup — restart to change. Platform `PORT` (Railway / Fly / Render) wins over `MAILROOM_PORT` via `listen_port()` — see `docs/deployment.md`.
 - `pipeline_schema.py` is cached at process level — editing `taxonomy.yaml` or the mirror requires a restart.
 
 ## Testing quirks
