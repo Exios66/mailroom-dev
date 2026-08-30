@@ -1,0 +1,34 @@
+services:
+  mailroom:
+    build: .
+    image: agent-mailroom:local
+    ports:
+      - "${MAILROOM_PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Always listen on all interfaces inside the container.
+      MAILROOM_HOST: "0.0.0.0"
+      MAILROOM_PORT: "8000"
+      MAILROOM_BASE_DIR: /app/data
+      # Token rotation (GitGuardian-clean empty passthrough)
+      MAILROOM_API_TOKEN: ${MAILROOM_API_TOKEN:-}
+      MAILROOM_API_TOKENS: ${MAILROOM_API_TOKENS:-}
+      MAILROOM_API_TOKEN_REVOKED: ${MAILROOM_API_TOKEN_REVOKED:-}
+      # Reach Ollama (or other local servers) on the host from the container:
+      # OLLAMA_BASE_URL: http://host.docker.internal:11434/v1
+    volumes:
+      - ./data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    user: "10001:10001"
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/v1/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
