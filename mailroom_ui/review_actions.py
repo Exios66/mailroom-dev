@@ -350,6 +350,31 @@ def _source_from_catalog(document: dict[str, Any], resolved: str) -> dict[str, A
     }
 
 
+def _lookup_miss_payload(filename: str = "") -> dict[str, Any]:
+    """Producer catalog has no record for this trace — an honest per-item state.
+
+    The REVIEW tray probes every parked run; a hard HTTP 404 for each one trips
+    the UI's global fetch-error banner. A 200 payload with ``readable: false``
+    lets each row show "no catalog record" inline. Never fabricates content.
+    """
+    return {
+        "configured": True,
+        "status": "missing",
+        "doc_id": None,
+        "filename": filename or None,
+        "content_type": "text/plain; charset=utf-8",
+        "text": None,
+        "truncated": False,
+        "readable": False,
+        "bytes": 0,
+        "source": "lookup-miss",
+        "error": (
+            "llm-mailroom has no catalog record for this document (lookup 404) "
+            "— parked text is unavailable from the producer."
+        ),
+    }
+
+
 def fetch_source(
     *,
     trace_id: str = "",
@@ -357,7 +382,13 @@ def fetch_source(
     doc_id: str = "",
     timeout: float = 8.0,
 ) -> dict[str, Any]:
-    """Parked-file JSON. Tries producer source, then catalog lookup fallback."""
+    """Parked-file JSON. Tries producer source, then catalog lookup fallback.
+
+    A producer-catalog miss on a trace/filename probe (no explicit doc_id)
+    returns the 200 lookup-miss payload instead of raising 404 — the tray
+    renders per-item state rather than a global error. Explicit doc_id misses
+    still raise so downloads stay honest 404s.
+    """
     if not pipeline_configured():
         return {
             "configured": False,
@@ -367,9 +398,14 @@ def fetch_source(
                 "view parked document text from llm-mailroom."
             ),
         }
-    resolved, document = _lookup_or_id(
-        trace_id=trace_id, filename=filename, doc_id=doc_id, timeout=timeout,
-    )
+    try:
+        resolved, document = _lookup_or_id(
+            trace_id=trace_id, filename=filename, doc_id=doc_id, timeout=timeout,
+        )
+    except ReviewActionError as exc:
+        if exc.status == 404 and not (doc_id or "").strip():
+            return _lookup_miss_payload(filename)
+        raise
     token = _token()
     try:
         data = _request_json(

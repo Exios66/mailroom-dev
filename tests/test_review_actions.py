@@ -392,6 +392,67 @@ def test_api_review_source_download_404_is_honest(monkeypatch):
     assert "no GET /documents" in (r.json().get("error") or "")
 
 
+def test_api_review_source_catalog_miss_is_200_lookup_miss(monkeypatch):
+    """Producer catalog has no record (lookup 404) — tray gets a per-item 200
+    state, not a hard HTTP 404 that trips the global error banner."""
+
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")
+
+    from mailroom_ui.review_actions import ReviewActionError
+
+    def fake_request(method, url, *, token="", body=None, timeout=8.0):
+        if method == "GET" and "/v1/lookup?" in url:
+            raise ReviewActionError("Document not found", status=404)
+        raise AssertionError(url)
+
+    from mailroom_ui import review_actions
+
+    src = LangfuseSource(client=FakeClient([make_trace("t-miss", stage="review")]))
+    with patch.object(review_actions, "_request_json", side_effect=fake_request):
+        with TestClient(create_app(src)) as c:
+            r = c.get("/api/review/source", params={"trace_id": "t-miss", "filename": "outpatient_1.txt"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["configured"] is True
+    assert body["readable"] is False
+    assert body["source"] == "lookup-miss"
+    assert body["text"] is None
+    assert "no catalog record" in (body.get("error") or "")
+
+
+def test_api_review_source_catalog_miss_with_doc_id_falls_back_honestly(monkeypatch):
+    """An explicit doc_id the catalog does not know keeps the honest fallback:
+    a 200 text-pane payload that says there is no source (download stays 404).
+
+    The lookup-miss payload only applies to trace/filename tray probes — an
+    explicit doc_id miss still goes through the source route + catalog fallback.
+    """
+
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")
+
+    from mailroom_ui.review_actions import ReviewActionError
+
+    def fake_request(method, url, *, token="", body=None, timeout=8.0):
+        if method == "GET" and "/v1/lookup?" in url:
+            raise ReviewActionError("Document not found", status=404)
+        if method == "GET" and "/v1/documents/doc-unknown/source" in url:
+            raise ReviewActionError("Not Found", status=404)
+        raise AssertionError(url)
+
+    from mailroom_ui import review_actions
+
+    src = LangfuseSource(client=FakeClient([make_trace("t-miss2")]))
+    with patch.object(review_actions, "_request_json", side_effect=fake_request):
+        with TestClient(create_app(src)) as c:
+            r = c.get("/api/review/source", params={"doc_id": "doc-unknown"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["readable"] is False
+    assert "no GET /documents" in (body.get("error") or "")
+
+
 def test_api_review_resolve_complete_forwards_extracted_data(monkeypatch):
     monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://pipeline.test:8000")
     monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "secret-token")

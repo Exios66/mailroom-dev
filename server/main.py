@@ -366,8 +366,12 @@ def create_app(source: Optional[object] = None) -> FastAPI:
         filename: str = Query("", max_length=512),
         doc_id: str = Query("", max_length=128),
     ):
-        """Producer catalog lookup + audit for a REVIEW desk item."""
-        return review_context(trace_id=trace_id, filename=filename, doc_id=doc_id)
+        """Producer catalog lookup + audit for a REVIEW desk item.
+
+        Tray probe: 4s cap so a slow producer does not pile threadpool waits
+        behind every row (the queue can hold dozens of items).
+        """
+        return review_context(trace_id=trace_id, filename=filename, doc_id=doc_id, timeout=4.0)
 
     @app.post("/api/review/resolve")
     def review_resolve_ep(payload: dict[str, Any]):
@@ -412,7 +416,9 @@ def create_app(source: Optional[object] = None) -> FastAPI:
                 if not pipeline_configured():
                     return fetch_source()
                 return {"configured": True, "text": None, "error": None}
-            return fetch_source(trace_id=trace_id, filename=filename, doc_id=doc_id)
+            # Tray probe: 4s cap (see /api/review/context) — the queue renders
+            # every parked run at once and a slow producer must not stall each.
+            return fetch_source(trace_id=trace_id, filename=filename, doc_id=doc_id, timeout=4.0)
         except ReviewActionError as exc:
             if not download and exc.status == 503:
                 return {

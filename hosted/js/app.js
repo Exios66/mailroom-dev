@@ -1,5 +1,29 @@
 /* Mailroom Observatory app shell: views, live board, replay, inspector, debug. */
 const App = (() => {
+  /* Review-tray probe limiter: the queue renders every parked run at once and
+     each row fires context + source fetches. Firing ~50 in parallel saturated
+     the server threadpool (producer probes can take seconds), starving
+     /api/health. Cap the probe concurrency instead. */
+  const PROBE_LIMIT = 4;
+  const probeQueue = [];
+  let probeActive = 0;
+  function drainProbes() {
+    while (probeActive < PROBE_LIMIT && probeQueue.length) {
+      const { fn, resolve, reject } = probeQueue.shift();
+      probeActive += 1;
+      Promise.resolve().then(fn).then(resolve, reject).finally(() => {
+        probeActive -= 1;
+        drainProbes();
+      });
+    }
+  }
+  function probe(fn) {
+    return new Promise((resolve, reject) => {
+      probeQueue.push({ fn, resolve, reject });
+      drainProbes();
+    });
+  }
+
   const STATIONS = [
     { key: "inbox", label: "Inbox", stages: ["inbox"] },
     { key: "sorter", label: "Sorter", stages: ["ingest", "classify", "retry_classify", "review_classify", "unknown"] },
@@ -415,13 +439,18 @@ const App = (() => {
     const badge = form.querySelector(".review-source-badge");
     const open = form.querySelector(".review-source-open");
     if (!pane) return;
-    Obs.api.reviewSource({
+    probe(() => Obs.api.reviewSource({
       trace_id: form.dataset.trace,
       filename: form.dataset.filename,
       doc_id: form.dataset.docId,
-    }).then((src) => {
+    })).then((src) => {
       if (!src || src.configured === false) {
         pane.textContent = (src && src.error) || "Live producer required to view the parked file.";
+        if (open) open.hidden = true;
+        return;
+      }
+      if (!src.readable || !src.text) {
+        pane.textContent = src.error || "(empty document text)";
         if (open) open.hidden = true;
         return;
       }
@@ -442,11 +471,11 @@ const App = (() => {
       const typeSel = form.querySelector("select[name='doc_type']");
       if (typeSel) typeSel.addEventListener("change", () => fillHostedSubclass(form));
       bindReviewSource(form);
-      Obs.api.reviewContext({
+      probe(() => Obs.api.reviewContext({
         trace_id: form.dataset.trace,
         filename: form.dataset.filename,
         doc_id: form.dataset.docId,
-      }).then((ctx) => {
+      })).then((ctx) => {
         const extracted = ctx && ctx.document && ctx.document.extracted_data;
         const ta = form.querySelector("textarea[name='extracted_data']");
         if (ta && extracted && !ta.value) {

@@ -42,6 +42,30 @@ const Mailroom = (() => {
   const dbgEvents = [];
   let debugVerbose = qs.has("debug") || localStorage.getItem("mailroom.debug") === "1";
 
+  // ---- review-tray probe limiter -----------------------------------------
+  // Every REVIEW card fires context + source probes on render; a long queue
+  // fired ~50 in parallel and saturated the server threadpool (producer
+  // probes can take seconds), starving /api/health. Cap probe concurrency.
+  const PROBE_LIMIT = 4;
+  const probeQueue = [];
+  let probeActive = 0;
+  function drainProbes() {
+    while (probeActive < PROBE_LIMIT && probeQueue.length) {
+      const { fn, resolve, reject } = probeQueue.shift();
+      probeActive += 1;
+      Promise.resolve().then(fn).then(resolve, reject).finally(() => {
+        probeActive -= 1;
+        drainProbes();
+      });
+    }
+  }
+  function probe(fn) {
+    return new Promise((resolve, reject) => {
+      probeQueue.push({ fn, resolve, reject });
+      drainProbes();
+    });
+  }
+
   function capture(kind, fields) {
     dbgEvents.push({ t: new Date().toISOString(), kind, ...fields });
     while (dbgEvents.length > MAX_DEBUG_EVENTS) dbgEvents.shift();
@@ -456,13 +480,18 @@ const Mailroom = (() => {
     const badge = form.querySelector(".review-source-badge");
     const open = form.querySelector(".review-source-open");
     if (!pane) return;
-    api.reviewSource({
+    probe(() => api.reviewSource({
       trace_id: form.dataset.trace,
       filename: form.dataset.filename,
       doc_id: form.dataset.docId,
-    }).then((src) => {
+    })).then((src) => {
       if (!src || src.configured === false) {
         pane.textContent = (src && src.error) || "live producer required to view the parked file";
+        if (open) open.hidden = true;
+        return;
+      }
+      if (!src.readable || !src.text) {
+        pane.textContent = src.error || "(empty document text)";
         if (open) open.hidden = true;
         return;
       }
@@ -486,11 +515,11 @@ const Mailroom = (() => {
         typeSel.addEventListener("change", () => fillSubclassSelect(subSel, typeSel.value, ""));
       }
       bindReviewSource(form);
-      api.reviewContext({
+      probe(() => api.reviewContext({
         trace_id: form.dataset.trace,
         filename: form.dataset.filename,
         doc_id: form.dataset.docId,
-      }).then((ctx) => {
+      })).then((ctx) => {
         const extracted = ctx && ctx.document && ctx.document.extracted_data;
         const ta = form.querySelector("textarea[name='extracted_data']");
         if (ta && extracted && !ta.value) {

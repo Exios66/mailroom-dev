@@ -148,6 +148,31 @@ def test_health_reports_ok_and_down():
     assert LangfuseSource(client=object()).health()["langfuse"] is False
 
 
+def test_health_probe_is_cached_within_window():
+    """Concurrent polls (page + poller + extra tabs) must collapse into one
+    Langfuse read — a slow cloud previously turned /api/health into a 30s hang."""
+    src = _source([make_trace("t1")])
+    first = src.health()
+    second = src.health()
+    assert first == second
+    assert first["langfuse"] is True
+    assert len(src.client.api.trace.calls) == 1
+
+
+def test_health_probe_revalidates_after_window_expiry():
+    src = _source([make_trace("t1")])
+    src.health()
+    src.health_cache.clear()
+    src.health()
+    assert len(src.client.api.trace.calls) == 2
+
+
+def test_health_probe_caches_failures():
+    src = LangfuseSource(client=object())
+    assert src.health()["langfuse"] is False
+    assert src.health()["langfuse"] is False
+
+
 def test_list_recent_runs_returns_pipeline_runs():
     src = _source([make_trace("t1")])
     runs = list_recent_runs(src, since=datetime(2025, 1, 1), limit=5)

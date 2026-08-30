@@ -122,6 +122,11 @@ class LangfuseSource:
         self.poll_cache_ttl = poll_cache_ttl
         self.run_cache_ttl = run_cache_ttl
         self._rate_hits = 0
+        # Health probe TTL: several concurrent polls (page + poller + extra
+        # tabs) otherwise each run a full Langfuse read — one 15s timeout with
+        # one retry became a 30s /api/health hang on a slow cloud. 5s of
+        # staleness is invisible to the UI and still fails fast on outage.
+        self.health_cache = TTLCache()
 
     # ---------------------------------------------------------------- client
 
@@ -498,7 +503,15 @@ class LangfuseSource:
     # ---------------------------------------------------------------- health
 
     def health(self) -> dict[str, Any]:
-        """Live Langfuse reachability: real API call, no cache (must be fresh)."""
+        """Live Langfuse reachability: real API call, cached 5s.
+
+        The probe is cheap to share: the SPA polls every few seconds and two
+        tabs + the poller can collapse into one Langfuse read per window.
+        Failures are cached too, so a slow cloud does not pile up timeouts.
+        """
+        cached = self.health_cache.get("probe")
+        if cached is not None:
+            return cached
         try:
             self.list_traces(limit=1)
             ok = True
@@ -506,7 +519,9 @@ class LangfuseSource:
             ok = False
         # "ok" is the source-agnostic key the SPA checks (Phoenix/multi
         # sources return their own keys; "langfuse" stays for back-compat).
-        return {"ok": ok, "langfuse": ok, "source": "langfuse", "cached_trace_count": None}
+        payload = {"ok": ok, "langfuse": ok, "source": "langfuse", "cached_trace_count": None}
+        self.health_cache.set("probe", payload, 5.0)
+        return payload
 
 
 def list_recent_runs(
