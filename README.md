@@ -280,7 +280,8 @@ mailroom-hosted                          # 0.0.0.0:8001  →  / and /live
 docker build -t mailroom-observatory .
 docker run --rm -p 7860:7860 --env-file .env mailroom-observatory
 python scripts/publish_space.py --check  # Hugging Face Docker Space payload
-# Railway: see docs/deployment.md (railway.json + PORT preference)
+# Railway: see docs/deployment.md (railway.json + PORT preference;
+# GET /health = liveness, GET /api/health = Langfuse)
 ```
 
 Hugging Face Space: SDK **Docker**, root directory **empty** (repo-root

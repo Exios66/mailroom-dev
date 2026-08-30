@@ -76,8 +76,8 @@ def _edition() -> str:
     return os.environ.get("MAILROOM_EDITION", "console").strip().lower()
 
 API_ENDPOINTS = [
-    {"method": "GET", "path": "/api/health", "desc": "source reachability"},
-    {"method": "GET", "path": "/health", "desc": "platform probe alias of /api/health (Railway / Fly)"},
+    {"method": "GET", "path": "/api/health", "desc": "source reachability (Langfuse / cache)"},
+    {"method": "GET", "path": "/health", "desc": "platform liveness (Railway / Fly / Docker; no Langfuse call)"},
     {"method": "GET", "path": "/api/traces", "desc": "recent runs (light); ?since=&limit=&stage=&environment="},
     {"method": "GET", "path": "/api/traces/{trace_id}", "desc": "full run detail (spans/generations/scores)"},
     {"method": "GET", "path": "/api/metrics", "desc": "window aggregates; ?since="},
@@ -194,10 +194,16 @@ def create_app(source: Optional[object] = None) -> FastAPI:
     def health():
         return _health_payload()
 
-    # Platform probes (Railway / Fly / Render) often expect bare /health.
+    # Platform probes (Railway / Fly / Render / Docker HEALTHCHECK) expect a
+    # fast 2xx without depending on Langfuse. MAILROOM CLOSED is a valid UI
+    # state — the process is still alive. Use /api/health for source status.
     @app.get("/health")
     def health_root():
-        return _health_payload()
+        return {
+            "ok": True,
+            "status": "alive",
+            "edition": _edition(),
+        }
 
     @app.get("/api/traces")
     def traces(

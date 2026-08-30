@@ -6,6 +6,15 @@ All notable changes to The-Mailroom are documented here, following
 
 ## [Unreleased]
 
+### Fixed
+
+- **Railway `/health` no longer calls Langfuse.** Platform probes
+  (`railway.json` healthcheckPath, Docker `HEALTHCHECK`) get a fast
+  `{"ok": true, "status": "alive"}` response. Source reachability stays
+  on `GET /api/health`. Avoids HEALTHCHECK timeouts when keys are
+  missing or Langfuse is slow. Docs / `.env.example` Railway checklist
+  and contract tests (`railway.json` DOCKERFILE builder) updated.
+
 ### Changed
 
 - **Aligned with llm-mailroom v0.6.0** (`3cf9fb9`, package `mailroom`

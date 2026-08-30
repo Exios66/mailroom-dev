@@ -24,8 +24,9 @@ mailroom-hosted                # Observatory on 0.0.0.0
 ## Railway
 
 Root `railway.json` selects the **Dockerfile** builder and probes
-`GET /health` (alias of `/api/health`). `nixpacks.toml` is a fallback if the
-service is not set to Dockerfile.
+`GET /health` (fast process liveness — **not** a Langfuse call).
+`GET /api/health` remains the SPA / TUI source-reachability check.
+`nixpacks.toml` is a fallback if the service is not set to Dockerfile.
 
 ### Why `PORT` matters
 
@@ -33,6 +34,15 @@ The image defaults `MAILROOM_PORT=7860` (Hugging Face Spaces). Railway
 injects `$PORT` and proxies to that port. The server prefers **`PORT` over
 `MAILROOM_PORT`** so the process binds where the edge expects — same
 contract as the llm-mailroom producer.
+
+### Why deploys looked “crashed”
+
+1. **Wrong listen port.** Binding image `7860` while Railway proxies
+   `$PORT` → edge connection refused → `CRASHED` / restart loop.
+2. **Health probe hung on Langfuse.** An older `/health` alias called the
+   Langfuse API (SDK timeout ~15s). Docker `HEALTHCHECK` is 5s; a slow or
+   missing key set made the container look unhealthy. `/health` is now
+   pure liveness (`{"ok": true, "status": "alive"}`).
 
 ### Required service variables
 
@@ -55,7 +65,8 @@ contract as the llm-mailroom producer.
 | `MAILROOM_TRACE_CACHE_DIR` | `/tmp/mailroom-trace-cache` |
 
 Display stays Langfuse-only. Without Langfuse keys the UI shows
-**MAILROOM CLOSED** — never canned envelopes.
+**MAILROOM CLOSED** — never canned envelopes. The process still passes
+`GET /health` so Railway does not restart-loop on a closed floor.
 
 ### Deploy
 
@@ -74,7 +85,8 @@ railway up -m "mailroom observatory"
 Generate a public domain (`railway domain`) and open it. Health:
 
 ```bash
-curl -sS https://<domain>/health
+curl -sS https://<domain>/health      # liveness
+curl -sS https://<domain>/api/health  # Langfuse / cache status
 ```
 
 Pair the producer the same way llm-mailroom documents under its
@@ -88,6 +100,8 @@ Pair the producer the same way llm-mailroom documents under its
 - Confirm `LANGFUSE_PUBLIC_KEY` + `LANGFUSE_SECRET_KEY` are set on the
   **service** (not only shared) if you expect a live floor.
 - Confirm `railway.json` is on the deployed branch (`builder: DOCKERFILE`).
+- Confirm `curl /health` returns quickly with `"status":"alive"` even when
+  `/api/health` reports `"ok": false` (MAILROOM CLOSED).
 
 ---
 
