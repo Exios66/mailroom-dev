@@ -11,6 +11,11 @@ workspace redirects.
 - `packages/llm-mailroom` — pipeline (dist `mailroom`, `src/` layout)
 - `packages/llm-entity-extraction` — eval loop (flat `agents`/`src`/`config` layout)
 - `packages/The-Mailroom` — visualizer (dist `the-mailroom`)
+- `packages/agent-mailroom` — walking-office-floor mailroom (dist `agent-mailroom`)
+- `packages/local-mailroom-sandbox` — local experiment sandbox (dist `mailroom-sandbox`)
+- `packages/Enron-Evaluation-Environment` — corpus feed (virtual member, no build)
+- `packages/claims-data-eda` — corpus feed (virtual member, no build)
+- `packages/llm-mailroom-graph` — derived graph site (virtual member, no build)
 
 Each package carries its own `AGENTS.md` with project-specific conventions —
 read the package's AGENTS.md before changing code inside it.
@@ -30,6 +35,9 @@ uv run pytest packages/llm-dojo-scoring/tests
 uv run pytest packages/llm-mailroom/src/tests
 uv run pytest packages/llm-entity-extraction/tests
 uv run pytest packages/The-Mailroom/tests
+uv run pytest packages/agent-mailroom/tests
+uv run pytest packages/local-mailroom-sandbox/tests
+uv run pytest packages/claims-data-eda/tests
 ```
 
 ## Workspace rules

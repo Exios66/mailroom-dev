@@ -22,3 +22,8 @@ addopts = "-q"
 [tool.ruff]
 line-length = 110
 target-version = "py310"
+
+# Monorepo: scripts/tests only, no build backend — resolve deps in the shared
+# workspace venv without building/installing a distribution.
+[tool.uv]
+package = false

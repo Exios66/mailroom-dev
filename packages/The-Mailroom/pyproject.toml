@@ -55,3 +55,8 @@ include = ["mailroom_ui*", "server*", "tui*", "operator_desk*"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+# Monorepo dev: resolve the pipeline from the workspace instead of the
+# release git pin above. Plain `pip install .` keeps using the pin.
+[tool.uv.sources]
+mailroom = { workspace = true }

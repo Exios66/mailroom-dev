@@ -29,6 +29,11 @@ importing across separate repositories.
 | `packages/llm-mailroom` | `mailroom` | LangGraph multi-agent legal-document pipeline (FastAPI producer) |
 | `packages/llm-entity-extraction` | `llm-entity-extraction` | Prompt-experiment loop: prompt versions × models over CUAD/LegalBench/MAUD corpora |
 | `packages/The-Mailroom` | `the-mailroom` | Pixel-art visualizer console + hosted Observatory (Langfuse as source of truth) |
+| `packages/agent-mailroom` | `agent-mailroom` | Self-contained mailroom: one state machine per document, specialist agents at desks |
+| `packages/local-mailroom-sandbox` | `mailroom-sandbox` | Local-first experiment sandbox (Ollama, vLLM, llama.cpp) |
+| `packages/Enron-Evaluation-Environment` | (virtual) | Enron corpus EDA → pipeline-ready correspondence dataset |
+| `packages/claims-data-eda` | (virtual) | CMS DE-SynPUF EDA → pipeline-ready insurance_claim dataset |
+| `packages/llm-mailroom-graph` | (virtual) | Derived graphify knowledge-graph site of llm-mailroom |
 
 Each package keeps its own history (merged via `git subtree`), pyproject,
 AGENTS.md, docs, tests, and deploy configs. Package-level documentation lives
@@ -53,10 +58,13 @@ working exactly as before.
 ### Per-package commands
 
 ```bash
-uv run --package llm-dojo-scoring pytest packages/llm-dojo-scoring/tests
-uv run --package mailroom pytest packages/llm-mailroom/src/tests
-uv run --package llm-entity-extraction pytest packages/llm-entity-extraction/tests
-uv run --package the-mailroom pytest packages/The-Mailroom/tests
+uv run pytest packages/llm-dojo-scoring/tests
+uv run pytest packages/llm-mailroom/src/tests
+uv run pytest packages/llm-entity-extraction/tests
+uv run pytest packages/The-Mailroom/tests
+uv run pytest packages/agent-mailroom/tests
+uv run pytest packages/local-mailroom-sandbox/tests
+uv run pytest packages/claims-data-eda/tests
 ```
 
 Some suites need credentials (Langfuse/Braintrust/HF) or network access and
