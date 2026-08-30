@@ -1,7 +1,5 @@
 # Deployment Guide — The-Mailroom
 
-> Mirrored at `docs/deployment.md` — edit both together.
-
 The-Mailroom is a **read-only** visualizer. It never writes Langfuse events
 and never runs the document graph. Deploy it next to (or pointed at) a live
 [`llm-mailroom`](https://github.com/Exios66/llm-mailroom) Langfuse project.
@@ -65,10 +63,22 @@ contract as the llm-mailroom producer.
 | `MAILROOM_PIPELINE_TOKEN` | same secret as producer `MAILROOM_API_TOKEN` |
 | `MAILROOM_PIPELINE_API_PREFIX` | `/v1` |
 | `MAILROOM_TRACE_CACHE_DIR` | `/tmp/mailroom-trace-cache` |
+| `MAILROOM_TRACE_LIMIT` | `100` (keeps floor polls snappy) |
+| `HF_TOKEN` | Hub token (eval / sync / Space publish) |
+| `MAILROOM_HF_DATASET` | `Lucius-Morningstar/docclass-merged` |
+| `MAILROOM_HF_REVISION` | corrected GT tip (see `mailroom_ui/hf_corpus.py`) |
+| `MAILROOM_HF_CONFIG` | `ground_truth` |
+
+On the **producer** (`llm-mailroom`) set the same `MAILROOM_HF_*` plus
+`HF_HOME=/data/huggingface` and `HF_HUB_CACHE=/data/huggingface/hub` so
+pilots read the pinned parquet from a volume cache instead of re-pulling
+Hub every run.
 
 Display stays Langfuse-only. Without Langfuse keys the UI shows
 **MAILROOM CLOSED** — never canned envelopes. The process still passes
 `GET /health` so Railway does not restart-loop on a closed floor.
+GT / pilot intake derive from the Hub corpus above
+(`scripts/eval_pipeline.py`, `scripts/sync_pilot_dataset.py`).
 
 ### Deploy
 
@@ -112,11 +122,11 @@ Pair the producer the same way llm-mailroom documents under its
 The same root `Dockerfile` is the Space image (`MAILROOM_EDITION=hosted`,
 `0.0.0.0:7860`, `python -m server.hosted`). Publish with
 `scripts/publish_space.py` — Langfuse keys stay Space **secrets**, never
-the git tree. Details: `hosted/SPACE_README.md`.
+the git tree. Details: [`hosted/SPACE_README.md`](../hosted/SPACE_README.md).
 
 ---
 
 ## GitHub Pages (static snapshot)
 
 Deploy-from-branch only — `scripts/publish_pages.sh` → `gh-pages:/docs`.
-No Actions. See `.cursor/skills/gh-pages/SKILL.md`.
+No Actions. See [`.cursor/skills/gh-pages/SKILL.md`](../.cursor/skills/gh-pages/SKILL.md).

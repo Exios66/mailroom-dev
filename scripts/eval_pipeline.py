@@ -34,6 +34,12 @@ from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(ROOT / ".env")
 
+from mailroom_ui.hf_corpus import (  # noqa: E402
+    corpus_id,
+    corpus_revision,
+    fetch_rows,
+    gt_config,
+)
 from mailroom_ui.intake_normalize import deterministic_normalize, looks_messy  # noqa: E402
 from mailroom_ui.pipeline_eval import (  # noqa: E402
     aligned as _aligned,
@@ -43,7 +49,7 @@ from mailroom_ui.pipeline_eval import (  # noqa: E402
     subclass_ok,
 )
 
-DATASET_ID = "Lucius-Morningstar/docclass-merged"
+DATASET_ID = corpus_id()
 
 
 def _basic_auth() -> str:
@@ -349,39 +355,30 @@ def enrich_intake(rows: list[dict]) -> list[dict]:
 
 
 def attach_hf_labels(rows: list[dict], split: str = "train") -> list[dict]:
-    """Fill missing ``expected`` from the HF ground_truth config, joined on filename."""
+    """Fill missing ``expected`` from pinned docclass-merged GT, joined on filename."""
     need = [r for r in rows if r.get("filename") and not r.get("expected")]
     if not need:
         return rows
-    token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN") or ""
-    headers = {"User-Agent": "the-mailroom-eval/1.0"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
     labels: dict[str, str] = {}
+    revision = corpus_revision()
     for sp in (split, "test", "train"):
-        offset = 0
-        while True:
-            url = (
-                "https://datasets-server.huggingface.co/rows?"
-                f"dataset={urllib.parse.quote(DATASET_ID, safe='')}"
-                f"&config=ground_truth&split={sp}&offset={offset}&length=100"
-            )
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                page = json.loads(resp.read().decode())
-            batch = [r["row"] for r in (page.get("rows") or [])]
-            if not batch:
-                break
-            for row in batch:
-                labels[row.get("filename")] = row.get("expected")
-                # sanitized local names used as Langfuse input.filename
-                stem = Path(str(row.get("filename") or "").replace("/", "_").replace(":", "_")).name
-                if stem:
-                    labels.setdefault(stem, row.get("expected"))
-                    labels.setdefault(stem + ".txt", row.get("expected"))
-            if len(batch) < 100:
-                break
-            offset += len(batch)
+        batch = fetch_rows(
+            dataset=DATASET_ID,
+            config=gt_config(),
+            split=sp,
+            revision=revision,
+        )
+        for row in batch:
+            expected = row.get("expected")
+            fn = row.get("filename")
+            if not fn or expected is None:
+                continue
+            labels[fn] = expected
+            # sanitized local names used as Langfuse input.filename
+            stem = Path(str(fn).replace("/", "_").replace(":", "_")).name
+            if stem:
+                labels.setdefault(stem, expected)
+                labels.setdefault(stem + ".txt", expected)
         if labels:
             break
     for r in rows:

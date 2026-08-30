@@ -1,32 +1,31 @@
 #!/usr/bin/env python3
-"""Mirror the Lucius-Morningstar/docclass-pilot HF dataset INTO Langfuse.
+"""Mirror Lucius-Morningstar/docclass-merged INTO a Langfuse dataset.
 
-Creates/updates the Langfuse dataset `docclass-pilot` (the pilot-run default
-corpus) so pipeline runs can execute against it as a managed eval dataset:
+Default corpus is the **corrected full** ``docclass-merged`` Hub set (pinned
+revision via ``MAILROOM_HF_REVISION`` / ``mailroom_ui.hf_corpus``). The smaller
+``docclass-pilot`` examples pack remains available with ``--corpus pilot``.
 
-- config `default`      -> item input  {filename, prompt, metadata}
-- config `ground_truth` -> item expected_output {expected, expected_subclass,
-  claim fields, ...}
+Configs joined on ``filename``:
 
-Rows are joined on filename across the two configs. Items are upserted
-(deterministic ids derived from filename), so re-running only refreshes.
-Rows are read via the HF datasets-server REST API — no huggingface_hub dep.
+- ``default``       → item input  {filename, doc_text, prompt, metadata}
+- ``ground_truth``  → item expected_output {expected, expected_subclass, …}
+
+Items are upserted with deterministic ids, so re-runs refresh rather than
+duplicate. Rows come from the HF datasets-server REST API (no huggingface_hub
+dep on this path).
 
 Usage:
-    python scripts/sync_pilot_dataset.py            # full sync
-    python scripts/sync_pilot_dataset.py --dry-run  # counts only, no writes
+    python scripts/sync_pilot_dataset.py                 # full merged corpus
+    python scripts/sync_pilot_dataset.py --corpus pilot  # 48-strata examples
+    python scripts/sync_pilot_dataset.py --dry-run
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import os
 import sys
-import time
-import urllib.parse
-import urllib.request
 
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
 
@@ -34,61 +33,89 @@ from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv()
 
-DATASET_ID = "Lucius-Morningstar/docclass-pilot"
-LF_DATASET_NAME = "docclass-pilot"
-ROWS_API = "https://datasets-server.huggingface.co/rows"
+from mailroom_ui.hf_corpus import (  # noqa: E402
+    DEFAULT_CONFIG,
+    EXAMPLES_ID,
+    FULL_CORPUS_ID,
+    corpus_id,
+    corpus_revision,
+    fetch_rows,
+    gt_config,
+)
+
+_CORPORA = {
+    "merged": {
+        "dataset": FULL_CORPUS_ID,
+        "langfuse": "docclass-merged",
+        "description": (
+            "Corrected full corpus mirrored from Lucius-Morningstar/docclass-merged "
+            "(configs: default + ground_truth)."
+        ),
+    },
+    "pilot": {
+        "dataset": EXAMPLES_ID,
+        "langfuse": "docclass-pilot",
+        "description": (
+            "Class×subclass examples mirrored from Lucius-Morningstar/docclass-pilot "
+            "(configs: default + ground_truth)."
+        ),
+    },
+}
 
 
-def _get_json(url: str, tries: int = 3) -> dict:
-    last: Exception | None = None
-    for attempt in range(tries):
-        try:
-            with urllib.request.urlopen(url, timeout=30) as resp:
-                return json.loads(resp.read().decode())
-        except Exception as exc:  # transient HF hiccups are common
-            last = exc
-            time.sleep(2 * (attempt + 1))
-    raise RuntimeError(f"HF fetch failed after {tries} tries: {url}: {last}")
-
-
-def _rows(config: str, split: str) -> list[dict]:
-    out: list[dict] = []
-    offset = 0
-    while True:
-        url = f"{ROWS_API}?dataset={urllib.parse.quote(DATASET_ID, safe='')}" \
-              f"&config={config}&split={split}&offset={offset}&length=100"
-        page = _get_json(url)
-        rows = page.get("rows") or []
-        if not rows:
-            break
-        out.extend(r["row"] for r in rows)
-        if len(rows) < 100:
-            break
-        offset += len(rows)
-    return out
-
-
-def _item_id(filename: str) -> str:
-    return "dcp-" + hashlib.sha1(filename.encode()).hexdigest()[:24]
+def _item_id(prefix: str, filename: str) -> str:
+    return prefix + hashlib.sha1(filename.encode()).hexdigest()[:24]
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Sync docclass-pilot into Langfuse datasets.")
+    parser = argparse.ArgumentParser(
+        description="Sync Hub docclass corpus into Langfuse datasets."
+    )
+    parser.add_argument(
+        "--corpus",
+        choices=sorted(_CORPORA),
+        default="merged",
+        help="Hub corpus to mirror (default: merged = corrected full docclass-merged).",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Count rows without writing.")
+    parser.add_argument(
+        "--omit-text",
+        action="store_true",
+        help="Omit doc_text from Langfuse item input (labels + metadata only; smaller).",
+    )
     args = parser.parse_args()
 
-    default_rows = _rows("default", "train") + _rows("default", "test")
-    gt_rows = _rows("ground_truth", "train") + _rows("ground_truth", "test")
-    gt_by_file = {r["filename"]: r for r in gt_rows}
+    spec = _CORPORA[args.corpus]
+    # Allow MAILROOM_HF_DATASET to override the merged id (pilot stays fixed).
+    dataset = corpus_id() if args.corpus == "merged" else spec["dataset"]
+    revision = corpus_revision() if args.corpus == "merged" else ""
+    lf_name = spec["langfuse"]
+    id_prefix = "dcm-" if args.corpus == "merged" else "dcp-"
 
-    print(f"{DATASET_ID}: {len(default_rows)} default rows, "
-          f"{len(gt_rows)} ground-truth rows, "
-          f"{sum(1 for r in default_rows if r['filename'] in gt_by_file)} joined")
+    default_rows = fetch_rows(
+        dataset=dataset, config=DEFAULT_CONFIG, split="train", revision=revision or None,
+    ) + fetch_rows(
+        dataset=dataset, config=DEFAULT_CONFIG, split="test", revision=revision or None,
+    )
+    gt_rows = fetch_rows(
+        dataset=dataset, config=gt_config(), split="train", revision=revision or None,
+    ) + fetch_rows(
+        dataset=dataset, config=gt_config(), split="test", revision=revision or None,
+    )
+    gt_by_file = {r["filename"]: r for r in gt_rows if r.get("filename")}
 
-    unmatched = [r["filename"] for r in default_rows if r["filename"] not in gt_by_file]
+    print(
+        f"{dataset}@{revision or 'main'}: {len(default_rows)} default rows, "
+        f"{len(gt_rows)} ground-truth rows, "
+        f"{sum(1 for r in default_rows if r.get('filename') in gt_by_file)} joined"
+    )
+
+    unmatched = [r["filename"] for r in default_rows if r.get("filename") not in gt_by_file]
     if unmatched:
-        print(f"  WARNING: {len(unmatched)} default rows without ground truth: "
-              f"{unmatched[:5]}{'…' if len(unmatched) > 5 else ''}")
+        print(
+            f"  WARNING: {len(unmatched)} default rows without ground truth: "
+            f"{unmatched[:5]}{'…' if len(unmatched) > 5 else ''}"
+        )
 
     if args.dry_run:
         print("dry run — nothing written")
@@ -96,7 +123,10 @@ def main() -> int:
 
     missing = [k for k in ("LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY") if not os.environ.get(k)]
     if missing:
-        sys.exit(f"missing env vars: {', '.join(missing)} (copy .env.example -> .env and fill in)")
+        sys.exit(
+            f"missing env vars: {', '.join(missing)} "
+            "(copy .env.example -> .env and fill in)"
+        )
     from langfuse import Langfuse
 
     client = Langfuse(
@@ -109,19 +139,21 @@ def main() -> int:
     except Exception as exc:
         sys.exit(f"Langfuse rejected the configured credentials ({str(exc)[:120]}).")
 
-    dataset = client.create_dataset(
-        name=LF_DATASET_NAME,
-        description="Pilot corpus mirrored from Lucius-Morningstar/docclass-pilot "
-                    "(configs: default + ground_truth). Valid doc classes: contract, "
-                    "merger_agreement, corporate_record, correspondence, insurance_claim.",
-        metadata={"source": f"https://huggingface.co/datasets/{DATASET_ID}",
-                  "sync": "scripts/sync_pilot_dataset.py"},
+    dataset_obj = client.create_dataset(
+        name=lf_name,
+        description=spec["description"],
+        metadata={
+            "source": f"https://huggingface.co/datasets/{dataset}",
+            "revision": revision or None,
+            "sync": "scripts/sync_pilot_dataset.py",
+            "corpus": args.corpus,
+        },
     )
 
-    created = updated = skipped = 0
+    created = skipped = 0
     known_items: dict[str, object] = {}
     try:
-        ds_client = client.get_dataset(LF_DATASET_NAME)
+        ds_client = client.get_dataset(lf_name)
         for item in getattr(ds_client, "items", []) or []:
             sig = getattr(item, "id", None)
             if sig:
@@ -130,31 +162,46 @@ def main() -> int:
         pass
 
     for row in default_rows:
-        fn = row["filename"]
+        fn = row.get("filename")
+        if not fn:
+            continue
         gt = gt_by_file.get(fn) or {}
-        item_input = {"filename": fn, "prompt": row.get("prompt"),
-                      "metadata": row.get("metadata")}
-        expected_output = {k: v for k, v in gt.items()
-                           if k != "filename" and v not in (None, "", [])} or None
-        iid = _item_id(fn)
+        item_input = {
+            "filename": fn,
+            "prompt": row.get("prompt"),
+            "metadata": row.get("metadata"),
+        }
+        if not args.omit_text and row.get("doc_text"):
+            item_input["doc_text"] = row.get("doc_text")
+        expected_output = {
+            k: v
+            for k, v in gt.items()
+            if k != "filename" and v not in (None, "", [])
+        } or None
+        iid = _item_id(id_prefix, fn)
         if iid in known_items:
             skipped += 1
             continue
         client.create_dataset_item(
-            dataset_name=LF_DATASET_NAME,
+            dataset_name=lf_name,
             id=iid,
             input=item_input,
             expected_output=expected_output,
-            metadata={"subclass": gt.get("expected_subclass"),
-                      "hf_split": gt.get("split")},
+            metadata={
+                "subclass": gt.get("expected_subclass"),
+                "hf_split": gt.get("split"),
+                "hf_revision": revision or None,
+            },
         )
         created += 1
 
     client.flush()
-    print(f"dataset '{LF_DATASET_NAME}' ({dataset.id}): "
-          f"{created} items added, {skipped} already present")
+    print(
+        f"dataset '{lf_name}' ({dataset_obj.id}): "
+        f"{created} items added, {skipped} already present"
+    )
     host = os.environ.get("LANGFUSE_HOST", "https://us.cloud.langfuse.com").rstrip("/")
-    print(f"Dataset live at {host}/datasets/{LF_DATASET_NAME}")
+    print(f"Dataset live at {host}/datasets/{lf_name}")
     client.shutdown()
     return 0
 

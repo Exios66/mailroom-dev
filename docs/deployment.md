@@ -63,10 +63,22 @@ contract as the llm-mailroom producer.
 | `MAILROOM_PIPELINE_TOKEN` | same secret as producer `MAILROOM_API_TOKEN` |
 | `MAILROOM_PIPELINE_API_PREFIX` | `/v1` |
 | `MAILROOM_TRACE_CACHE_DIR` | `/tmp/mailroom-trace-cache` |
+| `MAILROOM_TRACE_LIMIT` | `100` (keeps floor polls snappy) |
+| `HF_TOKEN` | Hub token (eval / sync / Space publish) |
+| `MAILROOM_HF_DATASET` | `Lucius-Morningstar/docclass-merged` |
+| `MAILROOM_HF_REVISION` | corrected GT tip (see `mailroom_ui/hf_corpus.py`) |
+| `MAILROOM_HF_CONFIG` | `ground_truth` |
+
+On the **producer** (`llm-mailroom`) set the same `MAILROOM_HF_*` plus
+`HF_HOME=/data/huggingface` and `HF_HUB_CACHE=/data/huggingface/hub` so
+pilots read the pinned parquet from a volume cache instead of re-pulling
+Hub every run.
 
 Display stays Langfuse-only. Without Langfuse keys the UI shows
 **MAILROOM CLOSED** — never canned envelopes. The process still passes
 `GET /health` so Railway does not restart-loop on a closed floor.
+GT / pilot intake derive from the Hub corpus above
+(`scripts/eval_pipeline.py`, `scripts/sync_pilot_dataset.py`).
 
 ### Deploy
 
