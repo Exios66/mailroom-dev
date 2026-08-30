@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Environment / secrets — never commit real credentials.
+.env
+*.env.local
+packages/llm-entity-extraction/config/environments/.env
+packages/llm-entity-extraction/config/environments/braintrust.env
+packages/llm-entity-extraction/config/environments/braintrust-sandbox.env
+packages/llm-entity-extraction/config/environments/langfuse.env
+packages/llm-entity-extraction/config/environments/*.env.local
+
+# Local run artifacts (regenerated locally)
+packages/llm-entity-extraction/data/manifests/*
+!packages/llm-entity-extraction/data/manifests/README.md
+packages/llm-dojo-scoring/reports/
+packages/llm-dojo-scoring/*.report.md
+packages/llm-dojo-scoring/*_plots/
+
+# Node (The-Mailroom optional React operator desk)
+node_modules/
+packages/The-Mailroom/ui/dist/
+
+# Data directory (pipeline bins + archive)
+packages/llm-mailroom/data/
+packages/The-Mailroom/data/
+packages/The-Mailroom/site/
+
+# Heavy assets pruned from history at monorepo import — keep them out.
+packages/The-Mailroom/docs/demos/
+packages/The-Mailroom/docs/screenshots/
+packages/llm-entity-extraction/docs/posit/
+packages/llm-entity-extraction/docs/posit-src/
+packages/llm-entity-extraction/docs/data/
+packages/llm-mailroom/docs/reports/
+packages/llm-mailroom/docs/examples/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
