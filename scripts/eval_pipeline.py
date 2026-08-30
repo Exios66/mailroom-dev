@@ -6,9 +6,8 @@ Mirrors the entity-extraction eval runners (manifest + deterministic scorers
 contract The-Mailroom displays. Classification is scored two ways:
 
 - **exact** — predicted ``doc_type`` == HF ``expected``
-- **aligned** — ``merger_agreement`` is accepted as ``contract`` (live
-  mailroom taxonomy files MAUD rows as contract; the visualizer still shows
-  the HF class)
+- **aligned** — exact match after extract-alias collapse (v0.6.0:
+  ``merger_agreement`` is a live MAUD class, not aligned with ``contract``)
 
 Usage:
     python scripts/eval_pipeline.py --session pilot-hf-...
@@ -433,7 +432,7 @@ def render_markdown(summary: dict, rows: list[dict], title: str) -> str:
         "",
         f"- n = **{summary['n']}**",
         f"- exact accuracy = **{summary['exact_accuracy']:.3f}**",
-        f"- aligned accuracy (merger_agreement≡contract) = **{summary['aligned_accuracy']:.3f}**",
+        f"- aligned accuracy = **{summary['aligned_accuracy']:.3f}**",
         f"- cost USD = {summary['cost_usd_sum']}",
         f"- tokens = {summary['tokens_sum']}",
         f"- mean latency s = {summary.get('latency_s_mean', 0)}",
@@ -484,18 +483,20 @@ def main() -> int:
     if args.check:
         fixture = [
             {"expected": "contract", "predicted": "contract", "stage": "archived", "exact_ok": True, "aligned_ok": True},
-            {"expected": "merger_agreement", "predicted": "contract", "stage": "archived", "exact_ok": False, "aligned_ok": True},
+            {"expected": "merger_agreement", "predicted": "merger_agreement", "stage": "archived", "exact_ok": True, "aligned_ok": True},
+            {"expected": "merger_agreement", "predicted": "contract", "stage": "archived", "exact_ok": False, "aligned_ok": False},
             {"expected": "correspondence", "predicted": "contract", "stage": "archived", "exact_ok": False, "aligned_ok": False},
             {"expected": "corporate_record", "predicted": "corporate_record", "stage": "failed", "error": "x", "exact_ok": True, "aligned_ok": True},
         ]
         for r in fixture:
-            r["filename"] = r["expected"] + ".txt"
+            r["filename"] = (r["expected"] or "x") + ".txt"
         summary = score_rows(fixture)
-        assert summary["n"] == 4
-        assert abs(summary["exact_accuracy"] - 0.5) < 1e-9
-        assert abs(summary["aligned_accuracy"] - 0.75) < 1e-9
+        assert summary["n"] == 5
+        assert abs(summary["exact_accuracy"] - 0.6) < 1e-9
+        assert abs(summary["aligned_accuracy"] - 0.6) < 1e-9
         assert classify_failure(fixture[2]) == "wrong_class"
-        assert classify_failure(fixture[3]) == "failed"
+        assert classify_failure(fixture[3]) == "wrong_class"
+        assert classify_failure(fixture[4]) == "failed"
         messy, stats = deterministic_normalize("A\n\n\n\nB-\nC")
         assert looks_messy("x\n" * 30, None)
         print("check ok", json.dumps(summary))

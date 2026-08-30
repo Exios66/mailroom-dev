@@ -47,11 +47,24 @@ def test_archived_class_miss_vs_ground_truth():
     assert run.needs_human is True
 
 
-def test_merger_agreement_alias_is_not_a_class_miss():
+def test_merger_agreement_vs_contract_is_a_class_miss():
+    """v0.6.0: MAUD merger_agreement is not equivalent to CUAD contract."""
     run = _run(
         make_trace(
-            "t-alias",
+            "t-maud-miss",
             doc_type="contract",
+            extra_input={"ground_truth": {"expected_hf_class": "merger_agreement"}},
+            extra_metadata={"expected_hf_class": "merger_agreement"},
+        )
+    )
+    assert CLASS_MISS in run.review_causes
+
+
+def test_merger_agreement_exact_match_is_not_a_class_miss():
+    run = _run(
+        make_trace(
+            "t-maud-hit",
+            doc_type="merger_agreement",
             extra_input={"ground_truth": {"expected_hf_class": "merger_agreement"}},
             extra_metadata={"expected_hf_class": "merger_agreement"},
         )

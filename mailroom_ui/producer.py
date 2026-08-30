@@ -7,8 +7,8 @@ checkout is available:
 
     pip install -e ".[pipeline]"
 
-Pin: ``git+https://github.com/Exios66/llm-mailroom.git@0928de1`` (package
-version 0.5.0 on ``origin/main``, llm-mailroom #53). Bump
+Pin: ``git+https://github.com/Exios66/llm-mailroom.git@3cf9fb9`` (package
+version 0.6.0 — tag ``v0.6.0``, pared LLM load). Bump
 ``MAILROOM_GIT_SHA`` and the extra together.
 
 Never import ``api.main`` (watcher / embeddings / graph warm-up at import
@@ -24,11 +24,11 @@ import sys
 from pathlib import Path
 from typing import Any, Optional
 
-# origin/main 0928de1 — "Harden aborted runs, review Complete, and stale-claim requeue (#53)"
-MAILROOM_GIT_SHA = "0928de1"
+# v0.6.0 tag 3cf9fb9 — "Release v0.6.0: pared LLM load + streamlined pipeline"
+MAILROOM_GIT_SHA = "3cf9fb9"
 MAILROOM_GIT_URL = "https://github.com/Exios66/llm-mailroom.git"
 MAILROOM_DIST_NAME = "mailroom"
-MAILROOM_DIST_VERSION = "0.5.0"
+MAILROOM_DIST_VERSION = "0.6.0"
 MAILROOM_PEP508 = (
     f"{MAILROOM_DIST_NAME} @ git+{MAILROOM_GIT_URL}@{MAILROOM_GIT_SHA}"
 )

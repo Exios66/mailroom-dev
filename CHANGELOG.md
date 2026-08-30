@@ -8,6 +8,17 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Changed
 
+- **Aligned with llm-mailroom v0.6.0** (`3cf9fb9`, package `mailroom`
+  0.6.0). Topology mirror: `merger_agreement` is a live MAUD class (not a
+  CUAD `contract` alias); pared extraction field keys (checklists /
+  semantic trio — retired `key_obligations` / `termination_clauses` /
+  `key_provisions` / `key_points`); severity-aware confidence defaults
+  (`high=0.97`, `low=0.88`, `retry_max=2`, `judge_band_high=0.95`,
+  `arbiter_retry_max=2`, `judge_max_passes=3`) plus optional
+  `confidence.by_class` when `MAILROOM_TAXONOMY` is set. Optional
+  `[pipeline]` pin bumped `0928de1` → `3cf9fb9`. Eval / reconsideration
+  no longer treat MAUD↔CUAD as equivalent.
+
 - **Full browser QA against live Langfuse (2026-08-29).** Pixel console
   (`/?debug=1`) and Observatory (`/live?debug=1`) desks, inspector,
   History replay, mobile FLOOR/REVIEW, and debug dump/push were exercised
@@ -15,6 +26,13 @@ All notable changes to The-Mailroom are documented here, following
   returns an honest HTTP 503. No SPA regressions required a code change.
 
 ### Added
+
+- **Railway deploy contract.** Root `railway.json` (Dockerfile builder +
+  `/health` probe), `nixpacks.toml` fallback, multi-stage non-root
+  Observatory `Dockerfile` with `HEALTHCHECK`, platform `PORT` preferred
+  over image `MAILROOM_PORT=7860`, and
+  [docs/deployment.md](docs/deployment.md) § Railway (required Langfuse
+  keys; optional `MAILROOM_PIPELINE_*` pairing).
 
 - **Live Hugging Face Space Observatory demo.** Full-desk recording
   (~102s) of

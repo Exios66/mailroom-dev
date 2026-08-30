@@ -106,7 +106,7 @@ def collect_review_causes(
     """Return canonical cause tokens. Empty when no objective miss is present."""
     scores = scores or {}
     schema = schema or PipelineSchema()
-    floor = float(getattr(schema, "confidence_low", 0.70) or 0.70)
+    floor = float(getattr(schema, "confidence_low", 0.88) or 0.88)
     causes: list[str] = []
 
     expected = _align_class(expected_hf_class)

@@ -525,25 +525,38 @@ def test_schema_mirror_covers_upstream_contract():
     assert "image-extractor" not in ps.AGENTS
     assert "compliance_specialist" in ps.AGENTS
     assert "compliance_filing" in ps.LIVE_DOC_TYPES
+    assert "merger_agreement" in ps.LIVE_DOC_TYPES
     assert "compliance_filing" in ps.DOC_CLASSES
     assert "court_opinion" not in ps.DOC_CLASSES
     assert "due_diligence" not in ps.DOC_CLASSES
-    assert ps.EXTRACT_CLASS_ALIASES["merger_agreement"] == "contract"
-    assert ps.resolve_extract_class("merger_agreement") == "contract"
+    assert ps.EXTRACT_CLASS_ALIASES == {}
+    assert ps.resolve_extract_class("merger_agreement") == "merger_agreement"
+    assert ps.resolve_extract_class("contract") == "contract"
     assert ps.resolve_extract_class("unknown") is None
     assert ps.resolve_extract_class("court_opinion") is None
     assert ps.DOC_CLASSES["insurance_claim"] == "Insurance Claim"
     assert ps.DOC_CLASSES["compliance_filing"] == "Compliance Filing"
+    assert ps.DOC_CLASSES["merger_agreement"] == "Merger Agreement"
     assert ps.SPECIALIST_BY_DOC_CLASS["insurance_claim"] == "insurance_claims_specialist"
     assert ps.SPECIALIST_BY_DOC_CLASS["compliance_filing"] == "compliance_specialist"
+    assert ps.SPECIALIST_BY_DOC_CLASS["merger_agreement"] == "contracts_specialist"
     assert "license" in ps.DOC_SUBCLASS_BY_CLASS["contract"]
     assert "10-K" in ps.DOC_SUBCLASS_BY_CLASS["compliance_filing"]
+    assert "cuad_clauses" in ps.EXTRACTION_FIELD_KEYS_BY_CLASS["contract"]
+    assert "key_obligations" not in ps.EXTRACTION_FIELD_KEYS_BY_CLASS["contract"]
+    assert "claim_checklist" in ps.EXTRACTION_FIELD_KEYS_BY_CLASS["insurance_claim"]
+    assert "intent" in ps.EXTRACTION_FIELD_KEYS_BY_CLASS["corporate_record"]
     assert ps.langfuse_score_name("extraction_overall_verified_precision") == "extraction_verified_precision"
     assert ps.canonical_score_name("extraction_verified_precision") == "extraction_overall_verified_precision"
     assert "content_topic_accuracy" in ps.SUITE_EXTRA_SCORES
     assert "maud_question_accuracy" in ps.SUITE_EXTRA_SCORES
     schema = ps.PipelineSchema.load()
-    assert schema.judge_band_high == 0.85
+    assert schema.judge_band_high == 0.95
+    assert schema.confidence_high == 0.97
+    assert schema.confidence_low == 0.88
+    assert schema.retry_max == 2
+    assert schema.arbiter_retry_max == 2
+    assert schema.judge_max_passes == 3
     assert ps.NODE_OBSERVATION_TYPES["document-pipeline"] == "chain"
     assert ps.NODE_OBSERVATION_TYPES["classify-document"] == "agent"
     assert ps.NODE_OBSERVATION_TYPES["judge-verify"] == "evaluator"
