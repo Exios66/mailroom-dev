@@ -1,0 +1,21 @@
+# Raw corpus artifacts (large, regenerable — never commit)
+data/raw/
+data/enron/
+data/corpus/
+data/hf_export/
+*.tar.gz
+*.tgz
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+data/cleaned/index_cleaned.jsonl
+
+# local data dir (lives in /tmp during pipeline runs; regenerate via scripts/acquire_enron.py)
+/data
