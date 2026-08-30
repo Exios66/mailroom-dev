@@ -6,16 +6,16 @@ All notable changes to The-Mailroom are documented here, following
 
 ## [Unreleased]
 
-### Fixed
-
-- **Railway `/health` no longer calls Langfuse.** Platform probes
-  (`railway.json` healthcheckPath, Docker `HEALTHCHECK`) get a fast
-  `{"ok": true, "status": "alive"}` response. Source reachability stays
-  on `GET /api/health`. Avoids HEALTHCHECK timeouts when keys are
-  missing or Langfuse is slow. Docs / `.env.example` Railway checklist
-  and contract tests (`railway.json` DOCKERFILE builder) updated.
-
 ### Changed
+
+- **Eval / Langfuse dataset sync pin the corrected full Hub corpus.**
+  `mailroom_ui/hf_corpus.py` defaults to
+  `Lucius-Morningstar/docclass-merged` @
+  `1d4753578d91aae09033b359bc32dc1b431e4c20` (`ground_truth` config)
+  via the datasets-server REST API. `scripts/eval_pipeline.py` and
+  `scripts/sync_pilot_dataset.py` (default `--corpus merged`) honor
+  `MAILROOM_HF_DATASET` / `MAILROOM_HF_REVISION` / `MAILROOM_HF_CONFIG`.
+  Railway checklist documents producer `HF_HOME` cache under `/data`.
 
 - **Aligned with llm-mailroom v0.6.0** (`3cf9fb9`, package `mailroom`
   0.6.0). Topology mirror: `merger_agreement` is a live MAUD class (not a
@@ -27,6 +27,15 @@ All notable changes to The-Mailroom are documented here, following
   `confidence.by_class` when `MAILROOM_TAXONOMY` is set. Optional
   `[pipeline]` pin bumped `0928de1` → `3cf9fb9`. Eval / reconsideration
   no longer treat MAUD↔CUAD as equivalent.
+
+### Fixed
+
+- **Railway `/health` no longer calls Langfuse.** Platform probes
+  (`railway.json` healthcheckPath, Docker `HEALTHCHECK`) get a fast
+  `{"ok": true, "status": "alive"}` response. Source reachability stays
+  on `GET /api/health`. Avoids HEALTHCHECK timeouts when keys are
+  missing or Langfuse is slow. Docs / `.env.example` Railway checklist
+  and contract tests (`railway.json` DOCKERFILE builder) updated.
 
 - **Full browser QA against live Langfuse (2026-08-29).** Pixel console
   (`/?debug=1`) and Observatory (`/live?debug=1`) desks, inspector,
