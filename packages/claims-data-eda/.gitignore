@@ -1,0 +1,31 @@
+# Data dirs (regenerable via scripts/)
+data/
+!data/.gitkeep
+
+# Environment / secrets
+.env
+.env.*
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
