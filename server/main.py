@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -13,7 +14,7 @@ from typing import Any, Optional
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -32,12 +33,23 @@ from mailroom_ui.multi_source import MultiSource
 from mailroom_ui.pipeline_ops import fetch_pipeline_ops
 from mailroom_ui.review_actions import (
     ReviewActionError,
+    enqueue_inbox,
     fetch_audit,
     fetch_source,
     fetch_source_download,
     pipeline_configured,
     resolve_review,
     review_context,
+)
+from mailroom_ui.trace_cache import (
+    CACHE_SOURCE,
+    cache_status,
+    load_run,
+    load_traces,
+    persist_floor,
+    persist_metrics,
+    persist_run,
+    snapshot_bundle,
 )
 from mailroom_ui.pipeline_schema import DOC_CLASSES, DOC_SUBCLASS_BY_CLASS
 from mailroom_ui.phoenix_source import PhoenixSource
@@ -81,6 +93,8 @@ API_ENDPOINTS = [
     {"method": "POST", "path": "/api/review/resolve", "desc": "proxy approve/reject/record/requeue/complete (+ doc_type mapped to override_doc_type) to llm-mailroom /v1"},
     {"method": "GET", "path": "/api/review/source", "desc": "parked document text from producer (lookup fallback if no /documents/{id}/source); ?trace_id=&filename=&doc_id=&download=1"},
     {"method": "GET", "path": "/api/review/audit", "desc": "hash-chained producer audit; ?doc_id="},
+    {"method": "POST", "path": "/api/inbox/enqueue", "desc": "proxy multipart file to producer POST /v1/upload (503 until MAILROOM_PIPELINE_URL)"},
+    {"method": "GET", "path": "/api/snapshot", "desc": "Langfuse-derived JSON snapshot (cache; never fabricated)"},
     {"method": "WS", "path": "/ws", "desc": "floor snapshots (live mode only)"},
     {"method": "GET", "path": "/live", "desc": "hosted Observatory UI (modern, accessible, public)"},
 ]
@@ -162,11 +176,18 @@ def create_app(source: Optional[object] = None) -> FastAPI:
     @app.get("/api/health")
     def health():
         payload = src.health()
+        cache = cache_status()
         if isinstance(payload, dict):
             payload = dict(payload)
             payload["pipeline_configured"] = pipeline_configured()
             payload["mailroom"] = producer_status()
             payload["operator"] = operator_status()
+            payload["cache"] = cache
+            if not payload.get("ok") and cache.get("has_snapshot"):
+                payload["ok"] = True
+                payload["source"] = CACHE_SOURCE
+                payload["cached_at"] = cache.get("cached_at")
+                payload["cached_trace_count"] = cache.get("cached_trace_count")
         return payload
 
     @app.get("/api/traces")
@@ -176,25 +197,53 @@ def create_app(source: Optional[object] = None) -> FastAPI:
         stage: Optional[str] = None,
         environment: Optional[str] = None,
     ):
-        runs = _recent(src, since, limit)
+        try:
+            runs = _recent(src, since, limit)
+        except TraceSourceUnavailable:
+            cached = load_traces()
+            if cached:
+                rows = list(cached.get("runs") or [])
+                if stage:
+                    rows = [r for r in rows if r.get("stage") == stage]
+                if environment:
+                    rows = [r for r in rows if r.get("environment") == environment]
+                return {
+                    "count": len(rows),
+                    "source": CACHE_SOURCE,
+                    "cached_at": cached.get("cached_at"),
+                    "runs": rows[:limit],
+                }
+            raise
         if stage:
             runs = [r for r in runs if r.stage.value == stage]
         if environment:
             runs = [r for r in runs if r.environment == environment]
+        payload_runs = [_serialize(r) for r in runs]
+        persist_floor(payload_runs, source=_source_names(src))
         return {
-            "count": len(runs),
+            "count": len(payload_runs),
             "source": _source_names(src),
-            "runs": [_serialize(r) for r in runs],
+            "runs": payload_runs,
         }
 
     @app.get("/api/traces/{trace_id}")
     def trace_detail(trace_id: str):
-        run = src.get_run(trace_id)
+        cached = load_run(trace_id)
+        if cached and (cached.get("spans") is not None or cached.get("generations") is not None):
+            return {**cached, "source": cached.get("source") or CACHE_SOURCE}
+        try:
+            run = src.get_run(trace_id)
+        except TraceSourceUnavailable:
+            if cached:
+                return {**cached, "source": CACHE_SOURCE}
+            raise
         if run is None:
-            # FastAPI has no Flask-style (body, status) tuple returns — the
-            # tuple was serialized as a 200 JSON array.
+            if cached:
+                return {**cached, "source": CACHE_SOURCE}
             return JSONResponse(status_code=404, content={"error": "trace not found"})
-        return _serialize(run, full=True)
+        detail = _serialize(run, full=True)
+        persist_run(trace_id, detail)
+        return detail
 
     @app.get("/api/metrics")
     def metrics(since: int = Query(86400 * 7, ge=0, le=86400 * 7)):
@@ -205,7 +254,9 @@ def create_app(source: Optional[object] = None) -> FastAPI:
         # re-walk Langfuse (that hung the inspector for ~2 minutes).
         runs = _desk_runs(src, hub, since_seconds=since, limit=TRACE_LIMIT)
         m = compute_metrics(runs, since=_utcnow() - timedelta(seconds=since))
-        return {"source": _source_names(src), **m.model_dump()}
+        payload = {"source": _source_names(src), **m.model_dump()}
+        persist_metrics(payload)
+        return payload
 
     @app.get("/api/sessions")
     def sessions(limit: int = Query(50, ge=1, le=200)):
@@ -369,6 +420,56 @@ def create_app(source: Optional[object] = None) -> FastAPI:
                 content={"error": exc.message, "detail": exc.detail},
             )
 
+    @app.post("/api/inbox/enqueue")
+    async def inbox_enqueue_ep(request: Request):
+        """Proxy a file to producer POST /v1/upload. No fabricated catalog row."""
+        try:
+            ctype = (request.headers.get("content-type") or "").lower()
+            filename = ""
+            matter_id = ""
+            content_type = ""
+            file_bytes: Optional[bytes] = None
+            if "application/json" in ctype:
+                payload = await request.json()
+                if not isinstance(payload, dict):
+                    payload = {}
+                filename = str(payload.get("filename") or "")
+                matter_id = str(payload.get("matter_id") or "")
+                content_type = str(payload.get("content_type") or "")
+                raw = payload.get("content_base64") or payload.get("content")
+                if isinstance(raw, str) and raw.strip():
+                    try:
+                        file_bytes = base64.b64decode(raw)
+                    except Exception as exc:
+                        raise ReviewActionError("content_base64 is not valid base64", status=400) from exc
+            else:
+                form = await request.form()
+                upload = form.get("file")
+                matter_id = str(form.get("matter_id") or "")
+                filename = str(form.get("filename") or "")
+                if upload is not None and hasattr(upload, "read"):
+                    file_bytes = await upload.read()
+                    filename = filename or (getattr(upload, "filename", None) or "")
+                    content_type = getattr(upload, "content_type", None) or ""
+            result = enqueue_inbox(
+                filename=filename,
+                matter_id=matter_id,
+                content_type=content_type,
+                file_bytes=file_bytes,
+            )
+            status = 202 if str(result.get("status") or "").lower() == "accepted" else 200
+            return JSONResponse(status_code=status, content=result)
+        except ReviewActionError as exc:
+            return JSONResponse(
+                status_code=exc.status,
+                content={"error": exc.message, "detail": exc.detail, "configured": pipeline_configured()},
+            )
+
+    @app.get("/api/snapshot")
+    def snapshot_ep():
+        """Download the Langfuse-derived cache bundle (same shape as export_snapshot)."""
+        return snapshot_bundle()
+
     @app.get("/api/meta")
     def meta():
         # V-23: use PipelineSchema.load() so the MAILROOM_TAXONOMY override is
@@ -421,6 +522,7 @@ def create_app(source: Optional[object] = None) -> FastAPI:
                 or os.environ.get("MAILROOM_PIPELINE_API")
             ),
             "pipeline_configured": pipeline_configured(),
+            "cache": cache_status(),
         }
         info["mailroom"] = producer_status()
         info["operator"] = operator_status()

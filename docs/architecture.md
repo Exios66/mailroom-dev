@@ -141,7 +141,10 @@ uncaught errors. Same `/api/*` + `/ws` as the pixel console. Deploy with
 the root `Dockerfile` (binds `0.0.0.0:7860`) — this is not GitHub Pages.
 Hugging Face Spaces: SDK **Docker**, empty root directory, port 7860,
 Langfuse keys as Space secrets (`scripts/publish_space.py`).
-See `hosted/README.md` and `hosted/SPACE_README.md`.
+Observatory cards show primary/secondary classification outcomes and a
+headline strip; `GET /api/snapshot` + `MAILROOM_TRACE_CACHE_DIR` cache
+Langfuse-derived JSON (never fabricated). See `hosted/README.md` and
+`hosted/SPACE_README.md`.
 
 ## GH Pages edition (static site, no Actions)
 
@@ -217,9 +220,12 @@ Langfuse output or as `run aborted [<class>]: …` in `error_message`.
 and, on 404, falls back to `GET /v1/lookup` catalog JSON (`original_filename`,
 `extracted_data`). Binary `?download=1` 404s when that route is missing.
 Requires `MAILROOM_PIPELINE_URL` + `MAILROOM_PIPELINE_TOKEN` on the visualizer
-(`:8000` producer — not `MAILROOM_API_URL`, which is TUI → this process
-`:8001`). `MAILROOM_PIPELINE_API_PREFIX` defaults to `/v1`. Display data
-stays Langfuse-only — the producer token never leaves the visualizer server.
+(local `http://127.0.0.1:8000`, or a public producer Space such as
+`https://<user>-mailroom-producer.hf.space` — not `MAILROOM_API_URL`, which
+is TUI → this process `:8001`). Inbox enqueue is `POST /api/inbox/enqueue`
+→ producer `POST /v1/upload`. `MAILROOM_PIPELINE_API_PREFIX` defaults to
+`/v1`. Display data stays Langfuse-only — the producer token never leaves
+the visualizer server.
 
 ## Operator desk (`operator_desk/`)
 

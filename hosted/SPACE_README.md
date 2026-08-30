@@ -39,6 +39,8 @@ contract as `mailroom-hosted`.
 | `LANGFUSE_PUBLIC_KEY` | `pk-lf-…` from Langfuse → Settings → API Keys |
 | `LANGFUSE_SECRET_KEY` | `sk-lf-…` (never a regular variable) |
 | `LANGFUSE_HOST` | Production US cloud: `https://us.cloud.langfuse.com` |
+| `MAILROOM_PIPELINE_URL` | Public producer URL, e.g. `https://<user>-mailroom-producer.hf.space`. **Not** `http://127.0.0.1:8000` — that loopback is the producer host, not this Space. |
+| `MAILROOM_PIPELINE_TOKEN` | Producer `MAILROOM_API_TOKEN` (or a key from `MAILROOM_API_TOKENS`) |
 
 This visualizer reads **`LANGFUSE_HOST`**. If you only have Langfuse's
 `LANGFUSE_BASE_URL`, set that instead — the server accepts it as an alias.
@@ -51,14 +53,29 @@ This visualizer reads **`LANGFUSE_HOST`**. If you only have Langfuse's
 | `MAILROOM_EDITION` | `hosted` (already set in the Dockerfile) |
 | `MAILROOM_TRACE_ENVIRONMENTS` | unset = show every env on the floor |
 | `MAILROOM_TRACE_TAGS` | unset = no tag filter |
+| `MAILROOM_TRACE_CACHE_DIR` | `/tmp/mailroom-trace-cache` (ephemeral; lost on sleep) |
+| `MAILROOM_POLL_ENRICH` | `inflight` (do not set `all` on the Space) |
+| `MAILROOM_PIPELINE_API_PREFIX` | `/v1` (producer default) |
 
 Do **not** put `HF_TOKEN` or Langfuse keys in Variables (they are visible
 to Space collaborators as plain text). The Hub token is only needed on
 your laptop to run `scripts/publish_space.py`.
 
-Human-review **resolve** still needs a reachable llm-mailroom producer
-(`MAILROOM_PIPELINE_URL` + `MAILROOM_PIPELINE_TOKEN`). Without it the
-desk stays read-only and REVIEW returns an honest 503.
+Human-review **resolve** and Inbox **Queue a document** (`POST /v1/upload`)
+need a reachable llm-mailroom producer. Set the three producer knobs:
+
+```bash
+MAILROOM_PIPELINE_URL=https://<user>-mailroom-producer.hf.space
+MAILROOM_PIPELINE_TOKEN=$MAILROOM_API_TOKEN
+MAILROOM_PIPELINE_API_PREFIX=/v1
+```
+
+`publish_space.py` copies URL + token as Space **secrets** (and `/v1` as a
+variable) when they are in the environment. Without them the desk stays
+read-only: REVIEW and enqueue return an honest 503. The floor uses a
+Langfuse-derived JSON cache so inspect does not wait 30s on `get_run`;
+**Export snapshot** downloads that bundle. Empty cache + Langfuse down
+is MAILROOM CLOSED.
 
 ## Republish
 
@@ -70,6 +87,9 @@ HF_TOKEN=hf_... \
   LANGFUSE_PUBLIC_KEY=pk-lf-... \
   LANGFUSE_SECRET_KEY=sk-lf-... \
   LANGFUSE_HOST=https://us.cloud.langfuse.com \
+  MAILROOM_PIPELINE_URL=https://<user>-mailroom-producer.hf.space \
+  MAILROOM_PIPELINE_TOKEN=$MAILROOM_API_TOKEN \
+  MAILROOM_PIPELINE_API_PREFIX=/v1 \
   python scripts/publish_space.py --repo <user>/mailroom-observatory
 ```
 

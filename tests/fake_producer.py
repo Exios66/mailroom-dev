@@ -2,8 +2,9 @@
 
 Mirrors producer ``origin/main`` (prefer ``/v1``): lookup, review resolve
 (``override_doc_type``, dispositions resume|record|requeue|complete), audit,
-health, inbox queue. There is **no** ``GET /documents/{id}/source`` — same as
-producer main — so the visualizer source pane uses catalog lookup fallback.
+health, inbox queue, ``POST /upload``. There is **no** ``GET /documents/{id}/source``
+on this stub (older producer forks) so the visualizer source pane uses catalog
+lookup fallback.
 
 Display data still comes from Langfuse (FakeClient in the demo). This stub is
 only the operator write-path the visualizer proxies to.
@@ -16,11 +17,13 @@ import json
 import socket
 import threading
 import time
+import uuid
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 
 from mailroom_ui.producer import DECISIONS, DISPOSITIONS, serialize_catalog_row
 
@@ -184,6 +187,34 @@ def create_fake_producer(store: Optional[FakeProducerStore] = None, *, token: st
             },
         }
 
+    @app.post("/upload")
+    async def upload(request: Request):
+        _require(request)
+        form = await request.form()
+        upload_file = form.get("file")
+        if upload_file is None:
+            raise HTTPException(400, "file is required")
+        filename = getattr(upload_file, "filename", None) or "upload.bin"
+        matter = str(form.get("matter_id") or "DEFAULT").strip() or "DEFAULT"
+        upload_id = uuid.uuid4().hex[:12]
+        store.queued.append({
+            "file": filename,
+            "matter_id": matter,
+            "uploaded_at": _now(),
+            "upload_id": upload_id,
+        })
+        store.inbox_pending = len(store.queued)
+        return JSONResponse(
+            status_code=202,
+            content={
+                "status": "accepted",
+                "file": filename,
+                "upload_id": upload_id,
+                "matter_id": matter,
+                "message": "File queued for processing — watcher will pick it up.",
+            },
+        )
+
     @app.get("/queue")
     async def queue(request: Request):
         _require(request)
@@ -339,7 +370,7 @@ def create_fake_producer(store: Optional[FakeProducerStore] = None, *, token: st
         from fastapi.routing import APIRoute
 
         wanted = {
-            "/health", "/queue", "/lookup", "/review/queue",
+            "/health", "/upload", "/queue", "/lookup", "/review/queue",
             "/review/{doc_id}/resolve", "/audit/{doc_id}",
         }
         for route in list(app.router.routes):

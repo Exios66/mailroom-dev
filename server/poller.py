@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from fastapi import WebSocket
 
+from mailroom_ui.classification import archive_name_from_run, classification_from_run
 from mailroom_ui.langfuse_source import LangfuseSource, list_recent_runs
 from mailroom_ui.models import PipelineRun, Stage
 from mailroom_ui.pipeline_ops import fetch_pipeline_ops
+from mailroom_ui.trace_cache import persist_floor, persist_run
 
 log = logging.getLogger("mailroom.poller")
 
@@ -64,6 +67,8 @@ def floor_payload(run: PipelineRun) -> dict[str, Any]:
         "created_at": run.created_at.isoformat() if run.created_at else None,
         "updated_at": run.updated_at.isoformat() if run.updated_at else None,
         "routing_path": run.routing_path,
+        **classification_from_run(run),
+        "archive_name": archive_name_from_run(run),
     }
 
 
@@ -129,6 +134,16 @@ def apply_light_identity(full: PipelineRun, light: PipelineRun) -> PipelineRun:
     if not updates:
         return full
     return full.model_copy(update=updates)
+
+
+def poll_enrich_mode() -> str:
+    """``all`` = legacy N+1 get_run; ``inflight`` (default) = hot runs only."""
+    raw = (os.environ.get("MAILROOM_POLL_ENRICH") or "inflight").strip().lower()
+    if raw in {"1", "true", "yes", "all", "on"}:
+        return "all"
+    if raw in {"0", "false", "no", "off", "none"}:
+        return "none"
+    return "inflight"
 
 
 def is_conveyor_hot(run: PipelineRun) -> bool:
@@ -290,12 +305,16 @@ class PollHub:
             cached = self._details.get(run.trace_id)
             prev = prev_by_id.get(run.trace_id)
             chosen: PipelineRun = run
-            if not self._needs_refresh(run, cached, now, prev):
+            mode = poll_enrich_mode()
+            want_enrich = mode == "all" or (
+                mode == "inflight" and is_conveyor_hot(prev or run)
+            )
+            if want_enrich and not self._needs_refresh(run, cached, now, prev):
                 chosen = apply_light_identity(prev, run) if prev is not None else run
                 payload = floor_payload(chosen)
                 ts = cached[0] if cached else now
                 self._details[run.trace_id] = (ts, payload, run_fingerprint(run))
-            else:
+            elif want_enrich:
                 force = cached is not None
                 try:
                     getter = getattr(self.source, "get_run", None)
@@ -315,10 +334,26 @@ class PollHub:
                 chosen = apply_light_identity(full, run) if full is not None else run
                 payload = floor_payload(chosen)
                 self._details[run.trace_id] = (now, payload, run_fingerprint(run))
+                if full is not None:
+                    try:
+                        persist_run(run.trace_id, {
+                            **payload,
+                            "spans": [s.model_dump(mode="json") for s in full.spans],
+                            "generations": [g.model_dump(mode="json") for g in full.generations],
+                            "scores": full.scores,
+                        })
+                    except Exception:
+                        pass
+            else:
+                chosen = apply_light_identity(prev, run) if prev is not None else run
+                payload = floor_payload(chosen)
+                ts = cached[0] if cached else now
+                self._details[run.trace_id] = (ts, payload, run_fingerprint(run))
             full_runs.append(chosen)
             out.append(payload)
         for tid in list(self._details):
             if tid not in current_ids:
                 del self._details[tid]
         self.runs = full_runs
+        persist_floor(out, source="langfuse")
         return out

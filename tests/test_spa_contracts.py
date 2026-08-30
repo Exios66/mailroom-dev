@@ -120,6 +120,21 @@ def test_live_poll_matches_server_interval_and_pipeline_ops():
     assert 'data-disposition="complete"' in hosted_app
     assert "run.failure_class" in hosted_app
     assert "run.run_aborted" in hosted_app
+    assert "Primary" in hosted_app
+    assert "Secondary" in hosted_app
+    assert "primary_outcome" in hosted_app
+    assert "headline-strip" in hosted_app or "renderHeadlines" in hosted_app
+    card_fn = hosted_app.split("function cardHTML")[1].split("function matchesFilter")[0]
+    assert "classification_confidence" not in card_fn
+    assert "extraction_confidence" not in card_fn
+    assert "inboxEnqueue" in hosted_client
+    assert "postForm" in hosted_client
+    assert "FormData" in hosted_app
+    assert "snapshot" in hosted_client
+    assert "/api/inbox/enqueue" in hosted_client
+    assert "/api/snapshot" in hosted_client
+    assert "Export snapshot" in (ROOT / "hosted" / "index.html").read_text()
+    assert "Queue a document" in (ROOT / "hosted" / "index.html").read_text()
 
 
 def test_error_banner_is_outside_overflow_hidden_screen():

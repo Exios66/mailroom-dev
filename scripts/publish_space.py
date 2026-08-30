@@ -9,9 +9,14 @@ script never writes them into the Space git tree.
   HF_TOKEN=hf_... \\
     LANGFUSE_PUBLIC_KEY=pk-lf-... LANGFUSE_SECRET_KEY=sk-lf-... \\
     LANGFUSE_HOST=https://us.cloud.langfuse.com \\
+    MAILROOM_PIPELINE_URL=https://<user>-mailroom-producer.hf.space \\
+    MAILROOM_PIPELINE_TOKEN=$MAILROOM_API_TOKEN \\
+    MAILROOM_PIPELINE_API_PREFIX=/v1 \\
     python scripts/publish_space.py --repo <user>/mailroom-observatory
 
 ``LANGFUSE_BASE_URL`` is accepted as an alias of ``LANGFUSE_HOST``.
+Optional producer knobs become Space secrets/variables when set; they are
+never written into the Space git tree.
 """
 
 from __future__ import annotations
@@ -55,6 +60,13 @@ SPACE_SECRETS = (
     "LANGFUSE_PUBLIC_KEY",
     "LANGFUSE_SECRET_KEY",
     "LANGFUSE_HOST",
+)
+
+# Optional — set when a reachable llm-mailroom producer exists.
+# 127.0.0.1:8000 is local-only; a Space Observatory needs a public producer URL.
+OPTIONAL_PIPELINE_SECRETS = (
+    "MAILROOM_PIPELINE_URL",
+    "MAILROOM_PIPELINE_TOKEN",
 )
 
 SPACE_VARIABLES = (
@@ -124,18 +136,43 @@ def _secret_values() -> dict[str, str]:
         )
     if pub.startswith("sk-") or sec.startswith("pk-"):
         _die("LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY look swapped")
-    return {
+    out = {
         "LANGFUSE_PUBLIC_KEY": pub,
         "LANGFUSE_SECRET_KEY": sec,
         "LANGFUSE_HOST": _resolved_host(),
     }
+    url = (
+        os.environ.get("MAILROOM_PIPELINE_URL")
+        or os.environ.get("MAILROOM_PIPELINE_API")
+        or ""
+    ).strip().rstrip("/")
+    token = (
+        os.environ.get("MAILROOM_PIPELINE_TOKEN")
+        or os.environ.get("MAILROOM_API_TOKEN")
+        or ""
+    ).strip()
+    if url:
+        out["MAILROOM_PIPELINE_URL"] = url
+    if token:
+        out["MAILROOM_PIPELINE_TOKEN"] = token
+    return out
 
 
 def _variable_values() -> dict[str, str]:
-    return {
+    out = {
         "MAILROOM_SOURCE": os.environ.get("MAILROOM_SOURCE", "langfuse").strip() or "langfuse",
         "MAILROOM_EDITION": os.environ.get("MAILROOM_EDITION", "hosted").strip() or "hosted",
     }
+    prefix = os.environ.get("MAILROOM_PIPELINE_API_PREFIX")
+    if prefix is not None:
+        text = prefix.strip()
+        out["MAILROOM_PIPELINE_API_PREFIX"] = text if text else "/"
+    elif (
+        os.environ.get("MAILROOM_PIPELINE_URL")
+        or os.environ.get("MAILROOM_PIPELINE_API")
+    ):
+        out["MAILROOM_PIPELINE_API_PREFIX"] = "/v1"
+    return out
 
 
 def stage_space_tree(dest: Path) -> None:

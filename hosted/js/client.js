@@ -22,25 +22,37 @@ const Obs = (() => {
     return res.json();
   }
 
+  async function readError(res, path, where) {
+    let detail = "";
+    try {
+      const payload = await res.json();
+      const msg = payload && (payload.detail || payload.error);
+      if (msg != null) {
+        detail = ` — ${typeof msg === "string" ? msg : JSON.stringify(msg)}`;
+      }
+    } catch (e) { /* non-JSON error body */ }
+    const err = new Error(`HTTP ${res.status} ${path}${detail}`);
+    dbg("fetch-error", { url: path, status: res.status, message: err.message, where });
+    throw err;
+  }
+
   async function post(path, body) {
     const res = await fetch(path, {
       method: "POST",
       headers: { Accept: "application/json", "Content-Type": "application/json" },
       body: JSON.stringify(body || {}),
     });
-    if (!res.ok) {
-      let detail = "";
-      try {
-        const payload = await res.json();
-        const msg = payload && (payload.detail || payload.error);
-        if (msg != null) {
-          detail = ` — ${typeof msg === "string" ? msg : JSON.stringify(msg)}`;
-        }
-      } catch (e) { /* non-JSON error body */ }
-      const err = new Error(`HTTP ${res.status} ${path}${detail}`);
-      dbg("fetch-error", { url: path, status: res.status, message: err.message, where: "Obs.post" });
-      throw err;
-    }
+    if (!res.ok) return readError(res, path, "Obs.post");
+    return res.json();
+  }
+
+  async function postForm(path, formData) {
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      body: formData,
+    });
+    if (!res.ok) return readError(res, path, "Obs.postForm");
     return res.json();
   }
 
@@ -62,6 +74,8 @@ const Obs = (() => {
       return get(`/api/review/context${qs ? `?${qs}` : ""}`);
     },
     reviewResolve: (body) => post("/api/review/resolve", body),
+    inboxEnqueue: (formData) => postForm("/api/inbox/enqueue", formData),
+    snapshot: () => get("/api/snapshot"),
     reviewAudit: (docId) => get(`/api/review/audit?doc_id=${encodeURIComponent(docId)}`),
     reviewSource: (opts = {}) => {
       const q = new URLSearchParams();

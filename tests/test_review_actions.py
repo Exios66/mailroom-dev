@@ -34,6 +34,74 @@ def test_floor_payload_includes_doc_id():
     assert floor_payload(run)["doc_id"] == "doc-pay"
 
 
+def test_inbox_enqueue_unconfigured_is_503(monkeypatch):
+    from mailroom_ui.review_actions import enqueue_inbox
+
+    monkeypatch.delenv("MAILROOM_PIPELINE_URL", raising=False)
+    monkeypatch.delenv("MAILROOM_PIPELINE_API", raising=False)
+    monkeypatch.delenv("MAILROOM_PIPELINE_TOKEN", raising=False)
+    try:
+        enqueue_inbox(filename="a.pdf")
+        assert False, "expected ReviewActionError"
+    except ReviewActionError as exc:
+        assert exc.status == 503
+        assert "MAILROOM_PIPELINE_URL" in exc.message
+    src = LangfuseSource(client=FakeClient([make_trace("t1")]))
+    with TestClient(create_app(src)) as c:
+        r = c.post("/api/inbox/enqueue", json={"filename": "a.pdf"})
+        assert r.status_code == 503
+        assert r.json()["configured"] is False
+        assert "queue" in r.json()["error"].lower()
+
+
+def test_inbox_enqueue_configured_without_file_is_400(monkeypatch):
+    from mailroom_ui.review_actions import enqueue_inbox
+
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "http://producer.test")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", "tok")
+    try:
+        enqueue_inbox(filename="a.pdf", matter_id="M-1")
+        assert False, "expected ReviewActionError"
+    except ReviewActionError as exc:
+        assert exc.status == 400
+        assert "file" in exc.message.lower()
+    src = LangfuseSource(client=FakeClient([make_trace("t-nofile")]))
+    with TestClient(create_app(src)) as c:
+        r = c.post("/api/inbox/enqueue", json={"filename": "a.pdf", "matter_id": "M-1"})
+        assert r.status_code == 400
+        assert r.json()["configured"] is True
+
+
+def test_inbox_enqueue_proxies_multipart_to_producer_upload(monkeypatch):
+    from tests.fake_producer import DEMO_TOKEN, create_fake_producer, serve_in_thread, stop_server
+
+    producer = create_fake_producer()
+    server, port, _thread = serve_in_thread(producer)
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", f"http://127.0.0.1:{port}")
+    monkeypatch.setenv("MAILROOM_PIPELINE_TOKEN", DEMO_TOKEN)
+    monkeypatch.delenv("MAILROOM_PIPELINE_API_PREFIX", raising=False)
+    src = LangfuseSource(client=FakeClient([make_trace("t-up")]))
+    try:
+        with TestClient(create_app(src)) as c:
+            r = c.post(
+                "/api/inbox/enqueue",
+                files={"file": ("nda.txt", b"hello-nda", "text/plain")},
+                data={"matter_id": "MATTER-9"},
+            )
+            assert r.status_code == 202
+            body = r.json()
+            assert body["status"] == "accepted"
+            assert body["file"] == "nda.txt"
+            assert body["matter_id"] == "MATTER-9"
+            assert body["upload_id"]
+            queued = producer.state.store.queued
+            assert queued[-1]["file"] == "nda.txt"
+            assert queued[-1]["matter_id"] == "MATTER-9"
+            assert queued[-1]["upload_id"] == body["upload_id"]
+    finally:
+        stop_server(server)
+
+
 def test_review_context_unconfigured(monkeypatch):
     monkeypatch.delenv("MAILROOM_PIPELINE_URL", raising=False)
     monkeypatch.delenv("MAILROOM_PIPELINE_API", raising=False)

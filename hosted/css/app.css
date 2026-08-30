@@ -359,6 +359,63 @@ main { padding-bottom: 3rem; }
   color: var(--ink-soft);
 }
 
+.card-class {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  margin-bottom: 0.2rem;
+}
+
+.headlines {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.4rem 0.7rem;
+  margin: 0.6rem 0 0;
+}
+
+.headline {
+  margin: 0;
+}
+
+.headline dt {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.headline dd {
+  margin: 0.1rem 0 0;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.inbox-queue {
+  border: 1px dashed var(--rule);
+  padding: 0.8rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.inbox-queue h3 {
+  font-size: 0.9rem;
+  margin: 0 0 0.4rem;
+}
+
+.inbox-queue form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  align-items: end;
+}
+
+.inbox-queue label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+}
+
 .badge {
   display: inline-block;
   margin: 0.15rem 0.2rem 0 0;

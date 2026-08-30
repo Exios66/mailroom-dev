@@ -79,5 +79,23 @@ def test_secret_values_refuse_swapped_keys(monkeypatch):
         pub._secret_values()
 
 
+def test_secret_values_include_optional_producer_knobs(monkeypatch):
+    monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "pk-lf-public")
+    monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-lf-secret")
+    monkeypatch.setenv("LANGFUSE_HOST", "https://us.cloud.langfuse.com")
+    monkeypatch.delenv("MAILROOM_PIPELINE_URL", raising=False)
+    monkeypatch.delenv("MAILROOM_PIPELINE_TOKEN", raising=False)
+    monkeypatch.delenv("MAILROOM_API_TOKEN", raising=False)
+    secrets = pub._secret_values()
+    assert "MAILROOM_PIPELINE_URL" not in secrets
+    monkeypatch.setenv("MAILROOM_PIPELINE_URL", "https://user-mailroom-producer.hf.space")
+    monkeypatch.setenv("MAILROOM_API_TOKEN", "prod-token")
+    secrets = pub._secret_values()
+    assert secrets["MAILROOM_PIPELINE_URL"] == "https://user-mailroom-producer.hf.space"
+    assert secrets["MAILROOM_PIPELINE_TOKEN"] == "prod-token"
+    vars_ = pub._variable_values()
+    assert vars_["MAILROOM_PIPELINE_API_PREFIX"] == "/v1"
+
+
 def test_cli_check_exits_zero():
     assert pub.main(["--check"]) == 0

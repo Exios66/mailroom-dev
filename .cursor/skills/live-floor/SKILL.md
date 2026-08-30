@@ -35,7 +35,9 @@ Set:
 
 ```bash
 MAILROOM_PIPELINE_URL=http://127.0.0.1:8000
-# MAILROOM_PIPELINE_TOKEN=   # optional GET /queue filenames
+# or https://<user>-mailroom-producer.hf.space  (required from a Space Observatory)
+MAILROOM_PIPELINE_TOKEN=$MAILROOM_API_TOKEN
+MAILROOM_PIPELINE_API_PREFIX=/v1
 ```
 
 `MAILROOM_API_URL` is the TUI’s pointer at **this** visualizer (`:8001`), not

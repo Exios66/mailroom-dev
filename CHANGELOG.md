@@ -16,12 +16,32 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Added
 
+- **Observatory cards show classification success.** Pipeline cards
+  display primary / secondary class labels with hit · miss · pending
+  (ground truth when present; otherwise “assigned a live roster class”).
+  Headline strip: in flight · review · archived · failed · classified
+  counts · judge CORRECT/MISS. Confidence percentages and extraction
+  scores are off the card (still on the API and inspect Scores).
+  Standardized `archive_name`
+  (`{doc_type}/{yyyy-mm-dd}/{doc_type}__{subclass}__{slug}__{id8}{ext}`)
+  is the archived card title. Inbox **Queue a document** proxies
+  multipart files to llm-mailroom `POST /v1/upload` when
+  `MAILROOM_PIPELINE_URL` + `MAILROOM_PIPELINE_TOKEN` are set
+  (`MAILROOM_PIPELINE_API_PREFIX=/v1`); unconfigured stays HTTP 503.
+  Langfuse snapshot cache (`MAILROOM_TRACE_CACHE_DIR`, `GET /api/snapshot`)
+  serves traces/inspect when the live `get_run` is slow or down; empty
+  cache + Langfuse down stays MAILROOM CLOSED. Poller default
+  `MAILROOM_POLL_ENRICH=inflight` avoids a 200-trace N+1 on the Space.
+
 - **Hugging Face Docker Space publisher.** `scripts/publish_space.py`
   ships the committed Observatory image (`Dockerfile`,
   `MAILROOM_EDITION=hosted`, port 7860) to a Hub Space, sets Langfuse
   keys as Space **secrets** (never the git tree), and accepts
-  `LANGFUSE_BASE_URL` as an alias of `LANGFUSE_HOST`. Dashboard
-  checklist lives in `hosted/SPACE_README.md`. `--check` is offline.
+  `LANGFUSE_BASE_URL` as an alias of `LANGFUSE_HOST`. Optional
+  `MAILROOM_PIPELINE_URL` / `MAILROOM_PIPELINE_TOKEN` /
+  `MAILROOM_PIPELINE_API_PREFIX` are copied from the environment when
+  set. Dashboard checklist lives in `hosted/SPACE_README.md`. `--check`
+  is offline.
 
 - **Operator desk submodule (`operator_desk/`).** Dedicated FastAPI package
   for JWT auth (`/v1/auth`), local archive list/download/preview/verify

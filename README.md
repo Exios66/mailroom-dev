@@ -385,8 +385,11 @@ All knobs live in `.env` (see `.env.example`): Langfuse keys/host
 `MAILROOM_RECENT_WINDOW=604800`), trace limit (`MAILROOM_TRACE_LIMIT=200`),
 optional tag/env filters, `MAILROOM_PORT` (default `8001`),
 `MAILROOM_TAXONOMY`, and `MAILROOM_PIPELINE_URL` + `MAILROOM_PIPELINE_TOKEN`
-(producer on `:8000` — watcher/inbox liveness, human-review resolve, class
-correction mapped to `override_doc_type`, parked-file source via `/v1`).
+(producer on `http://127.0.0.1:8000` or a public Space such as
+`https://<user>-mailroom-producer.hf.space` — watcher/inbox liveness,
+`POST /v1/upload` enqueue, human-review resolve, class correction mapped
+to `override_doc_type`, parked-file source via `/v1`). Token is the
+producer `MAILROOM_API_TOKEN`.
 `MAILROOM_PIPELINE_API_PREFIX` defaults to `/v1`. `MAILROOM_API_URL` is the TUI → this
 visualizer (`:8001`), not the producer. The operator desk (`operator_desk/`)
 adds `MAILROOM_OPERATOR_*` (JWT, admin seed, ingest token) plus

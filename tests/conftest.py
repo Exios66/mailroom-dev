@@ -25,3 +25,4 @@ def _isolate_operator_desk(tmp_path, monkeypatch):
     monkeypatch.setenv("MAILROOM_OBSERVER", "0")
     monkeypatch.delenv("MAILROOM_OPERATOR_INGEST_TOKEN", raising=False)
     monkeypatch.delenv("MAILROOM_UI_DIST", raising=False)
+    monkeypatch.setenv("MAILROOM_TRACE_CACHE_DIR", str(tmp_path / "trace-cache"))

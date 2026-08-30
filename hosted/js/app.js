@@ -52,6 +52,7 @@ const App = (() => {
   let pollIntervalMs = 3000;
   let fallbackTimer = null;
   let fallbackPollMs = 0;
+  let pipelineOps = null;
 
   const $ = (id) => document.getElementById(id);
 
@@ -137,20 +138,93 @@ const App = (() => {
     if (name === "debug") renderDebug();
   }
 
+  function outcomeClass(outcome) {
+    if (outcome === "hit") return "badge-ok";
+    if (outcome === "miss") return "badge-bad";
+    if (outcome === "pending") return "badge-warn";
+    return "badge-info";
+  }
+
+  function outcomeWord(outcome) {
+    if (outcome === "hit") return "hit";
+    if (outcome === "miss") return "miss";
+    if (outcome === "pending") return "pending";
+    return "n/a";
+  }
+
+  function cardTitle(run) {
+    const archived = run.stage === "archive" || run.stage === "archived" || run.stage === "catalog";
+    if (archived && run.archive_name) return run.archive_name;
+    return run.filename || run.trace_id;
+  }
+
   function cardHTML(run, { replayId } = {}) {
-    const title = Obs.esc(run.filename || run.trace_id);
+    const title = Obs.esc(cardTitle(run));
     const replayCls = replayId && run.trace_id === replayId ? " is-replay" : "";
     const verdict = run.verdict
       ? `<span class="badge ${verdictClass(run.verdict)}">${Obs.esc(run.verdict)}</span>`
       : "";
     const stage = `<span class="badge badge-info">${Obs.esc((run.stage || "unknown").replaceAll("_", " "))}</span>`;
+    const primary = `<span class="badge ${outcomeClass(run.primary_outcome)}">Primary ${Obs.esc(run.primary_label || "untyped")} · ${outcomeWord(run.primary_outcome)}</span>`;
+    const secondary = `<span class="badge ${outcomeClass(run.secondary_outcome)}">Secondary ${Obs.esc(run.secondary_label || "no subclass")} · ${outcomeWord(run.secondary_outcome)}</span>`;
+    let extra = "";
+    if (run.failure_class || run.run_aborted) {
+      extra = `<span class="card-meta">${Obs.esc(run.failure_class ? String(run.failure_class).replaceAll("_", " ") : "aborted")}</span>`;
+    } else if (run.needs_reconsideration && Array.isArray(run.review_causes) && run.review_causes.length) {
+      extra = `<span class="card-meta">${Obs.esc(run.review_causes.join(", "))}</span>`;
+    }
     return `<button type="button" class="card${replayCls}" data-trace="${Obs.esc(run.trace_id)}">
       <span class="card-title">${title}</span>
-      <span class="card-meta">${Obs.esc((run.doc_type || "untyped").replaceAll("_", " "))}
-        · ${Obs.fmt.conf(run.classification_confidence)} cls
-        · ${Obs.fmt.conf(run.extraction_confidence)} ext</span>
+      <span class="card-meta card-class">${primary} ${secondary}</span>
       <span class="card-meta">${stage} ${verdict}</span>
+      ${extra}
     </button>`;
+  }
+
+  function renderHeadlines(list, ops) {
+    const el = need("headline-strip");
+    if (!el) return;
+    const rows = Array.isArray(list) ? list : [];
+    let inflight = 0, review = 0, archived = 0, failed = 0;
+    let primaryHit = 0, primaryN = 0, secondaryHit = 0, secondaryN = 0;
+    let correct = 0, miss = 0, judged = 0;
+    for (const r of rows) {
+      const tray = stationFor(r);
+      if (tray === "review") review += 1;
+      else if (tray === "done" && r.stage === "failed") failed += 1;
+      else if (tray === "done" || tray === "archive") archived += 1;
+      else inflight += 1;
+      if (r.primary_outcome && r.primary_outcome !== "n_a") {
+        primaryN += 1;
+        if (r.primary_outcome === "hit") primaryHit += 1;
+      }
+      if (r.secondary_outcome && r.secondary_outcome !== "n_a") {
+        secondaryN += 1;
+        if (r.secondary_outcome === "hit") secondaryHit += 1;
+      }
+      if (r.verdict) {
+        judged += 1;
+        if (r.verdict === "CORRECT") correct += 1;
+        if (r.verdict === "MISS") miss += 1;
+      }
+    }
+    const frac = (n, d) => (d ? `${n}/${d}` : "—");
+    const tiles = [
+      ["In flight", inflight],
+      ["Review", review],
+      ["Archived", archived],
+      ["Failed", failed],
+      ["Primary classified", frac(primaryHit, primaryN)],
+      ["Secondary classified", frac(secondaryHit, secondaryN)],
+    ];
+    if (judged) {
+      tiles.push(["Judge CORRECT", correct]);
+      tiles.push(["Judge MISS", miss]);
+    }
+    if (ops && ops.configured && ops.inbox_pending != null) {
+      tiles.push(["Inbox pending", ops.inbox_pending]);
+    }
+    el.innerHTML = tiles.map(([k, v]) => `<div class="headline"><dt>${Obs.esc(k)}</dt><dd>${Obs.esc(String(v))}</dd></div>`).join("");
   }
 
   function matchesFilter(run) {
@@ -182,9 +256,13 @@ const App = (() => {
     bindCards(board);
     const count = need("run-count");
     if (count) count.textContent = `${runs.length} run${runs.length === 1 ? "" : "s"} in the live window`;
+    renderHeadlines(runs, pipelineOps);
   }
 
   function applyPipelineOps(ops) {
+    pipelineOps = ops || null;
+    renderHeadlines(runs, pipelineOps);
+    bindInboxQueue(ops);
     const el = need("pipeline-ops");
     if (!el) return;
     if (!ops || !ops.configured) {
@@ -446,11 +524,10 @@ const App = (() => {
             ? ` (${r.review_causes.join(", ")})`
             : ""
         }</td>
-        <td>${Obs.fmt.conf(r.extraction_confidence)}</td>
         <td>${r.verdict ? `<span class="badge ${verdictClass(r.verdict)}">${Obs.esc(r.verdict)}</span>` : "—"}</td>
         <td>${reviewForm(r)}</td>
       </tr>`);
-      el.innerHTML = setup + table("Runs waiting on a human", ["Document", "Type", "Why", "Extract", "Verdict", "Resolve"], rows);
+      el.innerHTML = setup + table("Runs waiting on a human", ["Document", "Type", "Why", "Verdict", "Resolve"], rows);
       bindCards(el);
       bindReviewForms(el, { onDone: () => refreshReview() });
       dbg("traces", { where: "review", count: (data.runs || []).length });
@@ -616,6 +693,9 @@ const App = (() => {
         ["Phase", run.phase],
         ["Type", run.doc_type],
         ["Subclass", run.doc_subclass || run.contract_subtype || "—"],
+        ["Primary", `${run.primary_label || run.doc_type || "untyped"} · ${outcomeWord(run.primary_outcome)}`],
+        ["Secondary", `${run.secondary_label || "no subclass"} · ${outcomeWord(run.secondary_outcome)}`],
+        ["Archive name", run.archive_name || "—"],
         ["Expected class", run.expected_hf_class || "—"],
         ["Expected subclass", run.expected_subclass || "—"],
         ["Intake", [
@@ -628,8 +708,6 @@ const App = (() => {
         ["Producer doc id", run.doc_id || "—"],
         ["User", run.user_id || "—"],
         ["Release", run.release || "—"],
-        ["Classification", Obs.fmt.conf(run.classification_confidence)],
-        ["Extraction", Obs.fmt.conf(run.extraction_confidence)],
         ["Verdict", run.verdict || "—"],
         ["Quality", run.quality == null ? "—" : Number(run.quality).toFixed(2)],
         ["Latency", Obs.fmt.latency(run.latency)],
@@ -883,6 +961,10 @@ const App = (() => {
       const data = await Obs.api.traces(604800, 200);
       applyRuns(data.runs || []);
       showAlert("");
+      if (data.source === "langfuse-cache") {
+        const age = data.cached_at ? ` · ${data.cached_at}` : "";
+        setSource("stale", `SOURCE: CACHE${age}`);
+      }
       dbg("traces", { where: "floor", count: (data.runs || []).length });
       try {
         applyPipelineOps(await Obs.api.pipeline());
@@ -912,7 +994,12 @@ const App = (() => {
       dbg("health", { ok, source: h.source, raw: h });
       if (ok) {
         showAlert("");
-        if (!socketLive) setSource("live", `Live · source ${h.source || "langfuse"}`);
+        if (h.source === "langfuse-cache") {
+          const age = h.cached_at ? ` · ${h.cached_at}` : "";
+          setSource("stale", `SOURCE: CACHE${age}`);
+        } else if (!socketLive) {
+          setSource("live", `Live · source ${h.source || "langfuse"}`);
+        }
         if (!meta) {
           try {
             meta = await Obs.api.meta();
@@ -1001,6 +1088,64 @@ const App = (() => {
     }
   }
 
+  function bindInboxQueue(ops) {
+    const form = $("inbox-form");
+    const setup = $("inbox-setup");
+    const ready = !!(ops && ops.configured);
+    if (setup) {
+      setup.hidden = ready;
+      if (!ready) {
+        setup.textContent = "Set MAILROOM_PIPELINE_URL and MAILROOM_PIPELINE_TOKEN to queue documents into llm-mailroom.";
+      }
+    }
+    if (!form) return;
+    form.hidden = !ready;
+    for (const field of form.querySelectorAll("input, button")) {
+      field.disabled = !ready;
+    }
+  }
+
+  async function submitInbox(ev) {
+    ev.preventDefault();
+    const form = $("inbox-form");
+    const status = $("inbox-status");
+    if (!form) return;
+    const file = form.file && form.file.files && form.file.files[0];
+    const matter = (form.matter_id && form.matter_id.value) || "";
+    if (!file) {
+      if (status) status.textContent = "Choose a file to queue.";
+      return;
+    }
+    if (status) status.textContent = "Submitting…";
+    try {
+      const fd = new FormData();
+      fd.append("file", file, file.name);
+      if (matter) fd.append("matter_id", matter);
+      const result = await Obs.api.inboxEnqueue(fd);
+      const queued = result && (result.file || file.name);
+      const uploadId = result && result.upload_id ? ` (${result.upload_id})` : "";
+      if (status) status.textContent = queued ? `Queued ${queued}${uploadId}.` : "Queued.";
+      form.reset();
+    } catch (err) {
+      if (status) status.textContent = err.message || String(err);
+    }
+  }
+
+  async function exportSnapshot() {
+    try {
+      const snap = await Obs.api.snapshot();
+      const blob = new Blob([JSON.stringify(snap, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "mailroom-snapshot.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      announce("Snapshot exported");
+    } catch (err) {
+      showAlert(`Snapshot export failed — ${err.message}`);
+    }
+  }
+
   function bindDebug() {
     const D = () => window.__OBSERVATORY_DEBUG__;
     const note = (msg) => { const el = $("dbg-note"); if (el) el.textContent = msg; };
@@ -1063,6 +1208,11 @@ const App = (() => {
     tick();
     setInterval(tick, 1000);
     bindDebug();
+    bindInboxQueue(null);
+    const inboxForm = $("inbox-form");
+    if (inboxForm) inboxForm.addEventListener("submit", submitInbox);
+    const exportBtn = $("export-snapshot");
+    if (exportBtn) exportBtn.addEventListener("click", exportSnapshot);
 
     const params = new URLSearchParams(location.search);
     if (params.get("debug") === "1" && window.__OBSERVATORY_DEBUG__) {

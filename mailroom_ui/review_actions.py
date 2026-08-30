@@ -7,15 +7,16 @@ catalog row.
 
 Producer contract (llm-mailroom ``origin/main``): prefer ``/v1`` aliases;
 resolve body uses ``override_doc_type`` (not ``doc_type``); lookup returns
-``{"document": serialize_document(...)}`` with ``original_filename``. There is
-no ``GET /documents/{id}/source`` on producer main — the visualizer tries it
-(forks may ship it) and falls back to the lookup catalog row.
+``{"document": serialize_document(...)}`` with ``original_filename``. Producer main now ships ``GET /documents/{id}/source`` and ``POST /upload``;
+older forks may 404 the source route — the visualizer falls back to lookup.
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import os
+import uuid
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -65,6 +66,74 @@ def _request_json(
     if token:
         headers["Authorization"] = f"Bearer {token}"
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        raw = ""
+        try:
+            raw = exc.read().decode("utf-8")
+        except Exception:
+            pass
+        detail: Any = raw[:400] if raw else (exc.reason or str(exc))
+        try:
+            parsed = json.loads(raw) if raw else {}
+            if isinstance(parsed, dict):
+                detail = parsed.get("detail") or parsed.get("error") or parsed
+        except Exception:
+            pass
+        raise ReviewActionError(str(detail)[:400], status=int(exc.code), detail=detail) from exc
+    except urllib.error.URLError as exc:
+        raise ReviewActionError(f"producer unreachable: {exc.reason}", status=502) from exc
+    payload = json.loads(raw) if raw else {}
+    return payload if isinstance(payload, dict) else {"data": payload}
+
+
+_MAX_UPLOAD_BYTES = 32 * 1024 * 1024
+
+
+def _safe_upload_name(name: str) -> str:
+    base = os.path.basename((name or "").replace("\\", "/").strip()) or "upload.bin"
+    return base.replace('"', "").replace("\r", "").replace("\n", "")
+
+
+def _request_multipart(
+    url: str,
+    *,
+    token: str = "",
+    fields: Optional[dict[str, str]] = None,
+    files: Optional[list[tuple[str, str, str, bytes]]] = None,
+    timeout: float = 60.0,
+) -> dict[str, Any]:
+    """POST multipart/form-data (producer ``POST /v1/upload``)."""
+    boundary = f"----MailroomBoundary{uuid.uuid4().hex}"
+    chunks: list[bytes] = []
+    for name, value in (fields or {}).items():
+        chunks.append(f"--{boundary}\r\n".encode("ascii"))
+        chunks.append(
+            f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode("utf-8")
+        )
+        chunks.append(str(value).encode("utf-8"))
+        chunks.append(b"\r\n")
+    for field, filename, content_type, data in files or []:
+        safe = _safe_upload_name(filename)
+        ctype = (content_type or "application/octet-stream").split(";")[0].strip()
+        chunks.append(f"--{boundary}\r\n".encode("ascii"))
+        chunks.append(
+            f'Content-Disposition: form-data; name="{field}"; filename="{safe}"\r\n'.encode("utf-8")
+        )
+        chunks.append(f"Content-Type: {ctype}\r\n\r\n".encode("utf-8"))
+        chunks.append(data)
+        chunks.append(b"\r\n")
+    chunks.append(f"--{boundary}--\r\n".encode("ascii"))
+    body = b"".join(chunks)
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(url, data=body, headers=headers, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw = resp.read().decode("utf-8")
@@ -504,3 +573,60 @@ def resolve_review(
         body=body,
         timeout=timeout,
     )
+
+
+INBOX_SETUP = (
+    "Set MAILROOM_PIPELINE_URL and MAILROOM_PIPELINE_TOKEN to "
+    "queue documents into llm-mailroom."
+)
+INBOX_FILE_REQUIRED = (
+    "file is required — POST multipart field `file` (or JSON content_base64) "
+    "to /api/inbox/enqueue"
+)
+
+
+def enqueue_inbox(
+    *,
+    filename: str = "",
+    matter_id: str = "",
+    content_type: str = "",
+    file_bytes: Optional[bytes] = None,
+    timeout: float = 60.0,
+) -> dict[str, Any]:
+    """Proxy a file to producer ``POST /v1/upload``.
+
+    Unconfigured → HTTP 503 with setup copy (no fabricated queue row).
+    Missing bytes → HTTP 400. Producer errors pass through.
+    """
+    if not pipeline_configured():
+        raise ReviewActionError(INBOX_SETUP, status=503, detail={"configured": False})
+    if not file_bytes:
+        raise ReviewActionError(
+            INBOX_FILE_REQUIRED,
+            status=400,
+            detail={"configured": True, "filename": filename or None},
+        )
+    if len(file_bytes) > _MAX_UPLOAD_BYTES:
+        raise ReviewActionError(
+            f"file exceeds {_MAX_UPLOAD_BYTES} byte visualizer limit",
+            status=413,
+        )
+    _require_pipeline()
+    token = _token()
+    fields: dict[str, str] = {}
+    if (matter_id or "").strip():
+        fields["matter_id"] = matter_id.strip()
+    data = _request_multipart(
+        producer_url("/upload"),
+        token=token,
+        fields=fields,
+        files=[(
+            "file",
+            filename or "upload.bin",
+            content_type or "application/octet-stream",
+            file_bytes,
+        )],
+        timeout=timeout,
+    )
+    data.setdefault("configured", True)
+    return data

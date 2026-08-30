@@ -65,12 +65,19 @@ HF_TOKEN=hf_... \
   LANGFUSE_PUBLIC_KEY=pk-lf-... \
   LANGFUSE_SECRET_KEY=sk-lf-... \
   LANGFUSE_HOST=https://us.cloud.langfuse.com \
+  MAILROOM_PIPELINE_URL=https://<user>-mailroom-producer.hf.space \
+  MAILROOM_PIPELINE_TOKEN=$MAILROOM_API_TOKEN \
+  MAILROOM_PIPELINE_API_PREFIX=/v1 \
   python scripts/publish_space.py --repo <user>/mailroom-observatory
 ```
 
 The Space URL is the Observatory (`/` inside the container). Pixel assets
-remain at `/static`. REVIEW resolve still needs `MAILROOM_PIPELINE_URL` on
-a reachable producer — the Space shows the live Langfuse floor without it.
+remain at `/static`. REVIEW resolve and Inbox enqueue (`POST /v1/upload`)
+need `MAILROOM_PIPELINE_URL` on a **reachable** producer — `127.0.0.1:8000`
+only works when the visualizer and producer share a host. A Space
+Observatory must use the public producer Space URL. Without those knobs
+the desk still shows the live Langfuse floor, with a disk snapshot cache
+(`MAILROOM_TRACE_CACHE_DIR`) so inspect does not stall on `get_run`.
 
 ### Any Docker host (Fly, Render, Cloud Run, a VPS)
 

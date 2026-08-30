@@ -155,6 +155,7 @@ def fetch_pipeline_ops(*, timeout: float = 1.5) -> dict[str, Any]:
                         "file": item.get("file"),
                         "matter_id": item.get("matter_id"),
                         "uploaded_at": item.get("uploaded_at"),
+                        "upload_id": item.get("upload_id"),
                     }
                     for item in queued[:50]
                     if isinstance(item, dict)
