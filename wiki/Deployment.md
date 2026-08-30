@@ -23,10 +23,21 @@ mailroom-hosted                # Observatory on 0.0.0.0
 
 ## Railway
 
-Root `railway.json` selects the **Dockerfile** builder and probes
-`GET /health` (fast process liveness — **not** a Langfuse call).
-`GET /api/health` remains the SPA / TUI source-reachability check.
-`nixpacks.toml` is a fallback if the service is not set to Dockerfile.
+Railway **retired Config as Code** (`railway.json` / `railway.toml`) — new
+projects stopped reading it on 2026-08-28, existing services stop on
+2026-12-01. The repo ships **Infrastructure as Code** instead:
+[`.railway/railway.py`](../.railway/railway.py) (`railway_sdk`, the beta
+Python mirror of the TypeScript DSL — authoring-only, never a runtime dep).
+The CLI evaluates it against the live environment: `railway config plan`
+previews the diff, `railway config apply` applies it. Railway builds the
+repo's root **Dockerfile** when it finds one (no build command needed).
+
+Deploys probe `GET /health` (fast process liveness — **not** a Langfuse call).
+`GET /api/health` remains the SPA / TUI source-reachability check. Both
+`/health` and `/api/meta` now carry `platform` (`railway` / `render` / `fly` /
+`huggingface`) and `build_sha` (commit baked from `RAILWAY_GIT_COMMIT_SHA`)
+so a deploy is verifiable at a glance. `nixpacks.toml` is a fallback if the
+service is ever switched off the Dockerfile builder.
 
 ### Why `PORT` matters
 
@@ -44,25 +55,27 @@ contract as the llm-mailroom producer.
    missing key set made the container look unhealthy. `/health` is now
    pure liveness (`{"ok": true, "status": "alive"}`).
 
-### Required service variables
+### Variable ownership
+
+`.railway/railway.py` declares the non-secret service variables
+(`MAILROOM_EDITION=hosted`, `MAILROOM_HOST=0.0.0.0`,
+`MAILROOM_POLL_ENRICH=inflight`, `MAILROOM_TRACE_CACHE_DIR=...`) and
+`preserve()`s the secrets — Railway keeps whatever the service already holds.
+Only these must be set on the service (dashboard / `railway variables set`):
 
 | Variable | Value |
 |---|---|
-| `MAILROOM_HOST` | `0.0.0.0` (already in the image) |
 | `LANGFUSE_PUBLIC_KEY` | Langfuse project public key |
 | `LANGFUSE_SECRET_KEY` | Langfuse project secret key |
-| `LANGFUSE_HOST` | `https://us.cloud.langfuse.com` (or self-hosted / EU) |
+| `LANGFUSE_HOST` | `https://us.cloud.langfuse.com` (or EU / self-hosted) |
+| `MAILROOM_PIPELINE_URL` | public producer URL (optional REVIEW pairing) |
+| `MAILROOM_PIPELINE_TOKEN` | same secret as producer `MAILROOM_API_TOKEN` |
+| `MAILROOM_PIPELINE_API_PREFIX` | `/v1` |
 
-### Recommended
+Optional Hub/eval knobs on this service (same as the producer side):
 
 | Variable | Value |
 |---|---|
-| `MAILROOM_EDITION` | `hosted` (Observatory on `/`; already in the image) |
-| `MAILROOM_POLL_ENRICH` | `inflight` |
-| `MAILROOM_PIPELINE_URL` | public producer URL (Railway / Space) |
-| `MAILROOM_PIPELINE_TOKEN` | same secret as producer `MAILROOM_API_TOKEN` |
-| `MAILROOM_PIPELINE_API_PREFIX` | `/v1` |
-| `MAILROOM_TRACE_CACHE_DIR` | `/tmp/mailroom-trace-cache` |
 | `MAILROOM_TRACE_LIMIT` | `100` (keeps floor polls snappy) |
 | `HF_TOKEN` | Hub token (eval / sync / Space publish) |
 | `MAILROOM_HF_DATASET` | `Lucius-Morningstar/docclass-merged` |
@@ -83,21 +96,21 @@ GT / pilot intake derive from the Hub corpus above
 ### Deploy
 
 ```bash
-railway link   # once
-railway variables set \
-  LANGFUSE_PUBLIC_KEY=pk-lf-... \
-  LANGFUSE_SECRET_KEY=sk-lf-... \
-  LANGFUSE_HOST=https://us.cloud.langfuse.com
-# optional REVIEW / Inbox pairing:
-# railway variables set MAILROOM_PIPELINE_URL=https://<producer> \
-#   MAILROOM_PIPELINE_TOKEN=... MAILROOM_PIPELINE_API_PREFIX=/v1
-railway up -m "mailroom observatory"
+railway link        # once (select the project/environment)
+pip install railway-sdk   # authoring only — evaluates .railway/railway.py
+
+railway config plan    # preview: service, healthcheck, variables
+railway config apply   # confirm and apply
+# If the service was still on legacy railway.json, migrate it first:
+#   railway config migrate --lang py --apply --delete-files
+
+railway up -m "mailroom observatory"   # deploy the current tree
 ```
 
 Generate a public domain (`railway domain`) and open it. Health:
 
 ```bash
-curl -sS https://<domain>/health      # liveness
+curl -sS https://<domain>/health      # liveness (+ platform, build_sha)
 curl -sS https://<domain>/api/health  # Langfuse / cache status
 ```
 
@@ -111,7 +124,10 @@ Pair the producer the same way llm-mailroom documents under its
   where `<PORT>` matches Railway’s injected `PORT` (not stuck on 7860).
 - Confirm `LANGFUSE_PUBLIC_KEY` + `LANGFUSE_SECRET_KEY` are set on the
   **service** (not only shared) if you expect a live floor.
-- Confirm `railway.json` is on the deployed branch (`builder: DOCKERFILE`).
+- Confirm `railway config plan` shows the service managed by
+  `.railway/railway.py` (not a leftover `railway.json` — Railway blocks dual
+  management; `railway config migrate --lang py --apply --delete-files`
+  clears a legacy file and its service setting).
 - Confirm `curl /health` returns quickly with `"status":"alive"` even when
   `/api/health` reports `"ok": false` (MAILROOM CLOSED).
 

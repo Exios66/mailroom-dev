@@ -71,7 +71,7 @@ python scripts/eval_pipeline.py --session pilot-hf-...   # score existing traces
 python scripts/release.py --help     # semver release workflow (see below)
 scripts/publish_pages.sh       # build site/ + push gh-pages:/docs (NO Actions;
                                # one-time UI toggle: Pages → gh-pages → /docs)
-# Railway Observatory: railway.json + docs/deployment.md (platform PORT wins)
+# Railway Observatory: .railway/railway.py (IaC) + docs/deployment.md (platform PORT wins)
 python scripts/publish_space.py --check  # Hugging Face Docker Space payload
 # HF_TOKEN + LANGFUSE_* in the env — never commit keys:
 # python scripts/publish_space.py --repo <user>/mailroom-observatory

@@ -1,6 +1,7 @@
 # Nixpacks fallback if a Railway service is not set to the Dockerfile builder.
-# Prefer railway.json (DOCKERFILE) — the image already runs as non-root with
-# HEALTHCHECK and prefers platform PORT over MAILROOM_PORT.
+# Prefer .railway/railway.py (Infrastructure as Code) — Railway retired
+# railway.json; the image already runs as non-root with HEALTHCHECK and
+# prefers platform PORT over MAILROOM_PORT.
 
 [phases.setup]
 nixPkgs = ["python311", "gcc"]

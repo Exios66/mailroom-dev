@@ -75,6 +75,25 @@ _NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate"}
 def _edition() -> str:
     return os.environ.get("MAILROOM_EDITION", "console").strip().lower()
 
+
+def _platform() -> str:
+    """Deploy host tag for /health + /api/meta (deploy verification)."""
+    if os.environ.get("RAILWAY_SERVICE_NAME") or os.environ.get("RAILWAY_DEPLOY_ID"):
+        return "railway"
+    if os.environ.get("RENDER_INSTANCE_ID"):
+        return "render"
+    if os.environ.get("FLY_APP_NAME"):
+        return "fly"
+    if os.environ.get("HF_SPACE_ID") or os.environ.get("SPACE_ID"):
+        return "huggingface"
+    return ""
+
+
+def _build_sha() -> str:
+    """Commit SHA baked at image build (MAILROOM_BUILD_SHA). Empty off-platform."""
+    sha = (os.environ.get("MAILROOM_BUILD_SHA") or "").strip()
+    return sha if sha and sha != "unknown" else ""
+
 API_ENDPOINTS = [
     {"method": "GET", "path": "/api/health", "desc": "source reachability (Langfuse / cache)"},
     {"method": "GET", "path": "/health", "desc": "platform liveness (Railway / Fly / Docker; no Langfuse call)"},
@@ -203,6 +222,8 @@ def create_app(source: Optional[object] = None) -> FastAPI:
             "ok": True,
             "status": "alive",
             "edition": _edition(),
+            "platform": _platform(),
+            "build_sha": _build_sha(),
         }
 
     @app.get("/api/traces")
@@ -512,6 +533,8 @@ def create_app(source: Optional[object] = None) -> FastAPI:
             "source": _source_names(src),
             "mode": "api",
             "edition": _edition(),
+            "platform": _platform(),
+            "build_sha": _build_sha(),
             "version": _version(),
             "ui": {
                 "console": "/",

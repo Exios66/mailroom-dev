@@ -27,8 +27,8 @@ is the LegalBench eval sibling. Full map:
   (Pipeline · Review · History · Matters · Metrics · Debug;
   `GET /api/debug/bundle`). Hugging Face Space: Docker + port 7860
   (`scripts/publish_space.py`, `hosted/SPACE_README.md`). Railway /
-  Fly / Render: see [Deployment](Deployment) (`railway.json`, platform
-  `PORT` preferred over image `MAILROOM_PORT`)
+  Fly / Render: see [Deployment](Deployment) (`.railway/railway.py` IaC,
+  platform `PORT` preferred over image `MAILROOM_PORT`)
 - **TUI** (`mailroom-tui`) — terminal (floor · review · sessions · metrics ·
   inspect · debug)
 - **GitHub Pages** — static snapshot of the pixel SPA (not the Observatory)

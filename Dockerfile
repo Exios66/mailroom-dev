@@ -29,6 +29,12 @@ FROM python:3.11-slim-bookworm AS runtime
 
 WORKDIR /app
 
+# Bake the deployed commit so /health and /api/meta can verify the live build.
+# Railway injects RAILWAY_GIT_COMMIT_SHA for GitHub-sourced deploys; the
+# default keeps HF Spaces / Fly / Render builds working unchanged.
+ARG RAILWAY_GIT_COMMIT_SHA=unknown
+ENV MAILROOM_BUILD_SHA=$RAILWAY_GIT_COMMIT_SHA
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/* \

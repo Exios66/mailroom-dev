@@ -1,4 +1,9 @@
-"""Listen-port + /health platform contract (Railway / Fly / Spaces)."""
+"""Railway deploy contract: IaC file, listen port, /health, deploy metadata.
+
+Railway retired Config as Code (railway.json) — 2026-08-28 for new projects,
+hard cutoff 2026-12-01. The repo ships Infrastructure as Code instead:
+`.railway/railway.py` (railway_sdk, authoring-only) + the Dockerfile.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +12,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from server.main import create_app, listen_port
+from server.main import _build_sha, _platform, create_app, listen_port
 from tests.fake_langfuse import FakeClient, make_trace
 from mailroom_ui.langfuse_source import LangfuseSource
 
@@ -46,6 +51,8 @@ def test_health_root_is_platform_liveness_without_source():
         assert body["ok"] is True
         assert body["status"] == "alive"
         assert "edition" in body
+        assert "platform" in body
+        assert "build_sha" in body
 
 
 def test_api_health_still_reports_source():
@@ -57,11 +64,55 @@ def test_api_health_still_reports_source():
         assert "mailroom" in api.json()
 
 
-def test_railway_json_forces_dockerfile_builder():
-    cfg = json.loads((REPO_ROOT / "railway.json").read_text(encoding="utf-8"))
-    assert cfg["build"]["builder"] == "DOCKERFILE"
-    assert cfg["build"]["dockerfilePath"] == "Dockerfile"
-    assert cfg["deploy"]["healthcheckPath"] == "/health"
+def test_platform_detection(monkeypatch):
+    for envs, expect in [
+        ({"RAILWAY_SERVICE_NAME": "mailroom"}, "railway"),
+        ({"RAILWAY_DEPLOY_ID": "d-1"}, "railway"),
+        ({"RENDER_INSTANCE_ID": "srv-1"}, "render"),
+        ({"FLY_APP_NAME": "mailroom"}, "fly"),
+        ({"HF_SPACE_ID": "user/mailroom"}, "huggingface"),
+        ({}, ""),
+    ]:
+        for k in ("RAILWAY_SERVICE_NAME", "RAILWAY_DEPLOY_ID", "RENDER_INSTANCE_ID", "FLY_APP_NAME", "HF_SPACE_ID"):
+            monkeypatch.delenv(k, raising=False)
+        for k, v in envs.items():
+            monkeypatch.setenv(k, v)
+        assert _platform() == expect
+
+
+def test_build_sha_reads_baked_env(monkeypatch):
+    monkeypatch.setenv("MAILROOM_BUILD_SHA", "abc123")
+    assert _build_sha() == "abc123"
+    monkeypatch.setenv("MAILROOM_BUILD_SHA", "unknown")
+    assert _build_sha() == ""
+    monkeypatch.delenv("MAILROOM_BUILD_SHA", raising=False)
+    assert _build_sha() == ""
+
+
+def test_health_and_meta_surface_platform_and_sha(monkeypatch):
+    monkeypatch.setenv("RAILWAY_SERVICE_NAME", "mailroom")
+    monkeypatch.setenv("MAILROOM_BUILD_SHA", "abc123")
+    src = LangfuseSource(client=FakeClient([make_trace("t-meta")]))
+    with TestClient(create_app(src)) as c:
+        root = c.get("/health").json()
+        assert root["platform"] == "railway"
+        assert root["build_sha"] == "abc123"
+        meta = c.get("/api/meta").json()
+        assert meta["platform"] == "railway"
+        assert meta["build_sha"] == "abc123"
+
+
+def test_railway_iac_replaces_deprecated_railway_json():
+    """railway.json (Config as Code) is gone — IaC owns the service now."""
+    assert not (REPO_ROOT / "railway.json").exists()
+    text = (REPO_ROOT / ".railway" / "railway.py").read_text(encoding="utf-8")
+    assert "service(" in text
+    assert 'start="python -m server.hosted"' in text
+    assert 'healthcheck="/health"' in text
+    assert "MAILROOM_EDITION" in text
+    assert "MAILROOM_HOST" in text
+    assert "preserve()" in text
+    assert "RAILWAY_GIT_COMMIT_SHA" not in text
 
 
 def test_dockerfile_healthcheck_prefers_platform_port():
@@ -70,6 +121,8 @@ def test_dockerfile_healthcheck_prefers_platform_port():
     assert "os.environ.get('PORT')" in text
     assert "/health" in text
     assert "server.hosted" in text
+    assert "ARG RAILWAY_GIT_COMMIT_SHA" in text
+    assert "MAILROOM_BUILD_SHA" in text
 
 
 def test_nixpacks_fallback_binds_hosted():

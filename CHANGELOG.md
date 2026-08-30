@@ -8,6 +8,22 @@ All notable changes to The-Mailroom are documented here, following
 
 ### Changed
 
+- **Railway now uses Infrastructure as Code.** `railway.json` (Config as
+  Code) is retired by Railway — new projects stopped reading it on
+  2026-08-28, hard cutoff 2026-12-01. `.railway/railway.py` (`railway_sdk`,
+  authoring-only) declares the Observatory service: Dockerfile source,
+  `start="python -m server.hosted"`, `/health` healthcheck, and the
+  non-secret variables (`MAILROOM_EDITION` / `HOST` / `POLL_ENRICH` /
+  `TRACE_CACHE_DIR`); secrets stay `preserve()`d on the service. Workflow:
+  `railway config plan` / `railway config apply` (legacy services migrate
+  with `railway config migrate --lang py --apply --delete-files`). Docs /
+  wiki / `.env.example` / contract tests updated.
+
+- **Deploys are verifiable at a glance.** The Dockerfile bakes
+  `RAILWAY_GIT_COMMIT_SHA` → `MAILROOM_BUILD_SHA` (guarded default, other
+  platforms unaffected); `GET /health` and `/api/meta` now carry `platform`
+  (`railway` / `render` / `fly` / `huggingface`) and `build_sha`.
+
 - **Eval / Langfuse dataset sync pin the corrected full Hub corpus.**
   `mailroom_ui/hf_corpus.py` defaults to
   `Lucius-Morningstar/docclass-merged` @
@@ -29,6 +45,20 @@ All notable changes to The-Mailroom are documented here, following
   no longer treat MAUD↔CUAD as equivalent.
 
 ### Fixed
+
+- **REVIEW tray no longer 404-storms or starves the server.** A producer
+  catalog miss on a trace/filename probe now returns a 200 `lookup-miss`
+  payload (`readable: false` + error copy) instead of a hard HTTP 404 per
+  row — the tray shows per-item "no catalog record" instead of tripping
+  the global error banner (explicit `doc_id` misses and downloads keep
+  honest 404s). Review probes are concurrency-capped at 4 in both SPAs and
+  backend tray probes timeout at 4s, so a long queue no longer saturates
+  the threadpool.
+
+- **`/api/health` no longer hangs for ~30s.** The Langfuse health probe is
+  cached 5s (page + poller + extra tabs collapse into one read; failures
+  cached too), and the REVIEW fan-out that was queuing health behind ~50
+  producer probes is gone.
 
 - **Railway `/health` no longer calls Langfuse.** Platform probes
   (`railway.json` healthcheckPath, Docker `HEALTHCHECK`) get a fast
