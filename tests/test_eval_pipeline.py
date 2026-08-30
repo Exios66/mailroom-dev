@@ -35,25 +35,29 @@ def test_normalize_collapses_and_unwraps():
     assert looks_messy(clean, st) is False
 
 
-def test_eval_scorer_merger_alias_and_failures():
+def test_eval_scorer_exact_and_failures():
     rows = [
         {"expected": "contract", "predicted": "contract", "stage": "archived",
          "exact_ok": True, "aligned_ok": True},
+        {"expected": "merger_agreement", "predicted": "merger_agreement", "stage": "archived",
+         "exact_ok": True, "aligned_ok": True},
         {"expected": "merger_agreement", "predicted": "contract", "stage": "archived",
-         "exact_ok": False, "aligned_ok": True},
+         "exact_ok": False, "aligned_ok": False},
         {"expected": "correspondence", "predicted": "contract", "stage": "archived",
          "exact_ok": False, "aligned_ok": False},
         {"expected": "corporate_record", "predicted": "corporate_record",
          "stage": "failed", "error": "extraction failed", "exact_ok": True, "aligned_ok": True},
     ]
     summary = score_rows(rows)
-    assert summary["n"] == 4
-    assert abs(summary["exact_accuracy"] - 0.5) < 1e-9
-    assert abs(summary["aligned_accuracy"] - 0.75) < 1e-9
+    assert summary["n"] == 5
+    assert abs(summary["exact_accuracy"] - 0.6) < 1e-9
+    assert abs(summary["aligned_accuracy"] - 0.6) < 1e-9
     assert classify_failure(rows[1]) == "ok"
     assert classify_failure(rows[2]) == "wrong_class"
-    assert classify_failure(rows[3]) == "failed"
-    assert aligned("merger_agreement", "contract")
+    assert classify_failure(rows[3]) == "wrong_class"
+    assert classify_failure(rows[4]) == "failed"
+    assert aligned("merger_agreement", "merger_agreement")
+    assert not aligned("merger_agreement", "contract")
     assert not aligned("correspondence", "contract")
     assert summary["confusion"]["merger_agreement"]["contract"] == 1
     assert summary["confusion"]["correspondence"]["contract"] == 1
@@ -108,6 +112,8 @@ def test_attach_manifest_joins_trace_id_and_local_filename():
          "expected": None, "exact_ok": False, "aligned_ok": False, "stage": "archived"},
         {"trace_id": "zzz", "filename": "other.txt", "predicted": "correspondence",
          "expected": None, "exact_ok": False, "aligned_ok": False, "stage": "archived"},
+        {"trace_id": "maud", "filename": "maud.txt", "predicted": "merger_agreement",
+         "expected": None, "exact_ok": False, "aligned_ok": False, "stage": "archived"},
     ]
     import json
     from pathlib import Path
@@ -115,13 +121,18 @@ def test_attach_manifest_joins_trace_id_and_local_filename():
     path.write_text(json.dumps({
         "samples": [
             {"trace_id": "abc", "expected": "merger_agreement", "local_filename": "local.txt"},
+            {"trace_id": "maud", "expected": "merger_agreement", "local_filename": "maud.txt"},
         ]
     }), encoding="utf-8")
     out = attach_manifest(rows, str(path))
     assert out[0]["expected"] == "merger_agreement"
-    assert out[0]["aligned_ok"] is True
+    # v0.6.0: MAUD merger_agreement is not aligned with CUAD contract.
+    assert out[0]["aligned_ok"] is False
     assert out[0]["exact_ok"] is False
     assert out[1]["expected"] is None
+    assert out[2]["expected"] == "merger_agreement"
+    assert out[2]["aligned_ok"] is True
+    assert out[2]["exact_ok"] is True
 
 
 def test_trace_latency_prefers_pipeline_duration_score():

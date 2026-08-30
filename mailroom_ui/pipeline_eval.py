@@ -1,16 +1,17 @@
 """Deterministic pipeline eval scorers (entity-extraction-style).
 
 Used by ``scripts/eval_pipeline.py`` and unit tests. No network I/O.
-``merger_agreement`` is aligned with ``contract`` because the live mailroom
-taxonomy files MAUD rows as contract while the HF corpus labels them as
-``merger_agreement``.
+As of llm-mailroom v0.6.0, ``merger_agreement`` (MAUD) is a live class
+distinct from ``contract`` (CUAD) — they are no longer aligned.
 """
 
 from __future__ import annotations
 
 from collections import Counter, defaultdict
 
-ALIGN = {"merger_agreement": "contract"}
+# Historical extract aliases that once collapsed for scoring. Empty under
+# v0.6.0 (MAUD is live). Kept as a hook if upstream re-adds aliases.
+ALIGN: dict[str, str] = {}
 FAILURE_MODES = (
     "ok",
     "wrong_class",

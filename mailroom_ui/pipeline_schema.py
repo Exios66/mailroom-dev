@@ -149,18 +149,19 @@ AGENTS: dict[str, dict[str, str]] = {
     "insurance_claims_specialist": {"label": "Insurance Claims", "role": "extract"},
     "arbiter": {"label": "Arbiter", "role": "adjudicate"},
     "boss": {"label": "Boss", "role": "adjudicate"},
+    # compile_report is procedural in llm-mailroom v0.6.0 (no get_llm).
     "reporter": {"label": "Reporter", "role": "report"},
     "judge": {"label": "Judge", "role": "evaluate"},
     "pdf_transcriber": {"label": "Transcriber", "role": "ingest"},
     "image_extractor": {"label": "Image Extractor", "role": "ingest"},
 }
 
-# Live taxonomy classes that dispatch to a specialist (llm-mailroom v0.5+ /
-# llm-dojo-scoring LIVE_DOC_TYPES, catalogs copied from `@v0.11.0`; T0 names
-# unchanged from v0.10.0). `merger_agreement` is an HF/sorter alias
-# that extracts through contracts; `unknown` is a routing token, not a class.
+# Live taxonomy classes that dispatch to a specialist (llm-mailroom v0.6.0 /
+# taxonomy.yaml doc_classes). ``merger_agreement`` is a live MAUD class (not
+# an extract alias of CUAD ``contract``). ``unknown`` is a routing token.
 LIVE_DOC_TYPES: tuple[str, ...] = (
     "contract",
+    "merger_agreement",
     "corporate_record",
     "correspondence",
     "compliance_filing",
@@ -168,7 +169,9 @@ LIVE_DOC_TYPES: tuple[str, ...] = (
 )
 RETIRED_DOC_TYPES: tuple[str, ...] = ("court_opinion", "due_diligence")
 UNKNOWN_DOC_TYPE = "unknown"
-EXTRACT_CLASS_ALIASES: dict[str, str] = {"merger_agreement": "contract"}
+# Sorter / HF labels that extract through a live taxonomy specialist without
+# adding a new doc_class row. Empty as of llm-mailroom v0.6.0 — MAUD is live.
+EXTRACT_CLASS_ALIASES: dict[str, str] = {}
 
 DOC_CLASSES: dict[str, str] = {
     "contract": "Contract / Agreement",
@@ -176,7 +179,7 @@ DOC_CLASSES: dict[str, str] = {
     "correspondence": "Correspondence",
     "compliance_filing": "Compliance Filing",
     "insurance_claim": "Insurance Claim",
-    "merger_agreement": "Merger Agreement",  # display/HF alias, not a taxonomy row
+    "merger_agreement": "Merger Agreement",
     "unknown": "Unknown",
 }
 
@@ -207,23 +210,23 @@ FAILURE_CLASS_LABELS: dict[str, str] = {
 }
 
 # Mirror of llm-mailroom schemas.documents EXTRACTION_SCHEMAS field names
-# (PR #53 REVIEW Complete rejects keys that belong to another specialist).
+# (v0.6.0 pared checklists; REVIEW Complete rejects foreign specialist keys).
 _META_EXTRACT_KEYS = frozenset({"confidence", "reasoning", "mock_extraction"})
 EXTRACTION_FIELD_KEYS_BY_CLASS: dict[str, frozenset[str]] = {
     "contract": frozenset({
         "document_name", "parties", "effective_date", "term_length",
-        "termination_clauses", "governing_law", "key_obligations",
-        "contract_value", "renewal_terms", "cuad_family",
+        "governing_law", "contract_value", "renewal_terms", "cuad_family",
         "merger_consideration", "cuad_clauses", "maud_clauses", "reasoning",
     }),
     "corporate_record": frozenset({
-        "entity_name", "record_type", "effective_date", "key_provisions",
+        "entity_name", "record_type", "effective_date",
         "signatories", "jurisdiction", "filing_number",
+        "intent", "subject_matter", "keywords",
     }),
     "correspondence": frozenset({
         "sender", "recipient", "additional_recipients", "communication_type",
-        "communication_date", "key_points", "demand_amount", "action_items",
-        "urgency", "referenced_communications", "confidence",
+        "communication_date", "demand_amount", "action_items",
+        "urgency", "intent", "subject_matter", "keywords", "confidence",
     }),
     "compliance_filing": frozenset({
         "filing_type", "regulatory_body", "filing_date", "due_date",
@@ -233,9 +236,11 @@ EXTRACTION_FIELD_KEYS_BY_CLASS: dict[str, frozenset[str]] = {
         "claim_number", "policy_number", "insurer", "insured_party",
         "claim_type", "date_of_loss", "date_filed", "claimed_amount",
         "adjuster", "damages_description", "coverage_determination",
-        "denial_reasons", "supporting_documents", "confidence",
+        "denial_reasons", "supporting_documents",
+        "intent", "subject_matter", "keywords", "claim_checklist", "confidence",
     }),
 }
+# MAUD shares the ContractExtraction field map but is its own live class.
 EXTRACTION_FIELD_KEYS_BY_CLASS["merger_agreement"] = EXTRACTION_FIELD_KEYS_BY_CLASS["contract"]
 
 _ABORT_CLASS_RE = re.compile(r"run aborted \[([a-z_]+)\]", re.I)
@@ -389,12 +394,17 @@ def canonical_score_name(name: str) -> str:
 class PipelineSchema:
     """Loaded once per process; configurable thresholds from taxonomy.yaml."""
 
-    confidence_high: float = 0.95
-    confidence_low: float = 0.70
-    retry_max: int = 1
+    # llm-mailroom v0.6.0 taxonomy.yaml global confidence defaults.
+    confidence_high: float = 0.97
+    confidence_low: float = 0.88
+    retry_max: int = 2
     conflict_threshold: float = 0.3
-    judge_band_high: float = 0.85   # routing.py judge_gate default
+    judge_band_high: float = 0.95   # Lane B ambiguous-band ceiling
+    arbiter_retry_max: int = 2
+    judge_max_passes: int = 3
     doc_classes: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_DOC_CLASSES))
+    # Per-class severity overrides (taxonomy confidence.by_class).
+    by_class: dict[str, dict[str, float]] = field(default_factory=dict)
 
     @classmethod
     def load(cls, taxonomy_path: Optional[str] = None) -> "PipelineSchema":
@@ -411,12 +421,23 @@ class PipelineSchema:
                 cfg = yaml.safe_load(f) or {}
         except Exception:
             return schema
-        conf = cfg.get("confidence", {}) or {}
+        conf = dict(cfg.get("confidence", {}) or {})
+        by_class = conf.pop("by_class", None) or {}
         schema.confidence_high = float(conf.get("high", schema.confidence_high))
         schema.confidence_low = float(conf.get("low", schema.confidence_low))
         schema.retry_max = int(conf.get("retry_max", schema.retry_max))
         schema.conflict_threshold = float(conf.get("conflict_threshold", schema.conflict_threshold))
         schema.judge_band_high = float(conf.get("judge_band_high", schema.judge_band_high))
+        schema.arbiter_retry_max = int(conf.get("arbiter_retry_max", schema.arbiter_retry_max))
+        schema.judge_max_passes = int(conf.get("judge_max_passes", schema.judge_max_passes))
+        if isinstance(by_class, dict):
+            parsed: dict[str, dict[str, float]] = {}
+            for key, overrides in by_class.items():
+                if isinstance(overrides, dict):
+                    parsed[str(key)] = {
+                        str(k): float(v) for k, v in overrides.items() if v is not None
+                    }
+            schema.by_class = parsed
         classes = {}
         for dc in cfg.get("doc_classes", []) or []:
             if isinstance(dc, dict) and dc.get("key"):
@@ -425,10 +446,29 @@ class PipelineSchema:
             schema.doc_classes = classes
         return schema
 
+    def thresholds_for(self, doc_type: Optional[str] = None) -> dict[str, float | int]:
+        """Global confidence / Lane B budgets, optionally merged with by_class."""
+        base: dict[str, float | int] = {
+            "high": self.confidence_high,
+            "low": self.confidence_low,
+            "retry_max": self.retry_max,
+            "conflict_threshold": self.conflict_threshold,
+            "judge_band_high": self.judge_band_high,
+            "arbiter_retry_max": self.arbiter_retry_max,
+            "judge_max_passes": self.judge_max_passes,
+        }
+        if not doc_type:
+            return base
+        resolved = resolve_extract_class(doc_type) or doc_type
+        overrides = self.by_class.get(resolved) or self.by_class.get(doc_type)
+        if overrides:
+            base.update(overrides)
+        return base
+
     def specialist_for(self, doc_type: str) -> Optional[str]:
         if not doc_type:
             return None
-        key = EXTRACT_CLASS_ALIASES.get(doc_type, doc_type)
+        key = resolve_extract_class(doc_type) or doc_type
         return SPECIALIST_BY_DOC_CLASS.get(key) or SPECIALIST_BY_DOC_CLASS.get(doc_type)
 
 

@@ -41,14 +41,25 @@ def test_primary_miss_and_pending_without_gt():
     assert untyped["secondary_outcome"] == N_A
 
 
-def test_merger_alias_counts_as_hit():
+def test_merger_exact_match_counts_as_hit():
+    card = classification_card(
+        doc_type="merger_agreement",
+        expected_hf_class="merger_agreement",
+        doc_subclass="all_cash",
+        expected_subclass="all_cash",
+    )
+    assert card["primary_outcome"] == HIT
+
+
+def test_merger_vs_contract_counts_as_miss():
+    """v0.6.0: MAUD and CUAD are distinct live classes."""
     card = classification_card(
         doc_type="merger_agreement",
         expected_hf_class="contract",
         doc_subclass="all_cash",
         expected_subclass="all_cash",
     )
-    assert card["primary_outcome"] == HIT
+    assert card["primary_outcome"] == MISS
 
 
 def test_assigned_class_without_gt_is_hit():

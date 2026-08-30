@@ -1,0 +1,18 @@
+# Nixpacks fallback if a Railway service is not set to the Dockerfile builder.
+# Prefer railway.json (DOCKERFILE) — the image already runs as non-root with
+# HEALTHCHECK and prefers platform PORT over MAILROOM_PORT.
+
+[phases.setup]
+nixPkgs = ["python311", "gcc"]
+
+[phases.install]
+cmds = ["pip install --upgrade pip", "pip install ."]
+
+[start]
+cmd = "MAILROOM_EDITION=hosted MAILROOM_HOST=0.0.0.0 python -m server.hosted"
+
+[variables]
+MAILROOM_EDITION = "hosted"
+MAILROOM_HOST = "0.0.0.0"
+MAILROOM_POLL_ENRICH = "inflight"
+MAILROOM_TRACE_CACHE_DIR = "/tmp/mailroom-trace-cache"

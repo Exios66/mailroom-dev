@@ -13,7 +13,7 @@ source; **[llm-entity-extraction](https://github.com/Exios66/llm-entity-extracti
 is the prompt-experiment loop that breeds its sorter/specialist prompts (and
 hosts the shared governance board); **[llm-dojo-scoring](https://github.com/Exios66/llm-dojo-scoring)**
 is the pinned scoring engine behind both (`@v0.11.0`); **llm-mailroom** itself
-is pinned here as dist `mailroom` `@0928de1` (optional extra `[pipeline]`); **[Enron-Evaluation-Environment](https://github.com/Exios66/Enron-Evaluation-Environment)**
+is pinned here as dist `mailroom` `@3cf9fb9` / **v0.6.0** (optional extra `[pipeline]`); **[Enron-Evaluation-Environment](https://github.com/Exios66/Enron-Evaluation-Environment)**
 and **[claims-data-eda](https://github.com/Exios66/claims-data-eda)** feed its
 corpus classes; **[atticus-investigation](https://github.com/Exios66/atticus-investigation)**
 is the LegalBench eval sibling. Full map:
@@ -26,7 +26,9 @@ is the LegalBench eval sibling. Full map:
 - **Observatory** (`/live`, `mailroom-hosted`) — public modern accessible desk
   (Pipeline · Review · History · Matters · Metrics · Debug;
   `GET /api/debug/bundle`). Hugging Face Space: Docker + port 7860
-  (`scripts/publish_space.py`, `hosted/SPACE_README.md`)
+  (`scripts/publish_space.py`, `hosted/SPACE_README.md`). Railway /
+  Fly / Render: see [Deployment](Deployment) (`railway.json`, platform
+  `PORT` preferred over image `MAILROOM_PORT`)
 - **TUI** (`mailroom-tui`) — terminal (floor · review · sessions · metrics ·
   inspect · debug)
 - **GitHub Pages** — static snapshot of the pixel SPA (not the Observatory)

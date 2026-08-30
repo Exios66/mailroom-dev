@@ -77,6 +77,7 @@ def _edition() -> str:
 
 API_ENDPOINTS = [
     {"method": "GET", "path": "/api/health", "desc": "source reachability"},
+    {"method": "GET", "path": "/health", "desc": "platform probe alias of /api/health (Railway / Fly)"},
     {"method": "GET", "path": "/api/traces", "desc": "recent runs (light); ?since=&limit=&stage=&environment="},
     {"method": "GET", "path": "/api/traces/{trace_id}", "desc": "full run detail (spans/generations/scores)"},
     {"method": "GET", "path": "/api/metrics", "desc": "window aggregates; ?since="},
@@ -173,8 +174,7 @@ def create_app(source: Optional[object] = None) -> FastAPI:
             content={"error": "internal server error", "detail": str(exc)[:300]},
         )
 
-    @app.get("/api/health")
-    def health():
+    def _health_payload():
         payload = src.health()
         cache = cache_status()
         if isinstance(payload, dict):
@@ -189,6 +189,15 @@ def create_app(source: Optional[object] = None) -> FastAPI:
                 payload["cached_at"] = cache.get("cached_at")
                 payload["cached_trace_count"] = cache.get("cached_trace_count")
         return payload
+
+    @app.get("/api/health")
+    def health():
+        return _health_payload()
+
+    # Platform probes (Railway / Fly / Render) often expect bare /health.
+    @app.get("/health")
+    def health_root():
+        return _health_payload()
 
     @app.get("/api/traces")
     def traces(
@@ -731,10 +740,24 @@ def _dt(value) -> Optional[datetime]:
         return None
 
 
+def listen_port(default: int = 8001) -> int:
+    """Prefer platform ``PORT`` (Railway / Fly / Render) over ``MAILROOM_PORT``.
+
+    Hugging Face Spaces and the Observatory image bake ``MAILROOM_PORT=7860``.
+    Listening on that while the edge proxies ``$PORT`` is the usual Railway
+    crash-loop failure mode — same contract as llm-mailroom's API.
+    """
+    platform = (os.environ.get("PORT") or "").strip()
+    if platform:
+        return int(platform)
+    configured = (os.environ.get("MAILROOM_PORT") or str(default)).strip() or str(default)
+    return int(configured)
+
+
 def run() -> None:
     logging.basicConfig(level=logging.INFO)
     load_dotenv()
-    port = int(os.environ.get("MAILROOM_PORT", "8001"))
+    port = listen_port(8001)
     host = os.environ.get("MAILROOM_HOST", "127.0.0.1")
     uvicorn.run(create_app(), host=host, port=port, log_level="info")
 
