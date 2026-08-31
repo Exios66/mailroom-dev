@@ -19,8 +19,8 @@ from typing import Any
 ORG = "Lucius-Morningstar"
 FULL_CORPUS_ID = f"{ORG}/docclass-merged"
 EXAMPLES_ID = f"{ORG}/docclass-pilot"
-# Corrected ground-truth tip (intent / subject_matter / keywords re-labels).
-FULL_CORPUS_REVISION = "1d4753578d91aae09033b359bc32dc1b431e4c20"
+# v7 tip (issue #5 intent hydration): data tip 1acd2600 + card-only bump.
+FULL_CORPUS_REVISION = "fc1f211c48e5f1f5a1a01c02f9e56c0e16e70a5f0"
 GT_CONFIG = "ground_truth"
 DEFAULT_CONFIG = "default"
 ROWS_API = "https://datasets-server.huggingface.co/rows"
