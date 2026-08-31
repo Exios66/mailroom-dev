@@ -30,6 +30,8 @@ mailroom-dev/
 ├── pyproject.toml               # uv workspace root: dev group, tool.uv.sources
 ├── uv.lock                      # single lockfile for the whole workspace
 ├── .gitignore
+├── governance/
+│   └── TASKS.md                 # task board: assigned / in_progress / needs_attention / done
 ├── scripts/
 │   ├── packages_sync.json       # per-package sync cursor (issue #2)
 │   └── sync_packages.py         # sub-package <-> standalone-repo sync driver
@@ -89,6 +91,11 @@ working exactly as before.
   happens ONLY through `[tool.uv.sources]` tables — never delete a pin line to
   "fix" resolution.
 - Bump a pin only when cutting a release of the pinned package.
+
+**Task board**: `governance/TASKS.md` tracks what is assigned, in progress,
+needs attention, and done across all agents and contributors — read it before
+picking up work and keep your card current while you work (protocol in
+`AGENTS.md §Governance`).
 
 ### Per-package test suites
 

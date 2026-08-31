@@ -40,6 +40,41 @@ uv run pytest packages/local-mailroom-sandbox/tests
 uv run pytest packages/claims-data-eda/tests
 ```
 
+## Governance & task board
+
+`governance/TASKS.md` is the monorepo's task board and the single source of
+truth for cross-agent task state: what is assigned, in progress, needs
+attention, and done. Read it FIRST every session, before any task. It is the
+simplified counterpart of
+`packages/llm-entity-extraction/governance/MESSAGE_BOARD.md` (same laws,
+fewer steps); package-scoped work keeps its own board.
+
+The four lanes: `assigned` (queued/claimed, nothing underway) →
+`in_progress` (any work exists — label the card before the code, never after)
+→ `needs_attention` (blocked / review / decision, tagged in Evidence) →
+`done` (Archive, append-only; reopen instead of delete).
+
+- **Claim before edit** — one owner per card; claim = lane + Owner name + date.
+- **Update, don't duplicate** — work touching an existing card's scope updates
+  that card; a discovered-but-undelivered item spawns its own card before the
+  parent closes.
+- **No silent completion** — `done` requires green suites for the touched
+  packages, a clean `git status` for the card's scope, Evidence naming the
+  commit(s), and (for synced cards) the GitHub issue closed in the same
+  commit. An agent is NOT done until its card says so.
+- **Commit discipline** — reference cards: `HUB-00N: <summary>`.
+- **Issue routing** — board-only for small/single-session/low-risk cards;
+  critical or cross-package cards get an issue in the repo where the work
+  lands (this monorepo for hub scope, the package repo for package scope).
+
+Test gates: run the surgically relevant suite for the package you touched by
+default; run that package's FULL suite (and any dependent suites) for
+significant changes (packaging/imports, cross-cutting refactors, scoring).
+Suites run one package per pytest invocation — several packages ship a
+top-level regular `tests` package and collide when batched. Docs currency:
+when a change alters behavior described by `README.md`, `AGENTS.md`, or
+`governance/TASKS.md`, update those files in the same commit.
+
 ## Sub-package sync
 
 Every package mirrors an independent `Exios66/*` repo. `scripts/sync_packages.py`
