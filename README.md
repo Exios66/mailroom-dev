@@ -1,6 +1,6 @@
 # llm-mailroom-graph
 
-Interactive knowledge graph of [llm-mailroom](https://github.com/Exios66/llm-mailroom), rebuilt 2026-08-28 from commit [`7dc57874`](https://github.com/Exios66/llm-mailroom/commit/7dc57874cd4206fa6470a887c38b566f2168daf8).
+Interactive knowledge graph of [llm-mailroom](https://github.com/Exios66/llm-mailroom), rebuilt 2026-08-31 from commit [`d93894a`](https://github.com/Exios66/llm-mailroom/commit/d93894a6600470bed67e5a2a4f403368577b0f5b).
 
 Live site: https://exios66.github.io/llm-mailroom-graph/
 
@@ -20,7 +20,8 @@ The old map dumped every test fixture and vendored OpenRouter skill into one unl
 
 - **Included:** `src/agents`, `graph`, `pipeline`, `api`, `storage`, `observability`, `llm`, `schemas`, `langchain_agents`, `legalbench`, `scripts`
 - **Excluded:** `src/tests`, `notebooks`, `.opencode/skills` (vendored assistant tools), docs
-- **Extractor:** graphify 0.9.50, `--code-only` AST, 0 LLM tokens
+- **Extractor:** graphify 0.9.53, `--code-only` AST, 0 LLM tokens
+- **Stats (2026-08-31):** 1,905 code symbols · 4,557 edges · 104 communities · 130 source files
 
 ## Rebuild
 
@@ -33,4 +34,6 @@ graphify cluster-only /tmp/llm-mailroom --no-label --no-viz --resolution 0.4 --e
 graphify tree --graph /tmp/llm-mailroom/graphify-out/graph.json --output tree.html --label llm-mailroom
 ```
 
-Then regenerate `index.html` / `report.html` from `graph.json` (community labels are architectural, not hub-file names).
+Then regenerate `index.html` / `report.html` from `graph.json` (community labels are architectural, not hub-file names):
+- `graphify export html --graph /tmp/llm-mailroom/graphify-out/graph.json` → `graph.html`
+- `python3 scripts/regenerate_graph_site.py /tmp/llm-mailroom/graphify-out/graph.json .` → `index.html` + `report.html`
