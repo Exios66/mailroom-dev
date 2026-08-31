@@ -1,5 +1,5 @@
 {
-  "note": "Per-package sync cursor against the standalone Exios66/* repositories. Baseline per issue #2: monorepo aligned with the standalone repos as of 2026-08-31T00:06:57Z (2026-08-30 19:06 CST). mailroom-corpus-eda: cursor tracks the published GitHub upstream tip (1b0cf28, v7 issue #5 hydration state); the monorepo import tip (filtered monorepo-import branch) carries the later local-only commits (pretty_name v7 fix af270cc, v7 doc sweep 916e8da) — the subtree tree is what the monorepo actually uses.",
+  "note": "Per-package sync cursor against the standalone Exios66/* repositories. Baseline per issue #2: monorepo aligned with the standalone repos as of 2026-08-31T00:06:57Z (2026-08-30 19:06 CST).",
   "packages": {
     "Enron-Evaluation-Environment": {
       "branch": "main",
@@ -57,8 +57,8 @@
     },
     "mailroom-corpus-eda": {
       "branch": "main",
-      "synced_at": "2026-08-31T18:45:00Z",
-      "synced_sha": "1b0cf28af4d37380c23b6cf3add635d4a2927c35",
+      "synced_at": "2026-08-31T19:53:55Z",
+      "synced_sha": "43b52328f94e1fed349b5da697b9a0f56c0df345",
       "url": "https://github.com/Exios66/Mailroom-Corpus-EDA.git"
     }
   },
