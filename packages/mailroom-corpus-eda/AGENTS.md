@@ -40,10 +40,11 @@ Never edit it from both places in one session — develop here, sync via
 .venv/bin/python scripts/export_docclass.py --help
 ```
 
-**Subset-run hazard**: any `--phases` subset rewrites `reports/SUMMARY_REPORT.*`
-from only the phases you ran — a figures-only run clobbers the full-corpus
-summary with partial stats. After a subset run, re-run all phases or restore
-the summary from git before committing.
+**Summary writes**: `reports/SUMMARY_REPORT.json` is written only by a
+full-pipeline run (all six phases). `--phases` subset runs — and
+`--no-interactive`, whose summary would be missing the P4 section — leave the
+summary untouched; per-phase results print to stdout only. (HUB-009: subset
+runs used to clobber the full-corpus summary with phase-partial stats.)
 
 ## Conventions
 

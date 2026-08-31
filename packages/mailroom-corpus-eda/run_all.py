@@ -3,7 +3,7 @@
 
 Usage:
     python run_all.py                 # everything
-    python run_all.py --phases P1 P2  # subset
+    python run_all.py --phases P1 P2  # subset (SUMMARY_REPORT.json untouched)
     python run_all.py --no-interactive
 """
 from __future__ import annotations
@@ -105,7 +105,8 @@ PHASES = {
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--phases", default="P0,P1,P2,P3,P4,P5",
-                        help="comma-separated phases to run (default: all)")
+                        help="comma-separated phases to run (default: all; "
+                             "a subset leaves SUMMARY_REPORT.json untouched)")
     parser.add_argument("--no-interactive", action="store_true",
                         help="skip P4 interactive HTML figures")
     args = parser.parse_args()
@@ -128,33 +129,41 @@ def main() -> int:
             print(f"ERROR phase {phase}: {exc}")
             results[phase] = {"error": str(exc)}
 
-    # Summary
-    summary_path = ROOT / "reports" / "SUMMARY_REPORT.json"
+    # Summary — written ONLY for a full-pipeline run (all six phases).
+    # A subset run's results would clobber the full-corpus summary with
+    # phase-partial stats (HUB-009); per-phase output stays on stdout.
+    full_run = set(wanted) == set(PHASES)
 
-    def _rel(p):
-        if isinstance(p, Path):
-            try:
-                return str(p.relative_to(ROOT))
-            except ValueError:
-                return str(p)
-        return p
+    if full_run:
+        summary_path = ROOT / "reports" / "SUMMARY_REPORT.json"
 
-    results = json.loads(json.dumps(results, default=str))
+        def _rel(p):
+            if isinstance(p, Path):
+                try:
+                    return str(p.relative_to(ROOT))
+                except ValueError:
+                    return str(p)
+            return p
 
-    def _walk(d):
-        if isinstance(d, dict):
-            return {k: _walk(v) for k, v in d.items()}
-        if isinstance(d, list):
-            return [_walk(v) for v in d]
-        if isinstance(d, str) and d.startswith(str(ROOT)):
-            return _rel(Path(d))
-        return d
+        results = json.loads(json.dumps(results, default=str))
 
-    results = _walk(results)
-    summary_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(summary_path, "w") as fh:
-        json.dump(results, fh, indent=2, default=str)
-    print(f"\nSummary written -> {summary_path}")
+        def _walk(d):
+            if isinstance(d, dict):
+                return {k: _walk(v) for k, v in d.items()}
+            if isinstance(d, list):
+                return [_walk(v) for v in d]
+            if isinstance(d, str) and d.startswith(str(ROOT)):
+                return _rel(Path(d))
+            return d
+
+        results = _walk(results)
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(summary_path, "w") as fh:
+            json.dump(results, fh, indent=2, default=str)
+        print(f"\nSummary written -> {summary_path}")
+    else:
+        print("\nSubset run: SUMMARY_REPORT.json left untouched (would "
+              "clobber full-corpus stats; run all phases to regenerate).")
 
     failed = [p for p, r in results.items() if "error" in r]
     if failed:
