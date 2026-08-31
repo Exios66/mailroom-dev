@@ -20,6 +20,13 @@ dev = [
     "nbformat>=5.10",
     "nbclient>=0.10",
     "ipykernel>=6.29",
+    # mailroom-corpus-eda script deps that no other member pulls in
+    # transitively (virtual member is not installable; its EDA/HF scripts
+    # need these in the shared venv).
+    "plotly>=7.0",
+    "seaborn>=0.13",
+    "squarify>=0.4",
+    "huggingface_hub>=1.29",
     # Workspace members, editable in the shared venv. Virtual members
     # (Enron-Evaluation-Environment, claims-data-eda, llm-mailroom-graph,
     # mailroom-corpus-eda) are `package = false` and not installable; their
