@@ -1,5 +1,5 @@
 {
-  "note": "Per-package sync cursor against the standalone Exios66/* repositories. Baseline per issue #2: monorepo aligned with the standalone repos as of 2026-08-31T00:06:57Z (2026-08-30 19:06 CST). mailroom-corpus-eda synced_sha is the LOCAL import tip (9cc339a): the corpus repo's main has not been republished — its remote still shows 00d55c4; drift shows in sync because 00d55c4 is an ancestor of the imported tip.",
+  "note": "Per-package sync cursor against the standalone Exios66/* repositories. Baseline per issue #2: monorepo aligned with the standalone repos as of 2026-08-31T00:06:57Z (2026-08-30 19:06 CST). mailroom-corpus-eda synced_sha is the LOCAL import tip (9cc339a): the corpus repo's main has not been republished \u2014 its remote still shows 00d55c4; drift shows in sync because 00d55c4 is an ancestor of the imported tip.",
   "packages": {
     "Enron-Evaluation-Environment": {
       "branch": "main",
@@ -39,8 +39,8 @@
     },
     "llm-mailroom": {
       "branch": "main",
-      "synced_at": "2026-08-31T04:49:35Z",
-      "synced_sha": "d93894a4e6df4d641d10972282d70a0b980abc54",
+      "synced_at": "2026-08-31T06:04:31Z",
+      "synced_sha": "4e9bf69c294c5a6ce8600e911496e1ff8a6e7dc4",
       "url": "https://github.com/Exios66/llm-mailroom.git"
     },
     "llm-mailroom-graph": {
