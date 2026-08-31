@@ -45,7 +45,7 @@ Never edit it from both places in one session — develop here, sync via
 ```
 
 **Summary writes**: `reports/SUMMARY_REPORT.json` is written only by a
-full-pipeline run (all six phases). `--phases` subset runs — and
+full-pipeline run (all seven phases). `--phases` subset runs — and
 `--no-interactive`, whose summary would be missing the P4 section — leave the
 summary untouched; per-phase results print to stdout only. (HUB-009: subset
 runs used to clobber the full-corpus summary with phase-partial stats.)
