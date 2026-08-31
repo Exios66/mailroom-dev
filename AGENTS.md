@@ -48,10 +48,11 @@ uv run pytest packages/Enron-Evaluation-Environment/tests
 
 The `docclass-merged` dataset family is published through the CENTRALIZED
 helpers in `packages/mailroom-corpus-eda/src/mailroom_eda/` (`hf_interface`,
-`dataset_export`, `docclass_uploader`) — never ad-hoc upload code. See
-`packages/mailroom-corpus-eda/AGENTS.md` and the `huggingface` opencode skill
-for the full workflow (cast-safe metadata, line-boundary-safe JSONL, sha256
-verification, surgical card renders, blind-config label guard).
+`dataset_export`, `docclass_uploader`, `intent_backfill`) — never ad-hoc
+upload code. See `packages/mailroom-corpus-eda/AGENTS.md` and the
+`huggingface` opencode skill for the full workflow (cast-safe metadata,
+line-boundary-safe JSONL, sha256 verification, surgical card renders,
+blind-config label guard, issue #5 intent hydration).
 
 ## Governance & task board
 
