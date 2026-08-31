@@ -9,14 +9,14 @@
     },
     "The-Mailroom": {
       "branch": "main",
-      "synced_at": "2026-08-31T02:34:20Z",
-      "synced_sha": "2ef0041df6995a79ff8f85159a0b01a918fce8af",
+      "synced_at": "2026-08-31T20:01:58Z",
+      "synced_sha": "fae52e142a64622b901f81b6ead490e687da4ccf",
       "url": "https://github.com/Exios66/The-Mailroom.git"
     },
     "agent-mailroom": {
       "branch": "main",
-      "synced_at": "2026-08-31T02:34:20Z",
-      "synced_sha": "b1d89b88dadbb24dc0d28d4fed50464d68ff0180",
+      "synced_at": "2026-08-31T20:01:57Z",
+      "synced_sha": "d846de672ad6ca2aa9ebf89e7b2652d82b6ea9b7",
       "url": "https://github.com/Exios66/agent-mailroom.git"
     },
     "claims-data-eda": {
@@ -39,8 +39,8 @@
     },
     "llm-mailroom": {
       "branch": "main",
-      "synced_at": "2026-08-31T20:00:21Z",
-      "synced_sha": "5dbc48c8c181255ec2d9e48427f50083fe02b306",
+      "synced_at": "2026-08-31T20:01:57Z",
+      "synced_sha": "857fb381964b6c0934630eaf1247b8add253c3e8",
       "url": "https://github.com/Exios66/llm-mailroom.git"
     },
     "llm-mailroom-graph": {
