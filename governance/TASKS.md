@@ -56,7 +56,7 @@ entity board: same laws, fewer steps.
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
 | HUB-008 | `done` (pending archive) | **Corpus EDA full-fidelity completion** — human directive: the HUB-007 prune of `reports/figures_interactive/` (18 Plotly-inlined HTML figures) is reversed; the corpus EDA package carries the FULL repo content with figures + EDA reports preserved faithfully. History truncation accepted; standalone repo NOT republished (upstream tip `b39245a` already equals the import tip — only the 18 figures were missing, 74MB). Un-pruned root `.gitignore`, imported the 18 HTMLs sha256-identical to upstream, refreshed the stale `packages_sync.json` note (corpus upstream IS published; `sync status` = in sync), aligned root/package docs. Spun off HUB-009 (subset-run summary hazard). | opencode | — | commit `c16cdd18` |
 | HUB-011 | `done` (pending archive) | **Prompt-engineer opencode agent adapted for the monorepo** — human directive: make the entity repo's GEPA prompt-engineer agent operate out of the box in mailroom-dev. Root `.opencode/agents/prompt-engineer.md` (workspace bindings: uv-workspace commands, per-package AGENTS.md rule, both prompt registries — entity `PROMPT_VERSIONS` append-only + mailroom `prompts_docclass.py` PURE-APPEND, the llm-dojo→mailroom direction doctrine, HUB-00N vs KANBAN-NNN board routing, env variables incl. the funding-key gate / `BRAINTRUST_LOGGING` default / mailroom `OBSERVABILITY_PROVIDER` Phoenix gotcha / `PYTHONHASHSEED=0` / hub-1.x datasets-cache + read-timeout quirks) + `PROMPT_ENGINEER_GEPA_PROVENANCE.md` companion copied verbatim. GEPA doctrine (9-step loop, scientific contract, Phases 0–6) preserved — diff vs the entity source shows exactly 3 intended binding edits, zero doctrine drift. Sessions inside `packages/llm-entity-extraction` keep that package's own agent copy (closer project config wins); the global `~/.config/opencode` copy stays generic. Board-only card (tooling config, single session). | opencode | — | restart opencode to load; suite impact: none (config-only) |
-| HUB-010 | `in_progress` | **Full documentation sweep** — human directive: update ALL documentation in mailroom-dev. Inventory every tracked doc (root README/AGENTS/TASKS + all 10 package READMEs/AGENTS.md), fact-check claims against the actual repo state (layouts, commands, test paths, asset counts, sync flows), fix all drift in one sweep. | opencode | — | claimed 2026-08-31; sweep underway |
+| HUB-012 | `assigned` | **corpus-eda P3 summary counter stale (27 vs 30 figures)** — discovered during HUB-010: `visualizations.run()` returns a figures count of 27, so `SUMMARY_REPORT.json` P3 stats say `figures: 27`, while P3 actually writes 30 PNGs (disk truth; 28/29/30 live in `visualizations.py`). Docs were aligned to 30 in HUB-010; fix the returned counter so the summary stats match the artifact count. Touching it rewrites `SUMMARY_REPORT.json` (byte-drift vs upstream) — coordinate with the corpus-eda upstream at next sync. | unclaimed | — | HUB-010 session, 2026-08-31 |
 
 ## Rules that keep the board honest
 
@@ -88,6 +88,25 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-010** (done 2026-08-31) — **Full documentation sweep** — human
+  directive: update ALL documentation in mailroom-dev. Inventoried ~380
+  tracked .md files; scoped the sweep to the OPERATIVE docs (root
+  README/AGENTS/TASKS + 10 package README/AGENTS pairs) — historical records
+  (memos, skills, wikis, slides) left untouched as standalone-mirror archives
+  (llm-mailroom's AGENTS.md itself forbids monorepo-side hand-edits of its
+  docs). Fixes: root AGENTS.md gains the Enron suite (74/74, verified green —
+  it was missing from both root docs) and corrects the "each package carries
+  its own AGENTS.md" claim (3 of 10 packages document conventions in READMEs);
+  root README drops the phantom `mailroom-corpus-eda/tests` line (no suite;
+  EDA verified via run_all.py P0–P5), documents the two suite-less virtual
+  members, clarifies per-package sync cursors (advanced since the issue #2
+  baseline), fixes the `uv run pytest` comment; corpus-eda README P3 row +
+  run_all.py banner 27→30 (disk truth — 30 PNGs, Reports section and AGENTS.md
+  already said 30); Enron AGENTS.md test counts aligned to reality/README
+  badge (74 across test_labeler.py + test_content_labels.py). Verified:
+  Enron suite 74 passed, claims-data-eda suite 30 passed ("30 tests" claim
+  confirmed), run_all.py py_compile green. Spawned HUB-012 (stale P3 summary
+  counter). Evidence: `bb854809`.
 - **HUB-009** (done 2026-08-31) — **run_all.py subset runs clobber
   SUMMARY_REPORT.\*** — fixed: `run_all.py` now writes
   `reports/SUMMARY_REPORT.json` only when all six phases ran; `--phases`
