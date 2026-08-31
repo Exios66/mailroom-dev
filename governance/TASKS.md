@@ -51,7 +51,6 @@ entity board: same laws, fewer steps.
 
 | Card | Status | Task | Owner | Issue | Evidence |
 |---|---|---|---|---|---|
-| HUB-007 | `in_progress` | **Import mailroom-corpus-eda as 10th workspace member** — subtree-add the corpus EDA package (full history appended from local `monorepo-import` branch; interactive HTML figures pruned — regenerable heavy assets, see package AGENTS.md), register in `sync_packages.py` PACKAGES + `packages_sync.json`, wire pyproject/AGENTS/README docs. | unclaimed | — | `39409359` (subtree add) |
 | HUB-004 | `in_progress` | **Upstream-drift reconciliation** — upstream tips of The-Mailroom (`2ef0041`), llm-entity-extraction (`4cfac90`) moved past their subtree-import SHAs. Run `python scripts/sync_packages.py status`, then per-package `pull --squash`, resolving upstream changes against monorepo-side fixes (the monorepo is the development source of truth — imported guards/skip fixes win unless upstream supersedes them). **llm-mailroom leg done:** pulled `d93894a` (monorepo docs alignment) with `sync_packages.py pull --squash`; re-applied the heavy-asset prune (`docs/examples/`, `docs/reports/`) as a monorepo-side fix and advanced the sync cursor; `uv run pytest packages/llm-mailroom/src/tests` = 772 passed / 36 skipped. Evidence: `abb0ed3d`. | unclaimed | — | drift visible via `sync_packages.py status`; cursor `scripts/packages_sync.json` |
 | HUB-005 | `assigned` | **Release-train readiness** — at the next package release: bump the consuming pins (release-time only; `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py` for the dojo pin), propagate monorepo work upstream with `python scripts/sync_packages.py push --package <name>`, tag in the standalone repo. One card per release sweep; scope it when claimed. | unclaimed | — | workspace rules in `AGENTS.md` (pins keep their published git lines) |
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
@@ -85,6 +84,21 @@ reverse) is a board inconsistency — fix it immediately.
 ## Archive
 
 Finished cards, append-only, newest last.
+
+- **HUB-007** (done 2026-08-31) — **Import mailroom-corpus-eda as 10th
+  workspace member** — subtree-added the corpus EDA package with FULL history
+  appended from a local `monorepo-import` branch (interactive HTML figures
+  pruned — regenerable heavy assets; standalone repo keeps them; ignored in
+  the monorepo); registered in `sync_packages.py` PACKAGES +
+  `packages_sync.json` (cursor at local import tip `9cc339a`, corpus repo NOT
+  republished); wired pyproject (virtual member, requires-python>=3.12),
+  root dev group (+plotly/seaborn/squarify/huggingface_hub), AGENTS/README
+  docs; fixed pandas 3.0/matplotlib 3.11 forward compat (include_groups
+  removal, boxplot tick_labels) + deterministic report outputs
+  (repo-relative paths, stable diff ordering) so monorepo rebuilds are
+  byte-identical; `uv lock`/`uv sync` green, `run_all.py` P0-P5 green under
+  the shared venv against the full 1,650-row corpus (v6 rev2). Evidence:
+  `39409359` (subtree add), `0a5b498a`, `90b25747`, `989f95bb`.
 
 - **HUB-003** (done 2026-08-30) — **Root documentation + governance foundation** —
   README reworked for the monorepo (structure tree, package↔mirror table, sync
