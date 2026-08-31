@@ -40,6 +40,12 @@ uv run pytest packages/local-mailroom-sandbox/tests
 uv run pytest packages/claims-data-eda/tests
 ```
 
+## Sub-package sync
+
+Every package mirrors an independent `Exios66/*` repo. `scripts/sync_packages.py`
+(status / pull / push / snapshot, cursor in `scripts/packages_sync.json`)
+reconciles the mirrors; the monorepo is the development source of truth.
+
 ## Workspace rules
 
 - Member dependency lines keep their published git pins (release builds via
