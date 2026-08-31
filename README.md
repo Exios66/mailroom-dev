@@ -1,4 +1,4 @@
-# mailroom-hub
+# mailroom-dev
 
 The monorepo of the LLM-Mailroom project — a single checkout and a single
 virtualenv for the whole constellation, so development never requires
@@ -9,7 +9,7 @@ importing across separate repositories.
                         │   llm-entity-extraction      │
                         │   prompt-experiment loop     │
                         └──────────┬───────────────────┘
-                                    ▼
+                                   ▼
 ┌────────────────────────┐   ┌──────────────────────────────┐
 │  llm-dojo-scoring      │◀──│        llm-mailroom          │
 │  scoring engine        │   │  (the pipeline)              │
@@ -18,6 +18,11 @@ importing across separate repositories.
                           ┌──────────────────────────────┐
                           │        The-Mailroom          │
                           │   pixel-art visual engine    │
+                          └──────────────────────────────┘
+                                          ▼
+                          ┌──────────────────────────────┐
+                          │        mailroom-dev          │
+                          │   The Present Mono Repo.     │
                           └──────────────────────────────┘
 ```
 
