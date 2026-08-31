@@ -16,6 +16,7 @@ workspace redirects.
 - `packages/Enron-Evaluation-Environment` — corpus feed (virtual member, no build)
 - `packages/claims-data-eda` — corpus feed (virtual member, no build)
 - `packages/llm-mailroom-graph` — derived graph site (virtual member, no build)
+- `packages/mailroom-corpus-eda` — corpus EDA + centralized HF upload helpers (virtual member, no build)
 
 Each package carries its own `AGENTS.md` with project-specific conventions —
 read the package's AGENTS.md before changing code inside it.
@@ -39,6 +40,15 @@ uv run pytest packages/agent-mailroom/tests
 uv run pytest packages/local-mailroom-sandbox/tests
 uv run pytest packages/claims-data-eda/tests
 ```
+
+## HF Hub uploads
+
+The `docclass-merged` dataset family is published through the CENTRALIZED
+helpers in `packages/mailroom-corpus-eda/src/mailroom_eda/` (`hf_interface`,
+`dataset_export`, `docclass_uploader`) — never ad-hoc upload code. See
+`packages/mailroom-corpus-eda/AGENTS.md` and the `huggingface` opencode skill
+for the full workflow (cast-safe metadata, line-boundary-safe JSONL, sha256
+verification, surgical card renders, blind-config label guard).
 
 ## Governance & task board
 

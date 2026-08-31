@@ -51,6 +51,7 @@ PACKAGES: dict[str, str] = {
     "llm-mailroom": "llm-mailroom",
     "llm-mailroom-graph": "llm-mailroom-graph",
     "local-mailroom-sandbox": "local-mailroom-sandbox",
+    "mailroom-corpus-eda": "Mailroom-Corpus-EDA",
 }
 
 # Issue #2 baseline: monorepo aligned with standalone repos at this instant.

@@ -49,7 +49,8 @@ mailroom-dev/
     ├── llm-entity-extraction/
     ├── llm-mailroom/
     ├── llm-mailroom-graph/             # virtual member (no build)
-    └── local-mailroom-sandbox/
+    ├── local-mailroom-sandbox/
+    └── mailroom-corpus-eda/            # virtual member (no build)
 ```
 
 Each package keeps its own history (merged via `git subtree`), pyproject,
@@ -70,6 +71,7 @@ inside each package directory; the root `pyproject.toml` wires the workspace
 | `packages/Enron-Evaluation-Environment` | (virtual) | [`Exios66/Enron-Evaluation-Environment`](https://github.com/Exios66/Enron-Evaluation-Environment) | Enron corpus EDA → pipeline-ready correspondence dataset |
 | `packages/claims-data-eda` | (virtual) | [`Exios66/claims-data-eda`](https://github.com/Exios66/claims-data-eda) | CMS DE-SynPUF EDA → pipeline-ready insurance_claim dataset |
 | `packages/llm-mailroom-graph` | (virtual) | [`Exios66/llm-mailroom-graph`](https://github.com/Exios66/llm-mailroom-graph) | Derived graphify knowledge-graph site of llm-mailroom |
+| `packages/mailroom-corpus-eda` | (virtual) | [`Exios66/Mailroom-Corpus-EDA`](https://github.com/Exios66/Mailroom-Corpus-EDA) | docclass-merged corpus EDA (P0–P5) + centralized HF upload helpers (`hf_interface`, `dataset_export`, `docclass_uploader`) |
 
 Virtual members have no build system (`package = false`) and are not installed;
 they exist so their data/code stays colocated in the single checkout.
@@ -112,12 +114,16 @@ uv run pytest packages/The-Mailroom/tests
 uv run pytest packages/agent-mailroom/tests
 uv run pytest packages/local-mailroom-sandbox/tests
 uv run pytest packages/claims-data-eda/tests
+uv run pytest packages/mailroom-corpus-eda/tests   # EDA pipeline smoke (if tests present)
 ```
 
 Some suites need credentials (Langfuse/Braintrust/HF) or network access and
 will skip without them. Heavy assets (sample PDFs, Posit-site builds, the
 append-only experiment log) are pruned from this repo; the affected tests
-carry explicit skip guards and are marked "pruned heavy asset".
+carry explicit skip guards and are marked "pruned heavy asset". The
+mailroom-corpus-eda interactive HTML figures (~4MB each, Plotly-inlined) are
+regenerable via its `run_all.py --phases P4` and stay in the standalone repo
+only.
 
 ## Sub-package sync (issue #2)
 
