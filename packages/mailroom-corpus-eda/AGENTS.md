@@ -26,6 +26,11 @@ Never edit it from both places in one session — develop here, sync via
 - `scripts/` — CLI wrappers: `publish_docclass.py`, `export_docclass.py`, `verify_hf.py`
 - `run_all.py` — 6-phase pipeline (P0 download → P5 export staging)
 - `reports/` — generated artifacts (figures/, figures_interactive/, tables/, SUMMARY_REPORT.md)
+  - ALL of `reports/` is tracked in full per human directive (HUB-008) — never
+    prune it and never commit regenerated variants of `figures_interactive/`:
+    each Plotly HTML embeds a random per-render div UUID, so regenerated
+    figures can never be byte-identical. The committed files are the canonical
+    upstream bytes; treat local regeneration as scratch output only.
 
 ## Commands
 

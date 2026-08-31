@@ -1,5 +1,5 @@
 {
-  "note": "Per-package sync cursor against the standalone Exios66/* repositories. Baseline per issue #2: monorepo aligned with the standalone repos as of 2026-08-31T00:06:57Z (2026-08-30 19:06 CST). mailroom-corpus-eda synced_sha is the LOCAL import tip (9cc339a): the corpus repo's main has not been republished \u2014 its remote still shows 00d55c4; drift shows in sync because 00d55c4 is an ancestor of the imported tip.",
+  "note": "Per-package sync cursor against the standalone Exios66/* repositories. Baseline per issue #2: monorepo aligned with the standalone repos as of 2026-08-31T00:06:57Z (2026-08-30 19:06 CST). mailroom-corpus-eda: the corpus repo has since been advanced upstream — its main tip (b39245a) equals the monorepo import tip, so the cursor tracks the upstream tip like every other package (HUB-008).",
   "packages": {
     "Enron-Evaluation-Environment": {
       "branch": "main",

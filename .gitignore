@@ -39,9 +39,6 @@ packages/The-Mailroom/ui/dist/
 packages/llm-mailroom/data/
 packages/The-Mailroom/data/
 
-# mailroom-corpus-eda regenerable heavy assets (Plotly-inlined HTML, ~4MB each;
-# regenerable via run_all.py --phases P4; kept only in the standalone repo)
-packages/mailroom-corpus-eda/reports/figures_interactive/
 packages/The-Mailroom/site/
 packages/local-mailroom-sandbox/data/
 packages/agent-mailroom/data/

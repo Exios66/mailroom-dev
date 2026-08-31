@@ -100,6 +100,9 @@ reconciles the mirrors; the monorepo is the development source of truth.
   `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py`, release-time only).
 - Heavy assets (docs demos/screenshots, example PDFs, report archives) are
   pruned from this repo — keep them out; reference the upstream repos.
+  EXCEPTION: the mailroom-corpus-eda EDA deliverables (`reports/figures/`,
+  `reports/figures_interactive/`, `reports/tables/`, `SUMMARY_REPORT.*`) are
+  tracked in full per human directive (HUB-008) — never prune them.
 - Deploy configs (Dockerfile, nixpacks.toml, railway.json) inside each
   package are still standalone-repo aware; build images from the package
   directory as before.

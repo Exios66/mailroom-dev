@@ -121,9 +121,10 @@ Some suites need credentials (Langfuse/Braintrust/HF) or network access and
 will skip without them. Heavy assets (sample PDFs, Posit-site builds, the
 append-only experiment log) are pruned from this repo; the affected tests
 carry explicit skip guards and are marked "pruned heavy asset". The
-mailroom-corpus-eda interactive HTML figures (~4MB each, Plotly-inlined) are
-regenerable via its `run_all.py --phases P4` and stay in the standalone repo
-only.
+mailroom-corpus-eda EDA deliverables — the 18 interactive Plotly HTML figures
+(`reports/figures_interactive/`, ~4MB each) and the static figures/tables —
+are tracked in full per human directive (HUB-008); they remain regenerable
+via `run_all.py --phases P4`.
 
 ## Sub-package sync (issue #2)
 
