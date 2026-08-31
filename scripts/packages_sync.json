@@ -1,5 +1,5 @@
 {
-  "note": "Per-package sync cursor against the standalone Exios66/* repositories. Baseline per issue #2: monorepo aligned with the standalone repos as of 2026-08-31T00:06:57Z (2026-08-30 19:06 CST). mailroom-corpus-eda: never republished (mirror-only per repo policy) — GitHub upstream stays at b39245a, so the cursor tracks the last published upstream tip; the monorepo import tip (filtered monorepo-import branch, v7 state incl. issue #5 intent hydration) is ahead and is what the subtree tree actually carries (HUB-008 pattern).",
+  "note": "Per-package sync cursor against the standalone Exios66/* repositories. Baseline per issue #2: monorepo aligned with the standalone repos as of 2026-08-31T00:06:57Z (2026-08-30 19:06 CST). mailroom-corpus-eda: cursor tracks the published GitHub upstream tip (1b0cf28, v7 issue #5 hydration state); the monorepo import tip (filtered monorepo-import branch) carries the later local-only commits (pretty_name v7 fix af270cc, v7 doc sweep 916e8da) — the subtree tree is what the monorepo actually uses.",
   "packages": {
     "Enron-Evaluation-Environment": {
       "branch": "main",
@@ -57,8 +57,8 @@
     },
     "mailroom-corpus-eda": {
       "branch": "main",
-      "synced_at": "2026-08-31T05:59:37Z",
-      "synced_sha": "b39245aaf1c4facd147e43761943f33653ff2920",
+      "synced_at": "2026-08-31T18:45:00Z",
+      "synced_sha": "1b0cf28af4d37380c23b6cf3add635d4a2927c35",
       "url": "https://github.com/Exios66/Mailroom-Corpus-EDA.git"
     }
   },
