@@ -40,6 +40,11 @@ Never edit it from both places in one session — develop here, sync via
 .venv/bin/python scripts/export_docclass.py --help
 ```
 
+**Subset-run hazard**: any `--phases` subset rewrites `reports/SUMMARY_REPORT.*`
+from only the phases you ran — a figures-only run clobbers the full-corpus
+summary with partial stats. After a subset run, re-run all phases or restore
+the summary from git before committing.
+
 ## Conventions
 
 - **Data never commits**: `data/` and `.venv/` are gitignored; `data/parquet`
@@ -49,9 +54,10 @@ Never edit it from both places in one session — develop here, sync via
   Metadata must be cast-safe (uniform keys, string-typed), JSONL must be
   line-boundary-safe (U+2028/U+2029/NEL), and labels NEVER ride in the blind
   `default` config.
-- **Interactive HTML figures** (~4MB each, Plotly-inlined) are REGENERABLE via
-  `run_all.py --phases P4` — they are pruned from the monorepo mirror (heavy
-  assets stay in the standalone repo; see mailroom-dev AGENTS.md).
+- **Interactive HTML figures** (~4MB each, Plotly-inlined) are tracked in full
+  in the monorepo per human directive (HUB-008) — see the `reports/` rule
+  above. Regenerable via `run_all.py --phases P4`, but regenerated output is
+  scratch (random per-render UUID); never commit it over the canonical bytes.
 - **Split rule**: md5(filename) % 10 == 0 → test (90/10), stable across rebuilds.
 - **Determinism**: `RANDOM_STATE = 42`; rebuilds of JSONL/parquet must be
   byte-identical (sorted rows, deterministic order).
