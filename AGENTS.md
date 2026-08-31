@@ -18,8 +18,10 @@ workspace redirects.
 - `packages/llm-mailroom-graph` — derived graph site (virtual member, no build)
 - `packages/mailroom-corpus-eda` — corpus EDA + centralized HF upload helpers (virtual member, no build)
 
-Each package carries its own `AGENTS.md` with project-specific conventions —
-read the package's AGENTS.md before changing code inside it.
+Most packages carry their own `AGENTS.md` with project-specific conventions —
+read it before changing code inside a package. `llm-dojo-scoring`,
+`agent-mailroom`, and `llm-mailroom-graph` have no AGENTS.md; their READMEs
+carry the conventions.
 
 ## Commands
 
@@ -39,6 +41,7 @@ uv run pytest packages/The-Mailroom/tests
 uv run pytest packages/agent-mailroom/tests
 uv run pytest packages/local-mailroom-sandbox/tests
 uv run pytest packages/claims-data-eda/tests
+uv run pytest packages/Enron-Evaluation-Environment/tests
 ```
 
 ## HF Hub uploads

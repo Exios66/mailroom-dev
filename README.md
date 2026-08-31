@@ -82,7 +82,7 @@ One workspace, one lockfile, one virtualenv:
 
 ```bash
 uv sync                 # create .venv and install every workspace member editable
-uv run pytest           # ad-hoc commands resolve against the shared venv
+uv run pytest ...       # any command resolves against the shared venv
 ```
 
 Cross-package dependencies resolve to **workspace sources** during development
@@ -114,8 +114,12 @@ uv run pytest packages/The-Mailroom/tests
 uv run pytest packages/agent-mailroom/tests
 uv run pytest packages/local-mailroom-sandbox/tests
 uv run pytest packages/claims-data-eda/tests
-uv run pytest packages/mailroom-corpus-eda/tests   # EDA pipeline smoke (if tests present)
+uv run pytest packages/Enron-Evaluation-Environment/tests
 ```
+
+`llm-mailroom-graph` and `mailroom-corpus-eda` ship no test suite — the graph
+site is a static build and the corpus EDA is verified behaviorally via
+`packages/mailroom-corpus-eda/run_all.py` (P0–P5).
 
 Some suites need credentials (Langfuse/Braintrust/HF) or network access and
 will skip without them. Heavy assets (sample PDFs, Posit-site builds, the
@@ -130,8 +134,9 @@ via `run_all.py --phases P4`.
 
 Every package mirrors an independent `Exios66/*` repository. The monorepo is
 the development source of truth; `scripts/sync_packages.py` keeps the mirrors
-reconciled. A baseline cursor lives in `scripts/packages_sync.json` — the
-monorepo is aligned with the standalone repos as of **2026-08-30 19:06 CST**.
+reconciled. Per-package sync cursors live in `scripts/packages_sync.json`
+(baseline 2026-08-30 19:06 CST per issue #2, advanced per-package since —
+`status` reports live drift).
 
 ```bash
 python scripts/sync_packages.py status              # drift report (fetches upstreams)

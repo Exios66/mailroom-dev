@@ -22,7 +22,7 @@ Develop here, sync via `scripts/sync_packages.py` in mailroom-dev.
 | P0 | corpus download + manifest validation | `data/parquet/**` |
 | P1 | structural integrity & provenance audit | `reports/tables/integrity_report.json` |
 | P2 | composition: strata, imbalance, provenance | `strata_counts.csv`, `imbalance_metrics.json` |
-| P3 | 27 static PNG figures + EDA tables | `reports/figures/`, `reports/tables/` |
+| P3 | 30 static PNG figures + EDA tables | `reports/figures/`, `reports/tables/` |
 | P4 | 18 interactive Plotly HTML figures | `reports/figures_interactive/` |
 | P5 | cast-safe JSONL + parquet staging helpers | `data/staging/` |
 

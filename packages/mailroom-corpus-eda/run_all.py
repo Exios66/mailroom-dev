@@ -54,7 +54,7 @@ def p2_composition() -> dict:
 
 @phase_timer
 def p3_visualizations() -> dict:
-    print("P3: static visualizations (27 figures + tables)")
+    print("P3: static visualizations (30 figures + tables)")
     from mailroom_eda import visualizations
     return visualizations.run()
 
