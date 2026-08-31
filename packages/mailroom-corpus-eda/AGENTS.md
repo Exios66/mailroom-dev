@@ -21,10 +21,13 @@ Never edit it from both places in one session — develop here, sync via
   - `visualizations_interactive.py` — P4 Plotly HTML figures (18)
   - `hf_interface.py` — centralized Hub client (upload, sha256 verify)
   - `dataset_export.py` — cast-safe JSONL (KANBAN-076/088), parquet staging, manifests
-  - `docclass_uploader.py` — docclass v6 publish, surgical card render, leak guard
+  - `docclass_uploader.py` — docclass v7 publish, surgical card render, leak guard
+  - `intent_backfill.py` — correspondence intent hydration (issue #5):
+    cross-walk, Enron/AESLC sha256 join, constrained LLM pass, provenance
   - `token_budget.py` — token estimation & budget coverage
-- `scripts/` — CLI wrappers: `publish_docclass.py`, `export_docclass.py`, `verify_hf.py`
-- `run_all.py` — 6-phase pipeline (P0 download → P5 export staging)
+- `scripts/` — CLI wrappers: `publish_docclass.py`, `backfill_intent.py`,
+  `export_docclass.py`, `verify_hf.py`
+- `run_all.py` — 7-phase pipeline (P0 download → P6 intent coverage audit)
 - `reports/` — generated artifacts (figures/, figures_interactive/, tables/, SUMMARY_REPORT.md)
   - ALL of `reports/` is tracked in full per human directive (HUB-008) — never
     prune it and never commit regenerated variants of `figures_interactive/`:
@@ -35,9 +38,10 @@ Never edit it from both places in one session — develop here, sync via
 ## Commands
 
 ```bash
-.venv/bin/python run_all.py                      # full pipeline P0-P5
+.venv/bin/python run_all.py                      # full pipeline P0-P6
 .venv/bin/python run_all.py --phases P3 P4       # figures only
-.venv/bin/python scripts/export_docclass.py --help
+.venv/bin/python scripts/backfill_intent.py --check
+.venv/bin/python scripts/publish_docclass.py --help
 ```
 
 **Summary writes**: `reports/SUMMARY_REPORT.json` is written only by a
@@ -55,17 +59,23 @@ runs used to clobber the full-corpus summary with phase-partial stats.)
   Metadata must be cast-safe (uniform keys, string-typed), JSONL must be
   line-boundary-safe (U+2028/U+2029/NEL), and labels NEVER ride in the blind
   `default` config.
-- **Interactive HTML figures** (~4MB each, Plotly-inlined) are tracked in full
-  in the monorepo per human directive (HUB-008) — see the `reports/` rule
-  above. Regenerable via `run_all.py --phases P4`, but regenerated output is
-  scratch (random per-render UUID); never commit it over the canonical bytes.
+- **Interactive HTML figures** are TRACKED IN FULL per human directive
+  (HUB-008): each Plotly HTML embeds a random per-render div UUID, so
+  regenerating can never be byte-identical — the committed files are the
+  canonical upstream bytes; treat local regeneration as scratch only.
+- **Intent backfill** (issue #5): never hand-edit `data/backfill/intent_labels.jsonl`;
+  re-run `scripts/backfill_intent.py` (checkpointed — the LLM pass skips rows
+  already in the sidecar). The canonical vocabulary is the closed 8-class set
+  in `intent_backfill.CANONICAL_INTENTS`; `other` is the explicit fallback,
+  never null.
 - **Split rule**: md5(filename) % 10 == 0 → test (90/10), stable across rebuilds.
 - **Determinism**: `RANDOM_STATE = 42`; rebuilds of JSONL/parquet must be
   byte-identical (sorted rows, deterministic order).
 
 ## HF facts (verified 2026-08-31)
 
-- Repo: `Lucius-Morningstar/docclass-merged` (v7, 1,650 rows, rev `1acd2600`).
+- Repo: `Lucius-Morningstar/docclass-merged` (v7, 1,650 rows, rev `fc1f211c`;
+  data tip `1acd2600` + card-only pretty_name bump).
 - Composition: insurance_claim 600, contract 509, correspondence 350,
   merger_agreement 152, corporate_record 39.
 - Configs: `default` (blind, 4 cols) + `ground_truth` (31 cols incl. labels +
