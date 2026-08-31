@@ -143,7 +143,7 @@ PHASES = {
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("--phases", default="P0,P1,P2,P3,P4,P5,P6",
+    parser.add_argument("--phases", default="P0,P1,P2,P3,P4,P5,P6",
                         help="comma-separated phases to run (default: all; "
                              "a subset leaves SUMMARY_REPORT.json untouched)")
     parser.add_argument("--no-interactive", action="store_true",
