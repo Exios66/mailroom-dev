@@ -13,7 +13,9 @@ ROOT = Path(__file__).resolve().parent.parent
 # workspace member (uv-managed editable install) — keep it so lazy imports in
 # pipeline.review_resolve (observability.*) resolve; ROOT at sys.path[0] still
 # protects `scripts/`. Standalone checkouts keep the full strip.
-_MONOREPO = (ROOT.parent / "uv.lock").is_file() and (ROOT.parent / "llm-mailroom").is_dir()
+_MONOREPO = (ROOT.parent / "llm-mailroom").is_dir() and (
+    (ROOT.parent.parent / "uv.lock").is_file() or (ROOT.parent / "uv.lock").is_file()
+)
 if not _MONOREPO:
     sys.path[:] = [p for p in sys.path if "llm-mailroom" not in Path(p).as_posix()]
 sys.path.insert(0, str(ROOT))

@@ -163,7 +163,7 @@ def test_judge_gate_run_flows_through_display_api():
     """A run sitting in the KANBAN-063 quality gate (judge-verify span, no
     output stage yet) must surface as stage=judge_verify with the new span in
     its routing path — not fall back to the sorter station."""
-    now = datetime.now() - timedelta(hours=1)
+    now = datetime.now(timezone.utc) - timedelta(hours=1)
     traces = [
         make_trace(
             "t-judge-gate",
@@ -191,7 +191,7 @@ def test_judge_gate_run_flows_through_display_api():
 
 
 def test_compliance_filing_floor_payload_exposes_subclass_and_intake():
-    now = datetime.now() - timedelta(hours=1)
+    now = datetime.now(timezone.utc) - timedelta(hours=1)
     traces = [
         make_trace(
             "t-compliance-floor",

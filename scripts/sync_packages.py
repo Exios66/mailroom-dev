@@ -1,0 +1,298 @@
+#!/usr/bin/env python3
+"""Sub-package <-> standalone-repo sync driver (issue #2).
+
+Each package under ``packages/`` mirrors an independent GitHub repository
+(``Exios66/<name>``). The monorepo is the single source of truth for active
+development; the sync flow keeps the mirrors reconciled with their upstreams:
+
+  status    compare each package against its upstream (drift report)
+  pull      import upstream commits into the monorepo copy (git subtree pull)
+  push      publish monorepo commits back to the standalone repo (subtree push)
+  snapshot  re-baseline the sync manifest at the current upstream tips
+
+Usage:
+    python scripts/sync_packages.py status [--package NAME] [--no-fetch] [--json]
+    python scripts/sync_packages.py pull   [--package NAME | --all] [--squash]
+    python scripts/sync_packages.py push   [--package NAME | --all]
+    python scripts/sync_packages.py snapshot [--package NAME]
+
+Baseline (per issue #2): the monorepo is aligned with the standalone repos as
+of 2026-08-30 19:06 CST (2026-08-31T00:06:57Z). That cursor lives in
+``scripts/packages_sync.json``; ``status`` always recomputes real drift against
+the live upstreams, so a stale manifest is visible at a glance.
+
+Requires: git with the ``subtree`` contrib command, network for fetch-based
+commands. Stdlib only.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+MANIFEST = REPO_ROOT / "scripts" / "packages_sync.json"
+
+ORIGIN = "https://github.com/Exios66"
+DEFAULT_BRANCH = "main"
+
+# package directory name -> standalone repo name (all under Exios66/, main).
+PACKAGES: dict[str, str] = {
+    "Enron-Evaluation-Environment": "Enron-Evaluation-Environment",
+    "The-Mailroom": "The-Mailroom",
+    "agent-mailroom": "agent-mailroom",
+    "claims-data-eda": "claims-data-eda",
+    "llm-dojo-scoring": "llm-dojo-scoring",
+    "llm-entity-extraction": "llm-entity-extraction",
+    "llm-mailroom": "llm-mailroom",
+    "llm-mailroom-graph": "llm-mailroom-graph",
+    "local-mailroom-sandbox": "local-mailroom-sandbox",
+}
+
+# Issue #2 baseline: monorepo aligned with standalone repos at this instant.
+BASELINE_SYNCED_AT = "2026-08-31T00:06:57Z"
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def run(cmd: list[str], *, capture: bool = True) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        cmd,
+        cwd=REPO_ROOT,
+        check=False,
+        text=True,
+        capture_output=capture,
+    )
+
+
+def git(args: list[str], *, capture: bool = True) -> subprocess.CompletedProcess:
+    return run(["git", *args], capture=capture)
+
+
+def load_manifest() -> dict:
+    if MANIFEST.is_file():
+        return json.loads(MANIFEST.read_text(encoding="utf-8"))
+    return {"version": 1, "note": "", "packages": {}}
+
+
+def save_manifest(data: dict) -> None:
+    MANIFEST.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def url_for(package: str) -> str:
+    return f"{ORIGIN}/{PACKAGES[package]}.git"
+
+
+def upstream_head(url: str, branch: str) -> str | None:
+    result = git(["ls-remote", url, f"refs/heads/{branch}"])
+    if result.returncode != 0 or not result.stdout.strip():
+        return None
+    return result.stdout.split()[0]
+
+
+def fetch_upstream(package: str) -> str | None:
+    """Fetch the upstream tip into FETCH_HEAD; return the fetched SHA."""
+    url, branch = url_for(package), DEFAULT_BRANCH
+    result = git(["fetch", "--no-tags", url, branch])
+    if result.returncode != 0:
+        print(result.stderr.strip(), file=sys.stderr)
+        return None
+    resolved = git(["rev-parse", "FETCH_HEAD"])
+    return resolved.stdout.strip() if resolved.returncode == 0 else None
+
+
+def assert_clean_tree(action: str, allow_dirty: bool) -> None:
+    status = git(["status", "--porcelain"])
+    dirty = bool(status.stdout.strip())
+    if dirty and not allow_dirty:
+        sys.exit(
+            f"refusing to {action}: worktree is dirty (git status reports changes).\n"
+            "Commit or stash first, or pass --allow-dirty if you accept the risk."
+        )
+
+
+def require_subtree() -> None:
+    probe = git(["subtree", "-h"], capture=True)
+    if probe.returncode not in (0, 129):
+        sys.exit("git subtree is unavailable; install git with the subtree contrib command.")
+
+
+def selected_packages(args: argparse.Namespace) -> list[str]:
+    if args.package:
+        if args.package not in PACKAGES:
+            sys.exit(f"unknown package {args.package!r}; valid: {', '.join(PACKAGES)}")
+        return [args.package]
+    return list(PACKAGES)
+
+
+# --------------------------------------------------------------------------- #
+# commands
+# --------------------------------------------------------------------------- #
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    manifest = load_manifest()
+    entries = manifest.setdefault("packages", {})
+    rows: list[dict[str, object]] = []
+    for package in selected_packages(args):
+        url = url_for(package)
+        head = None if args.no_fetch else fetch_upstream(package)
+        entry = entries.get(package, {})
+        synced_sha = entry.get("synced_sha")
+        drift = None
+        if head and synced_sha:
+            count = git(["rev-list", "--count", f"{synced_sha}..{head}"])
+            drift = int(count.stdout.strip()) if count.returncode == 0 else None
+        rows.append(
+            {
+                "package": package,
+                "prefix": f"packages/{package}",
+                "upstream": url,
+                "branch": DEFAULT_BRANCH,
+                "upstream_head": head or "unreachable",
+                "synced_sha": synced_sha,
+                "synced_at": entry.get("synced_at"),
+                "new_upstream_commits": drift,
+                "up_to_date": drift == 0,
+            }
+        )
+    if args.json:
+        print(json.dumps(rows, indent=2))
+        return 0
+    for row in rows:
+        drift = row["new_upstream_commits"]
+        state = "in sync" if drift == 0 else f"{drift} new upstream commit(s)" if drift is not None else "unknown drift"
+        print(
+            f"{row['package']:<32} {state:<28} upstream={row['upstream_head'][:12]} "
+            f"synced={str(row['synced_sha'])[:12] or '-'} @ {row['synced_at'] or '-'}"
+        )
+    return 0
+
+
+def cmd_pull(args: argparse.Namespace) -> int:
+    require_subtree()
+    assert_clean_tree("pull", args.allow_dirty)
+    manifest = load_manifest()
+    entries = manifest.setdefault("packages", {})
+    failed = False
+    for package in selected_packages(args):
+        url = url_for(package)
+        print(f"== git subtree pull --prefix packages/{package} {url} {DEFAULT_BRANCH}"
+              + (" --squash" if args.squash else ""))
+        cmd = ["subtree", "pull", f"--prefix=packages/{package}", url, DEFAULT_BRANCH]
+        if args.squash:
+            cmd.append("--squash")
+        result = git(cmd, capture=False)
+        if result.returncode != 0:
+            print(f"!! pull failed for {package}", file=sys.stderr)
+            failed = True
+            continue
+        # Record the exact upstream tip that was merged in.
+        head = upstream_head(url, DEFAULT_BRANCH)
+        entries[package] = {
+            "url": url,
+            "branch": DEFAULT_BRANCH,
+            "synced_sha": head,
+            "synced_at": utc_now(),
+        }
+    save_manifest(manifest)
+    return 1 if failed else 0
+
+
+def cmd_push(args: argparse.Namespace) -> int:
+    require_subtree()
+    assert_clean_tree("push", args.allow_dirty)
+    manifest = load_manifest()
+    entries = manifest.setdefault("packages", {})
+    failed = False
+    for package in selected_packages(args):
+        url = url_for(package)
+        print(f"== git subtree push --prefix packages/{package} {url} {DEFAULT_BRANCH}")
+        result = git(
+            ["subtree", "push", f"--prefix=packages/{package}", url, DEFAULT_BRANCH],
+            capture=False,
+        )
+        if result.returncode != 0:
+            print(f"!! push failed for {package}", file=sys.stderr)
+            failed = True
+            continue
+        entries[package] = {
+            "url": url,
+            "branch": DEFAULT_BRANCH,
+            "synced_sha": upstream_head(url, DEFAULT_BRANCH),
+            "synced_at": utc_now(),
+        }
+    save_manifest(manifest)
+    return 1 if failed else 0
+
+
+def cmd_snapshot(args: argparse.Namespace) -> int:
+    manifest = load_manifest()
+    entries = manifest.setdefault("packages", {})
+    now = utc_now()
+    for package in selected_packages(args):
+        url = url_for(package)
+        head = upstream_head(url, DEFAULT_BRANCH)
+        if head is None:
+            print(f"!! could not read upstream tip for {package}; keeping previous entry", file=sys.stderr)
+            continue
+        entries[package] = {
+            "url": url,
+            "branch": DEFAULT_BRANCH,
+            "synced_sha": head,
+            "synced_at": now,
+        }
+    manifest["version"] = 1
+    manifest.setdefault("note", "")
+    manifest["note"] = (
+        "Per-package sync cursor against the standalone Exios66/* repositories. "
+        "Baseline per issue #2: monorepo aligned with the standalone repos as of "
+        f"{BASELINE_SYNCED_AT} (2026-08-30 19:06 CST)."
+    )
+    save_manifest(manifest)
+    print(f"snapshot written to {MANIFEST.relative_to(REPO_ROOT)} at {now}")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    def add_common(p: argparse.ArgumentParser, with_all: bool = True) -> None:
+        p.add_argument("--package", help="operate on a single package (default: all)")
+        if with_all:
+            p.add_argument("--all", action="store_true", help="explicit all-packages mode")
+
+    status = sub.add_parser("status", help="report upstream drift per package")
+    add_common(status)
+    status.add_argument("--no-fetch", action="store_true", help="skip network fetch; manifest-only report")
+    status.add_argument("--json", action="store_true", help="machine-readable output")
+    status.set_defaults(func=cmd_status)
+
+    pull = sub.add_parser("pull", help="git subtree pull upstream into packages/<name>")
+    add_common(pull)
+    pull.add_argument("--squash", action="store_true", help="squash upstream history on import")
+    pull.add_argument("--allow-dirty", action="store_true", help="bypass the clean-worktree guard")
+    pull.set_defaults(func=cmd_pull)
+
+    push = sub.add_parser("push", help="git subtree push packages/<name> back to upstream")
+    add_common(push)
+    push.add_argument("--allow-dirty", action="store_true", help="bypass the clean-worktree guard")
+    push.set_defaults(func=cmd_push)
+
+    snap = sub.add_parser("snapshot", help="re-baseline the manifest at current upstream tips")
+    add_common(snap)
+    snap.set_defaults(func=cmd_snapshot)
+
+    args = parser.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

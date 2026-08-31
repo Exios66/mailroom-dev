@@ -221,7 +221,7 @@ def write_sample_manifest(dataset: list[dict], manifest_path: Path) -> None:
                 "filename": row["filename"],
                 "expected": row["expected"],
                 "expected_subclass": row.get("expected_subclass"),
-            }, ensure_ascii=False) + "\n")
+            }, ensure_ascii=False) + "\n")  # KANBAN-088-EXEMPT: json.dumps always escapes control chars (no raw newlines); UTF-8 output only
 
 
 def attach_pages_by_filename(dataset: list[dict], pdf_dir: Path) -> tuple[list[dict], int]:

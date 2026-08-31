@@ -1,0 +1,60 @@
+{
+  "note": "Per-package sync cursor against the standalone Exios66/* repositories. Baseline per issue #2: monorepo aligned with the standalone repos as of 2026-08-31T00:06:57Z (2026-08-30 19:06 CST).",
+  "packages": {
+    "Enron-Evaluation-Environment": {
+      "branch": "main",
+      "synced_at": "2026-08-31T02:34:20Z",
+      "synced_sha": "b0fc5abc760f61d9b03b17e4249967d6d2b1be59",
+      "url": "https://github.com/Exios66/Enron-Evaluation-Environment.git"
+    },
+    "The-Mailroom": {
+      "branch": "main",
+      "synced_at": "2026-08-31T02:34:20Z",
+      "synced_sha": "2ef0041df6995a79ff8f85159a0b01a918fce8af",
+      "url": "https://github.com/Exios66/The-Mailroom.git"
+    },
+    "agent-mailroom": {
+      "branch": "main",
+      "synced_at": "2026-08-31T02:34:20Z",
+      "synced_sha": "b1d89b88dadbb24dc0d28d4fed50464d68ff0180",
+      "url": "https://github.com/Exios66/agent-mailroom.git"
+    },
+    "claims-data-eda": {
+      "branch": "main",
+      "synced_at": "2026-08-31T02:34:20Z",
+      "synced_sha": "ef912ea02b42ff035cc901a2e6290c2b593628d4",
+      "url": "https://github.com/Exios66/claims-data-eda.git"
+    },
+    "llm-dojo-scoring": {
+      "branch": "main",
+      "synced_at": "2026-08-31T02:34:20Z",
+      "synced_sha": "15a9c7069079b08f33d446c30e1204e203fb9dcc",
+      "url": "https://github.com/Exios66/llm-dojo-scoring.git"
+    },
+    "llm-entity-extraction": {
+      "branch": "main",
+      "synced_at": "2026-08-31T02:34:20Z",
+      "synced_sha": "4cfac906e487bf1ac21cffb422251f0020de512d",
+      "url": "https://github.com/Exios66/llm-entity-extraction.git"
+    },
+    "llm-mailroom": {
+      "branch": "main",
+      "synced_at": "2026-08-31T02:34:20Z",
+      "synced_sha": "67db3ea6600470bed67e5a2a4f403368577b0f5b",
+      "url": "https://github.com/Exios66/llm-mailroom.git"
+    },
+    "llm-mailroom-graph": {
+      "branch": "main",
+      "synced_at": "2026-08-31T02:34:20Z",
+      "synced_sha": "1b65e46517e73b5c25733cf0906435082e5be0a6",
+      "url": "https://github.com/Exios66/llm-mailroom-graph.git"
+    },
+    "local-mailroom-sandbox": {
+      "branch": "main",
+      "synced_at": "2026-08-31T02:34:20Z",
+      "synced_sha": "08cd80caf69ef66df044225f06e080adbeae2c31",
+      "url": "https://github.com/Exios66/local-mailroom-sandbox.git"
+    }
+  },
+  "version": 1
+}
