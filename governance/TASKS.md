@@ -55,7 +55,6 @@ entity board: same laws, fewer steps.
 | HUB-005 | `assigned` | **Release-train readiness** — at the next package release: bump the consuming pins (release-time only; `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py` for the dojo pin), propagate monorepo work upstream with `python scripts/sync_packages.py push --package <name>`, tag in the standalone repo. One card per release sweep; scope it when claimed. | unclaimed | — | workspace rules in `AGENTS.md` (pins keep their published git lines) |
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
 | HUB-008 | `done` (pending archive) | **Corpus EDA full-fidelity completion** — human directive: the HUB-007 prune of `reports/figures_interactive/` (18 Plotly-inlined HTML figures) is reversed; the corpus EDA package carries the FULL repo content with figures + EDA reports preserved faithfully. History truncation accepted; standalone repo NOT republished (upstream tip `b39245a` already equals the import tip — only the 18 figures were missing, 74MB). Un-pruned root `.gitignore`, imported the 18 HTMLs sha256-identical to upstream, refreshed the stale `packages_sync.json` note (corpus upstream IS published; `sync status` = in sync), aligned root/package docs. Spun off HUB-009 (subset-run summary hazard). | opencode | — | commit `c16cdd18` |
-| HUB-009 | `in_progress` | **run_all.py subset runs clobber SUMMARY_REPORT.\*** — discovered during HUB-008 verification: any `run_all.py --phases` subset rewrites `reports/SUMMARY_REPORT.*` from only the phases that ran (a P4-only run deleted 362 lines of full-corpus stats; caught and reverted from git). Fix the pipeline so the summary is only written when all phases ran (or is phase-tagged), and keep the warning in `packages/mailroom-corpus-eda/AGENTS.md`. Package-scoped but hub-visible until the package grows its own board. | opencode | — | claimed 2026-08-31; behavior regression-verified against P4-only and full runs |
 
 ## Rules that keep the board honest
 
@@ -87,6 +86,20 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-009** (done 2026-08-31) — **run_all.py subset runs clobber
+  SUMMARY_REPORT.\*** — fixed: `run_all.py` now writes
+  `reports/SUMMARY_REPORT.json` only when all six phases ran; `--phases`
+  subset runs and `--no-interactive` (whose summary would miss the P4
+  section) leave it untouched with an explicit stdout notice. Package has no
+  test suite, so verification was behavioral: P4-only and `--no-interactive`
+  runs leave the summary sha256-identical; a full P0-P5 run rewrites it
+  byte-identical to the committed version (determinism holds); scratch
+  figure UUIDs restored from git per the canonical-bytes rule; `py_compile`
+  green. One transient P3 failure on a `--no-interactive` attempt did not
+  reproduce on rerun (phase machinery reported it correctly with exit 1 —
+  watch for recurrence). Package AGENTS.md hazard block updated to the new
+  behavior; monorepo-side fix, upstream publish deferred to the release
+  train (HUB-005). Evidence: `9c0a5321`.
 - **HUB-008** (done 2026-08-31) — **Corpus EDA full-fidelity completion** —
   human directive: preserve figures + EDA reports faithfully, full repo in,
   history truncation OK, no republish. Imported the 18 Plotly HTML figures
