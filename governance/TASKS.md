@@ -63,6 +63,7 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
 | Card | Status | Task | Owner | Issue | Evidence |
 |---|---|---|---|---|---|
 | HUB-005 | `assigned` | **Release-train readiness** — at the next package release: bump the consuming pins (release-time only; `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py` for the dojo pin), propagate monorepo work upstream with `python scripts/sync_packages.py push --package <name>`, tag in the standalone repo. One card per release sweep; scope it when claimed. | unclaimed | — | workspace rules in `AGENTS.md` (pins keep their published git lines) |
+| HUB-016 | `in_progress` | **Docs-currency sweep** — verify every doc against the post-HUB-014/004/012/015 reality: version pins (v0.6.0 / dojo v0.12.2), prune state, figure counts, reporter retirement, board tracker/labels, CHANGELOG entries for behavior-changing commits (sandbox). Small board-only card. | opencode (2026-09-01) | — | claimed 2026-09-01 by opencode |
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
 
 ## Rules that keep the board honest
