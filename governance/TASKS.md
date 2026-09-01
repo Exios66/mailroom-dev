@@ -63,7 +63,6 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
 | Card | Status | Task | Owner | Issue | Evidence |
 |---|---|---|---|---|---|
 | HUB-005 | `assigned` | **Release-train readiness** — at the next package release: bump the consuming pins (release-time only; `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py` for the dojo pin), propagate monorepo work upstream with `python scripts/sync_packages.py push --package <name>`, tag in the standalone repo. One card per release sweep; scope it when claimed. | unclaimed | — | workspace rules in `AGENTS.md` (pins keep their published git lines) |
-| HUB-016 | `in_progress` | **Docs-currency sweep** — verify every doc against the post-HUB-014/004/012/015 reality: version pins (v0.6.0 / dojo v0.12.2), prune state, figure counts, reporter retirement, board tracker/labels, CHANGELOG entries for behavior-changing commits (sandbox). Small board-only card. | opencode (2026-09-01) | — | claimed 2026-09-01 by opencode |
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
 
 ## Rules that keep the board honest
@@ -96,6 +95,22 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-016** (done 2026-09-01) — **Docs-currency sweep** — systematic
+  staleness pass over every surface touched by HUB-014/004/012/015. Fixed:
+  sandbox `docs/sister-repos.md` dojo row v0.12.1→v0.12.2;
+  `data/fixtures/ATTRIBUTION.md` v0.5.0→v0.6.0; sandbox `CHANGELOG.md`
+  [Unreleased] pin bullet updated + HUB-015 Changed entry (reporter
+  retirement / zero-LLM compile path / v0.6.0+v0.12.2 alignment / GT
+  targets / Docker hardening); `docs/docker-offline.md` documents the
+  non-root USER + HEALTHCHECK + the full version-pin table. Verified
+  current (no changes needed): root README (architecture map, governance
+  tooling, suite list), root AGENTS.md (commands + board law), TASKS.md,
+  corpus-eda README/AGENTS (no stale figure counts), entity docs
+  (upstream-managed — describes the standalone repo where the pruned dirs
+  exist; prune is documented at root level), sandbox README/AGENTS/evals.md
+  (HUB-015 pass). Greps for legacy template refs, stale pins, and figure
+  counts all clean. Suite: 51 passed / 1 skipped / 0 failed. Evidence: this
+  commit.
 - **HUB-015** (done 2026-09-01) — **Offline sandbox: current-pipeline
   alignment + reduced agent profile + docclass-merged targets** — human
   directive; one commit. (a) **Version alignment**: sandbox surfaces moved
