@@ -62,7 +62,6 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
 
 | Card | Status | Task | Owner | Issue | Evidence |
 |---|---|---|---|---|---|
-| HUB-004 | `in_progress` | **Upstream-drift reconciliation** — upstream tips of The-Mailroom (`2ef0041`), llm-entity-extraction (`4cfac90`) moved past their subtree-import SHAs. Run `python scripts/sync_packages.py status`, then per-package `pull --squash`, resolving upstream changes against monorepo-side fixes (the monorepo is the development source of truth — imported guards/skip fixes win unless upstream supersedes them). **llm-mailroom leg done:** pulled `d93894a` (monorepo docs alignment) + `4e9bf69` (audit-driven docs drift fixes) with `sync_packages.py pull --squash`; re-applied the heavy-asset prune (`docs/examples/`, `docs/reports/`) as a monorepo-side fix and advanced the sync cursor; llm-mailroom-graph subtree refresh pulled (`fec699d`); `uv run pytest packages/llm-mailroom/src/tests` = 772 passed / 36 skipped. Evidence: `abb0ed3d`, `d158f6ae`, `69f572a2`. | opencode (2026-09-01) | — | drift visible via `sync_packages.py status`; cursor `scripts/packages_sync.json` |
 | HUB-005 | `assigned` | **Release-train readiness** — at the next package release: bump the consuming pins (release-time only; `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py` for the dojo pin), propagate monorepo work upstream with `python scripts/sync_packages.py push --package <name>`, tag in the standalone repo. One card per release sweep; scope it when claimed. | unclaimed | — | workspace rules in `AGENTS.md` (pins keep their published git lines) |
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
 | HUB-012 | `in_progress` | **corpus-eda P3 summary counter stale (27 vs 30 figures)** — discovered during HUB-010: `visualizations.run()` returns a figures count of 27, so `SUMMARY_REPORT.json` P3 stats say `figures: 27`, while P3 actually writes 30 PNGs (disk truth; 28/29/30 live in `visualizations.py`). Docs were aligned to 30 in HUB-010; fix the returned counter so the summary stats match the artifact count. Touching it rewrites `SUMMARY_REPORT.json` (byte-drift vs upstream) — coordinate with the corpus-eda upstream at next sync (executing now per human directive). | opencode (2026-09-01) | — | HUB-010 session, 2026-08-31 |
@@ -97,6 +96,29 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-004** (done 2026-09-01) — **Upstream-drift reconciliation** — all
+  legs complete, monorepo in sync with every standalone upstream (10/10 via
+  `sync_packages.py status`). llm-mailroom leg: pulled `d93894a`+`4e9bf69`
+  (`--squash`), heavy-asset prune re-applied, cursor advanced; suite 772
+  passed / 36 skipped. llm-mailroom-graph refresh pulled (`fec699d`).
+  The-Mailroom tip `fae52e1` reconciled. llm-entity-extraction leg
+  (2026-09-01): pulled upstream `4cfac906e`→`2482879f2` — 6 additive
+  KANBAN-105 commits (docclass-merged v6 builders/publish machinery:
+  `build_docclass_v6.py`, `publish_docclass_v6.py`,
+  `attach_original_files.py`, `export_existing_purpose_gt.py`,
+  `build_correspondence_append.py`, `build_extra_claims.py` +
+  `test_kanban105_docclass_v6.py`); file-level compare pre-verified zero
+  overlap with monorepo-side wiring (conflict-free by construction);
+  re-applied the heavy-asset prune the subtree merge resurrected
+  (`docs/data/`, `docs/posit/`, `docs/posit-src/` — root `.gitignore`
+  lines 52-54; gitignore does not apply to tracked files, so explicit
+  `git rm --cached` + tree removal); entity suite green 745 passed /
+  28 skipped / 0 failed (the 2 transitory failures were the resurrected
+  pruned dirs breaking skip-guarded tests — resolved by the prune; all
+  skips are documented pruned-asset/live-artifact guards). Monorepo-side
+  fixes untouched (guards/markers intact); no stale code imported
+  (monorepo = central truth, current-only pulls). Evidence: `a760f698`
+  (entity squash) + the prune/archive commit.
 - **HUB-014** (done 2026-09-01) — **GitHub governance tooling — templates,
   labels, board state tracker** — human directive: full GitHub integration
   for the hub board. Landed in one commit: YAML issue templates
