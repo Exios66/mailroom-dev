@@ -44,6 +44,15 @@ uv run pytest packages/claims-data-eda/tests
 uv run pytest packages/Enron-Evaluation-Environment/tests
 ```
 
+Governance tooling (hub board + labels; see README "GitHub governance
+tooling" for the full command list):
+
+```bash
+python scripts/board_state.py status            # live board snapshot (--json for machines)
+python scripts/board_state.py check             # board invariants; exit 1 on structural errors
+python scripts/github_labels.py audit           # label taxonomy drift (CI gate)
+```
+
 ## HF Hub uploads
 
 The `docclass-merged` dataset family is published through the CENTRALIZED
@@ -80,6 +89,19 @@ The four lanes: `assigned` (queued/claimed, nothing underway) →
 - **Issue routing** — board-only for small/single-session/low-risk cards;
   critical or cross-package cards get an issue in the repo where the work
   lands (this monorepo for hub scope, the package repo for package scope).
+  Synced issues use the *Board card (HUB-0NN)* template
+  (`.github/ISSUE_TEMPLATE/hub_card.yml`), carry the `kanban` + lane labels
+  (taxonomy: `.github/labels.json`, applied by `board_state.py sync-issues`),
+  and are mirrored both ways: the card's Issue column links the issue, lane
+  moves land as issue comments.
+
+The board is computationally readable: `scripts/board_state.py` parses the
+live file (open table + archive) into JSON, validates the board's own laws
+(`check` — structural contradictions exit 1, hygiene drift is warned), and
+mirrors lane state onto GitHub issues and an optional Projects v2 board.
+Run `check` before closing any card that touches the board; the CI gate
+(`.github/workflows/board-governance.yml`) enforces it on every change to
+`governance/`, `scripts/`, or `.github/`.
 
 Test gates: run the surgically relevant suite for the package you touched by
 default; run that package's FULL suite (and any dependent suites) for

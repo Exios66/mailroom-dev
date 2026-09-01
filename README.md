@@ -39,7 +39,16 @@ mailroom-dev/
 │   └── TASKS.md                 # task board: assigned / in_progress / needs_attention / done
 ├── scripts/
 │   ├── packages_sync.json       # per-package sync cursor (issue #2)
-│   └── sync_packages.py         # sub-package <-> standalone-repo sync driver
+│   ├── sync_packages.py         # sub-package <-> standalone-repo sync driver
+│   ├── board_state.py           # live-state tracker for governance/TASKS.md (HUB-014)
+│   ├── github_labels.py         # label taxonomy sync/audit (.github/labels.json)
+│   └── board_config.json        # Projects v2 mirror config (written by project-init)
+├── .github/
+│   ├── ISSUE_TEMPLATE/          # YAML forms: board card, bug, feature, task/TODO
+│   ├── PULL_REQUEST_TEMPLATE/   # PR form enforcing the hub board discipline
+│   ├── labels.json              # declarative label taxonomy (stages/domains/types)
+│   └── workflows/
+│       └── board-governance.yml # CI gate: board invariants + label drift
 └── packages/                    # one directory per standalone repo (git subtree)
     ├── Enron-Evaluation-Environment/   # virtual member (no build)
     ├── The-Mailroom/
@@ -150,6 +159,47 @@ python scripts/sync_packages.py snapshot            # re-baseline the cursor
 `pull`/`push` refuse to run on a dirty worktree (`--allow-dirty` overrides);
 `pull --squash` keeps upstream history out of the monorepo log. `status
 --json` emits machine-readable drift rows for CI.
+
+## GitHub governance tooling (HUB-014)
+
+The board and its GitHub surface stay machine-readable and mutually
+consistent:
+
+- **Issue templates** (`.github/ISSUE_TEMPLATE/`): a *Board card (HUB-0NN)*
+  form for synced cards (one card = one issue), plus bug / feature / TODO
+  forms — each pre-labelled from the taxonomy in `.github/labels.json`
+  (`stage/*` lane mirrors, `attention/*` tags, `type/*`, `priority/*`,
+  `domain/*` per package, `kanban` marker). The PR template
+  (`.github/PULL_REQUEST_TEMPLATE/`) enforces the board discipline (card
+  reference, board-before-code, `HUB-0NN:` commits, test gates, docs
+  currency).
+- **Board state tracker** — `scripts/board_state.py` reads the LIVE state of
+  `governance/TASKS.md` (open table + archive), validates the board's own
+  laws, and mirrors lane state onto GitHub:
+
+  ```bash
+  python scripts/board_state.py status                # snapshot (add --json for machine-readable)
+  python scripts/board_state.py card HUB-014          # one card + commits referencing it
+  python scripts/board_state.py check                 # invariants; exit 1 on structural errors
+  python scripts/board_state.py check --with-issues   # + verify synced issues/labels via gh
+  python scripts/board_state.py sync-issues --apply   # push board-derived labels onto issues
+  python scripts/board_state.py project-init          # one-time Projects v2 mirror setup
+  python scripts/board_state.py project-sync --apply  # mirror the open table into the project
+  ```
+
+  `check` errors are structural contradictions (duplicate IDs, invalid lanes,
+  malformed issue links, missing `needs:`/`review:`/`decision:` tags, phantom
+  commit references); hygiene drift (pending-archive rows, unclaimed cards
+  with commits, stale `in_progress`) is reported as warnings. CI runs
+  `check` + the label audit on every change to `governance/`, `scripts/`,
+  or `.github/` (`.github/workflows/board-governance.yml`).
+- **Label taxonomy** — `.github/labels.json` is the source of truth;
+  `python scripts/github_labels.py sync` creates/updates the repo labels,
+  `audit` reports drift (exit 1 when manifest labels are missing).
+
+The Projects v2 mirror (the `mailroom-hub board` project, with
+Lane/Owner/Card fields) needs a one-time interactive scope grant:
+`gh auth refresh -s read:project`, then `project-init` + `project-sync`.
 
 ## Release flow
 

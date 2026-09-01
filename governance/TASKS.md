@@ -17,6 +17,17 @@ entity board: same laws, fewer steps.
 > agent communication thread lands (HUB-006), it becomes the discussion
 > channel and this file remains the lane table + archive of record.
 
+**Machine-readable state (HUB-014):** this board is computationally readable
+via `python scripts/board_state.py` — `status` (snapshot, `--json` for
+machines), `card HUB-0NN` (one card + its commits), `check` (invariants:
+structural contradictions exit 1; hygiene drift is warned), `sync-issues`
+(label sync onto synced issues), `project-init`/`project-sync` (GitHub
+Projects v2 mirror). The label taxonomy for issues lives in
+`.github/labels.json` (`stage/*` = these lanes, `attention/*` = the
+needs_attention tags, `type/*`, `priority/*`, `domain/*`, `kanban` marker);
+the CI gate `.github/workflows/board-governance.yml` runs `check` + the
+label audit on every change to `governance/`, `scripts/`, or `.github/`.
+
 ## How to use — four steps
 
 1. **Read first.** Read this board (and open GitHub issues) at session start,
@@ -54,11 +65,7 @@ entity board: same laws, fewer steps.
 | HUB-004 | `in_progress` | **Upstream-drift reconciliation** — upstream tips of The-Mailroom (`2ef0041`), llm-entity-extraction (`4cfac90`) moved past their subtree-import SHAs. Run `python scripts/sync_packages.py status`, then per-package `pull --squash`, resolving upstream changes against monorepo-side fixes (the monorepo is the development source of truth — imported guards/skip fixes win unless upstream supersedes them). **llm-mailroom leg done:** pulled `d93894a` (monorepo docs alignment) + `4e9bf69` (audit-driven docs drift fixes) with `sync_packages.py pull --squash`; re-applied the heavy-asset prune (`docs/examples/`, `docs/reports/`) as a monorepo-side fix and advanced the sync cursor; llm-mailroom-graph subtree refresh pulled (`fec699d`); `uv run pytest packages/llm-mailroom/src/tests` = 772 passed / 36 skipped. Evidence: `abb0ed3d`, `d158f6ae`, `69f572a2`. | unclaimed | — | drift visible via `sync_packages.py status`; cursor `scripts/packages_sync.json` |
 | HUB-005 | `assigned` | **Release-train readiness** — at the next package release: bump the consuming pins (release-time only; `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py` for the dojo pin), propagate monorepo work upstream with `python scripts/sync_packages.py push --package <name>`, tag in the standalone repo. One card per release sweep; scope it when claimed. | unclaimed | — | workspace rules in `AGENTS.md` (pins keep their published git lines) |
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
-| HUB-008 | `done` (pending archive) | **Corpus EDA full-fidelity completion** — human directive: the HUB-007 prune of `reports/figures_interactive/` (18 Plotly-inlined HTML figures) is reversed; the corpus EDA package carries the FULL repo content with figures + EDA reports preserved faithfully. History truncation accepted; standalone repo NOT republished (upstream tip `b39245a` already equals the import tip — only the 18 figures were missing, 74MB). Un-pruned root `.gitignore`, imported the 18 HTMLs sha256-identical to upstream, refreshed the stale `packages_sync.json` note (corpus upstream IS published; `sync status` = in sync), aligned root/package docs. Spun off HUB-009 (subset-run summary hazard). | opencode | — | commit `c16cdd18` |
-| HUB-011 | `done` (pending archive) | **Prompt-engineer opencode agent adapted for the monorepo** — human directive: make the entity repo's GEPA prompt-engineer agent operate out of the box in mailroom-dev. Root `.opencode/agents/prompt-engineer.md` (workspace bindings: uv-workspace commands, per-package AGENTS.md rule, both prompt registries — entity `PROMPT_VERSIONS` append-only + mailroom `prompts_docclass.py` PURE-APPEND, the llm-dojo→mailroom direction doctrine, HUB-00N vs KANBAN-NNN board routing, env variables incl. the funding-key gate / `BRAINTRUST_LOGGING` default / mailroom `OBSERVABILITY_PROVIDER` Phoenix gotcha / `PYTHONHASHSEED=0` / hub-1.x datasets-cache + read-timeout quirks) + `PROMPT_ENGINEER_GEPA_PROVENANCE.md` companion copied verbatim. GEPA doctrine (9-step loop, scientific contract, Phases 0–6) preserved — diff vs the entity source shows exactly 3 intended binding edits, zero doctrine drift. Sessions inside `packages/llm-entity-extraction` keep that package's own agent copy (closer project config wins); the global `~/.config/opencode` copy stays generic. Board-only card (tooling config, single session). | opencode | — | restart opencode to load; suite impact: none (config-only) |
 | HUB-012 | `assigned` | **corpus-eda P3 summary counter stale (27 vs 30 figures)** — discovered during HUB-010: `visualizations.run()` returns a figures count of 27, so `SUMMARY_REPORT.json` P3 stats say `figures: 27`, while P3 actually writes 30 PNGs (disk truth; 28/29/30 live in `visualizations.py`). Docs were aligned to 30 in HUB-010; fix the returned counter so the summary stats match the artifact count. Touching it rewrites `SUMMARY_REPORT.json` (byte-drift vs upstream) — coordinate with the corpus-eda upstream at next sync. | unclaimed | — | HUB-010 session, 2026-08-31 |
-| HUB-014 | `in_progress` | **GitHub governance tooling — templates, labels, board state tracker** — human directive: full GitHub integration for the hub board. YAML issue templates (board card / bug / feature / task-TODO + `config.yml`, replacing the legacy `new-feature.md`+`todo.md`), YAML PR template enforcing the hub discipline (card ref, board-before-code, `HUB-0NN:` commit law, test gates, docs currency), declarative label taxonomy (`.github/labels.json`: `stage/*` lane mirrors, `attention/*` tags, `type/*`, `priority/*`, `domain/*` per package, `kanban` marker) + `scripts/github_labels.py` sync/audit, and `scripts/board_state.py` — a computationally readable live-state tracker for this board (parse open table + archive, `status`/`--json`/`card`/`check` invariants incl. git cross-checks, `sync-issues` label sync, `project-init`/`project-sync` GitHub Projects v2 mirror with Lane/Owner/Card fields, dry-run default). CI: `.github/workflows/board-governance.yml`. Docs currency in the same commit. | opencode (2026-08-31) | — | claimed 2026-08-31 by opencode; human directive, same session |
-| HUB-013 | `done` (pending archive) | **Corpus-EDA v7 reconciliation** — human pushed the standalone clone to upstream (`main` = `43b5232`; both the import tip `b39245a` and v7 tip `1b0cf28` verified ancestors — clone no longer sole copy). Upstream now carries v7 intent-hydration machinery (issue #5: cross-walk, Enron join, LLM labeler, provenance schema; HF data rev `1acd2600`, card rev `fc1f211c`), a **P0–P6 pipeline** (new P6), v7 EDA reruns, and ports of the monorepo HUB-008 reports rule + HUB-009 summary guard. Pull v7 into the monorepo via `sync_packages.py`, reconcile against monorepo-side fixes (monorepo wins unless superseded), run the full pipeline, advance the cursor, align root docs (P0–P6). | opencode | — | v7 landed via `e68b0631`/`06505812`/`e37100a9`/`8d7ce748` + v7 schema bump `41ac512a`; cursor advanced to `43b5232` in `831c9b34`; `sync status` = in sync |
 
 ## Rules that keep the board honest
 
@@ -90,6 +97,29 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-014** (done 2026-09-01) — **GitHub governance tooling — templates,
+  labels, board state tracker** — human directive: full GitHub integration
+  for the hub board. Landed in one commit: YAML issue templates
+  (`.github/ISSUE_TEMPLATE/`: hub card / bug / feature / task-TODO +
+  `config.yml`, legacy `new-feature.md`+`todo.md` deleted), YAML PR template
+  enforcing the hub discipline, declarative label taxonomy
+  (`.github/labels.json`: `stage/*` lane mirrors, `attention/*` tags,
+  `type/*`, `priority/*`, `domain/*` ×13, `kanban`) +
+  `scripts/github_labels.py` (sync/audit), `scripts/board_state.py`
+  (live-state tracker: parse open table + archive, `status`/`card`/`check`
+  invariants incl. git cross-checks, `sync-issues` label sync,
+  `project-init`/`project-sync` Projects v2 mirror with Lane/Owner/Card
+  fields, dry-run default), CI gate `.github/workflows/board-governance.yml`
+  (board check + label audit blocking; project mirror advisory), docs
+  currency in README/AGENTS/TASKS. Verified: `py_compile` green; all 7 YAML
+  files parse; `status/check/card/--json` green on the live board (0 errors;
+  surfaced hygiene drift → HUB-008/011/013 stale open rows resolved, HUB-011
+  properly archived); labels synced live (32 created, `audit` green — 3
+  descriptions shortened to GitHub's 100-char limit); all 5 repo issues
+  (all closed) retro-labelled with the taxonomy. Open prerequisite (human,
+  one-time interactive): `gh auth refresh -s read:project` → `project-init`
+  → `project-sync` to stand up the Projects v2 mirror. Suite impact: none
+  (hub tooling only). Evidence: this commit.
 - **HUB-013** (done 2026-08-31) — **Corpus-EDA v7 reconciliation** — v7
   intent-hydrated corpus (issue #5: aeslc_join/llm_zero_shot hydration of 350
   correspondence rows, intent_source/confidence/status GT columns; HF data
@@ -107,6 +137,25 @@ Finished cards, append-only, newest last.
   in sync; `py_compile` green. Downloads clone now fully contained in
   upstream — safe to archive locally. HUB-012 remains open (P3 summary
   counter still 27 in v7). Evidence: `831c9b34` + commits above.
+- **HUB-011** (done 2026-08-31) — **Prompt-engineer opencode agent adapted
+  for the monorepo** — human directive: make the entity repo's GEPA
+  prompt-engineer agent operate out of the box in mailroom-dev. Root
+  `.opencode/agents/prompt-engineer.md` (workspace bindings: uv-workspace
+  commands, per-package AGENTS.md rule, both prompt registries append-only
+  — entity `PROMPT_VERSIONS` + mailroom `prompts_docclass.py`, the
+  llm-dojo→mailroom direction doctrine, HUB-0NN vs KANBAN-NNN board routing,
+  env variables incl. the funding-key gate / `BRAINTRUST_LOGGING` default /
+  mailroom `OBSERVABILITY_PROVIDER` Phoenix gotcha / `PYTHONHASHSEED=0` /
+  hub-1.x datasets-cache + read-timeout quirks) + the
+  `PROMPT_ENGINEER_GEPA_PROVENANCE.md` companion copied verbatim. GEPA
+  doctrine (9-step loop, scientific contract, Phases 0–6) preserved — diff
+  vs the entity source shows exactly 3 intended binding edits, zero doctrine
+  drift. Sessions inside `packages/llm-entity-extraction` keep that package's
+  own agent copy (closer project config wins); the global
+  `~/.config/opencode` copy stays generic. Board-only card (tooling config,
+  single session). Evidence: restart opencode to load; suite impact: none
+  (config-only). Archived from the open table by the HUB-014 board-state
+  tracker sweep (the archive entry was missing).
 - **HUB-010** (done 2026-08-31) — **Full documentation sweep** — human
   directive: update ALL documentation in mailroom-dev. Inventoried ~380
   tracked .md files; scoped the sweep to the OPERATIVE docs (root

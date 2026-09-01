@@ -1,0 +1,54 @@
+name: board-governance
+
+# HUB-014: keeps the governance board honest on every change to it or to the
+# tooling that reads it. Blocking: board invariants + label-manifest drift.
+# Non-blocking: the Projects v2 mirror drift (needs a token with the
+# `project` scope; the default GITHUB_TOKEN may not have it — configure via
+# repository settings if you want the mirror job enforced).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "governance/**"
+      - "scripts/**"
+      - ".github/**"
+  pull_request:
+    paths:
+      - "governance/**"
+      - "scripts/**"
+      - ".github/**"
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  projects: write
+
+jobs:
+  board-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 500  # commit cross-checks scan recent history
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Board invariants
+        run: python scripts/board_state.py check --log-limit 500
+      - name: Label manifest drift
+        run: python scripts/github_labels.py audit --repo ${{ github.repository }}
+
+  project-mirror:
+    runs-on: ubuntu-latest
+    continue-on-error: true  # needs the `project` token scope; advisory until enforced
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Projects v2 mirror drift (advisory)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/board_state.py project-sync

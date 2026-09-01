@@ -15,12 +15,12 @@
     {
       "name": "stage/needs-attention",
       "color": "D93F0B",
-      "description": "Board lane: needs_attention - blocked, awaiting review, or awaiting a decision (Evidence names which)"
+      "description": "Board lane: needs_attention - blocked, review, or decision pending (Evidence names which)"
     },
     {
       "name": "stage/done",
       "color": "0E8A16",
-      "description": "Board lane: done - finished, verified, evidenced; issue closed in the same commit that archives the card"
+      "description": "Board lane: done - finished, verified, evidenced; issue closed with the archive commit"
     },
     {
       "name": "attention/blocked",
@@ -160,7 +160,7 @@
     {
       "name": "kanban",
       "color": "000000",
-      "description": "Synced board card: this issue mirrors a HUB-0NN card on governance/TASKS.md (board = source of truth, one card = one issue)"
+      "description": "Synced board card: mirrors a HUB-0NN card on governance/TASKS.md (board = source of truth)"
     }
   ]
 }
