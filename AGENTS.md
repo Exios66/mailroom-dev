@@ -51,6 +51,7 @@ tooling" for the full command list):
 python scripts/board_state.py status            # live board snapshot (--json for machines)
 python scripts/board_state.py check             # board invariants; exit 1 on structural errors
 python scripts/github_labels.py audit           # label taxonomy drift (CI gate)
+./docs/wiki/sync-wiki.sh                        # push docs/wiki/ source to the GitHub wiki (--check for drift)
 ```
 
 ## HF Hub uploads

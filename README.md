@@ -61,6 +61,8 @@ mailroom-dev/
 ├── .gitignore
 ├── governance/
 │   └── TASKS.md                 # task board: assigned / in_progress / needs_attention / done
+├── docs/
+│   └── wiki/                    # version-controlled GitHub wiki source (sync-wiki.sh)
 ├── scripts/
 │   ├── packages_sync.json       # per-package sync cursor (issue #2)
 │   ├── sync_packages.py         # sub-package <-> standalone-repo sync driver
@@ -224,6 +226,14 @@ consistent:
 The Projects v2 mirror (the `mailroom-hub board` project, with
 Lane/Owner/Card fields) needs a one-time interactive scope grant:
 `gh auth refresh -s read:project`, then `project-init` + `project-sync`.
+
+**Wiki**: the [GitHub wiki](https://github.com/Exios66/mailroom-dev/wiki)
+is mirrored from the version-controlled source in `docs/wiki/` (Home,
+Getting-Started, Architecture, Board-Governance, Sub-Package-Sync,
+HF-Corpus, Offline-Sandbox, Releases, FAQ + sidebar). After editing pages:
+`./docs/wiki/sync-wiki.sh` (or `--check` for drift). First-time setup is a
+one-time UI action — create any page on the wiki once so GitHub
+materializes the `.wiki.git` repo, then the sync pushes the full content.
 
 ## Release flow
 

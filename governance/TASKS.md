@@ -63,7 +63,6 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
 | Card | Status | Task | Owner | Issue | Evidence |
 |---|---|---|---|---|---|
 | HUB-005 | `assigned` | **Release-train readiness** — at the next package release: bump the consuming pins (release-time only; `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py` for the dojo pin), propagate monorepo work upstream with `python scripts/sync_packages.py push --package <name>`, tag in the standalone repo. One card per release sweep; scope it when claimed. | unclaimed | — | workspace rules in `AGENTS.md` (pins keep their published git lines) |
-| HUB-017 | `in_progress` | **GitHub wiki for mailroom-dev** — human directive: stand up the full version-controlled wiki (`docs/wiki/` + sync script, entity-repo pattern) reflecting the post-HUB-016 reality: architecture map with links, board governance + tracker/labels/templates, sync doctrine, HF corpus, offline sandbox reduced profile, release train. Push to Exios66/mailroom-dev wiki. | opencode (2026-09-01) | — | claimed 2026-09-01 by opencode |
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
 
 ## Rules that keep the board honest
@@ -96,6 +95,34 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-017** (done 2026-09-01) — **GitHub wiki for mailroom-dev** — human
+  directive. Full version-controlled wiki source landed at `docs/wiki/`
+  (entity-repo pattern): **Home** (facts table: pins v0.6.0 / dojo
+  v0.12.2 / corpus v7), **Getting-Started** (workspace, per-package
+  suites, sandbox quickstart), **Architecture** (full map: 10 packages +
+  hub, direct repo links, the 3 GitHub Pages sites, 13-node pipeline with
+  the procedural compile_report + live reviewers, layout, heavy-asset
+  rule), **Board-Governance** (lanes, laws, `board_state.py` usage incl.
+  severity contract + Projects v2 prerequisite, label taxonomy, issue/PR
+  forms, CI gate), **Sub-Package-Sync** (current-only doctrine, driver
+  commands, prune-resurrection fix, verification contract),
+  **HF-Corpus** (docclass-merged v7 facts: 1,650 rows, revs, 27-key GT
+  schema, strata vocabulary, P0–P6 + canonical-bytes rule, upload
+  helpers), **Offline-Sandbox** (provider profiles, reduced agent profile
+  — reporter retired/procedural, reviewers kept — corpus-aligned targets,
+  Docker hardening + pins, commands), **Releases** (release train, family
+  pins table, deploy surfaces), **FAQ** (10 gotchas incl. prune
+  resurrection, tracker warnings, project scope, reporter), plus
+  **_Sidebar.md** navigation and **sync-wiki.sh** (clone-or-pull, copy,
+  commit + push; `--check` drift mode; syntax-checked). Root docs currency:
+  README structure tree gains `docs/wiki/` + wiki paragraph; AGENTS.md
+  commands gains `sync-wiki.sh`. Suite green (51 passed / 0 failed).
+  **Open prerequisite (human, one-time UI action)**: the wiki git repo is
+  NOT materialized until the first page is created in the web UI (no REST/
+  GraphQL API for wiki content; first push returns "Repository not found")
+  — visit github.com/Exios66/mailroom-dev/wiki once, create any page, then
+  `./docs/wiki/sync-wiki.sh` pushes the full content. Evidence: this
+  commit.
 - **HUB-016** (done 2026-09-01) — **Docs-currency sweep** — systematic
   staleness pass over every surface touched by HUB-014/004/012/015. Fixed:
   sandbox `docs/sister-repos.md` dojo row v0.12.1→v0.12.2;
