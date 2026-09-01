@@ -31,8 +31,9 @@ if [[ "${1:-}" == "--check" ]]; then
     exit $rc
 fi
 
-if [[ -d "$WIKI_TMP/.git" ]]; then
-    git -C "$WIKI_TMP" pull --ff-only --quiet
+if [[ -d "$WIKI_TMP/.git" && -n "$(git -C "$WIKI_TMP" remote get-url origin 2>/dev/null || true)" ]] \
+    && git -C "$WIKI_TMP" rev-parse --verify -q origin/master >/dev/null; then
+    git -C "$WIKI_TMP" pull --ff-only --quiet origin master
 else
     rm -rf "$WIKI_TMP"
     git clone --quiet "$WIKI_URL" "$WIKI_TMP"
