@@ -64,7 +64,6 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
 |---|---|---|---|---|---|
 | HUB-005 | `assigned` | **Release-train readiness** — at the next package release: bump the consuming pins (release-time only; `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py` for the dojo pin), propagate monorepo work upstream with `python scripts/sync_packages.py push --package <name>`, tag in the standalone repo. One card per release sweep; scope it when claimed. | unclaimed | — | workspace rules in `AGENTS.md` (pins keep their published git lines) |
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
-| HUB-012 | `in_progress` | **corpus-eda P3 summary counter stale (27 vs 30 figures)** — discovered during HUB-010: `visualizations.run()` returns a figures count of 27, so `SUMMARY_REPORT.json` P3 stats say `figures: 27`, while P3 actually writes 30 PNGs (disk truth; 28/29/30 live in `visualizations.py`). Docs were aligned to 30 in HUB-010; fix the returned counter so the summary stats match the artifact count. Touching it rewrites `SUMMARY_REPORT.json` (byte-drift vs upstream) — coordinate with the corpus-eda upstream at next sync (executing now per human directive). | opencode (2026-09-01) | — | HUB-010 session, 2026-08-31 |
 
 ## Rules that keep the board honest
 
@@ -96,6 +95,25 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-012** (done 2026-09-01) — **corpus-eda P3 summary counter stale
+  (27 vs 30 figures)** — fixed: `visualizations.py::run()` now returns
+  `{"figures": 30}` (disk truth — 30 PNGs written by the module), so
+  `SUMMARY_REPORT.json` P3 stats match the artifact count. Verified by the
+  FULL P0–P6 pipeline in the workspace venv: all 7 phases green, P3 banner
+  "30 figures", 1,650 rows / schema v7 / P6 intent coverage 100%
+  (350/350, 8/8 classes in test) — in line with the published HF corpus
+  (`data 1acd2600`, `card fc1f211c`, API-verified). Determinism held: the
+  summary diff is exactly the one-line `figures` correction; all 30 PNGs +
+  tables byte-identical; the 19 regenerated interactive HTMLs restored to
+  canonical bytes (per-render UUID rule). Published upstream per human
+  directive: subtree push was non-fast-forward (cursor ancestry from the
+  HUB-013 snapshot, not a graft) — clean 1-commit patch-push to
+  Mailroom-Corpus-EDA `main` instead (`43b5232..f3c94f3`, fast-forward),
+  cursor re-baselined via snapshot; `sync status` 10/10 in sync. Known
+  benign drift: upstream's committed `SUMMARY_REPORT.json` differs from the
+  monorepo's in JSON key ORDER only (5 keys, values identical) —
+  upstream-side generation artifact, monorepo file is canonical. Evidence:
+  `6c343bab` (fix) + upstream `f3c94f3`.
 - **HUB-004** (done 2026-09-01) — **Upstream-drift reconciliation** — all
   legs complete, monorepo in sync with every standalone upstream (10/10 via
   `sync_packages.py status`). llm-mailroom leg: pulled `d93894a`+`4e9bf69`
