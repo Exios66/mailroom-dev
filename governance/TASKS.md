@@ -63,6 +63,7 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
 | Card | Status | Task | Owner | Issue | Evidence |
 |---|---|---|---|---|---|
 | HUB-005 | `assigned` | **Release-train readiness** — at the next package release: bump the consuming pins (release-time only; `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py` for the dojo pin), propagate monorepo work upstream with `python scripts/sync_packages.py push --package <name>`, tag in the standalone repo. One card per release sweep; scope it when claimed. | unclaimed | — | workspace rules in `AGENTS.md` (pins keep their published git lines) |
+| HUB-017 | `in_progress` | **GitHub wiki for mailroom-dev** — human directive: stand up the full version-controlled wiki (`docs/wiki/` + sync script, entity-repo pattern) reflecting the post-HUB-016 reality: architecture map with links, board governance + tracker/labels/templates, sync doctrine, HF corpus, offline sandbox reduced profile, release train. Push to Exios66/mailroom-dev wiki. | opencode (2026-09-01) | — | claimed 2026-09-01 by opencode |
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
 
 ## Rules that keep the board honest
