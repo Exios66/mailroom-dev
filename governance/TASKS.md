@@ -63,7 +63,6 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
 | Card | Status | Task | Owner | Issue | Evidence |
 |---|---|---|---|---|---|
 | HUB-005 | `assigned` | **Release-train readiness** — at the next package release: bump the consuming pins (release-time only; `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py` for the dojo pin), propagate monorepo work upstream with `python scripts/sync_packages.py push --package <name>`, tag in the standalone repo. One card per release sweep; scope it when claimed. | unclaimed | — | workspace rules in `AGENTS.md` (pins keep their published git lines) |
-| HUB-015 | `in_progress` | **Offline sandbox: current-pipeline alignment + reduced agent profile + docclass-merged targets** — human directive: make `packages/local-mailroom-sandbox` fully offline-operational and aligned with the CURRENT llm-mailroom (v0.6.0). (a) Infrastructure: Docker/compose/env/provider audit + gaps (ollama default, offline-first profiles). (b) Version alignment: `fetch-deps`/docs still pin stale mailroom v0.5.0 while uv workspace already resolves current main; v0.6.0 tag exists upstream — align all surfaces. (c) Reduced agent profile — HUMAN CORRECTION 2026-09-01: REMOVE THE REPORTER agent from the sandbox profile (components gates → retired), keep all reviewers untouched, and align the compile stage to the computational procedural reporter (v0.6.0 `compile_matter_record` is already procedural — sandbox eval drops the `get_llm` acquisition so the reporter path makes zero LLM calls). (d) Expected outputs: enrich the 5 HF fixture rows with full docclass-merged ground-truth-schema targets (per-doc-type entity fields + subclass + correspondence intents) wired into extraction scoring. Sandbox-profile scope only — production llm-mailroom graph untouched (human-confirmed). | opencode (2026-09-01) | — | claimed 2026-09-01 by opencode; human directive, same session |
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
 
 ## Rules that keep the board honest
@@ -96,6 +95,41 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-015** (done 2026-09-01) — **Offline sandbox: current-pipeline
+  alignment + reduced agent profile + docclass-merged targets** — human
+  directive; one commit. (a) **Version alignment**: sandbox surfaces moved
+  off stale mailroom v0.5.0 → **v0.6.0** (`fetch-deps` cli help + tag,
+  `overlay.py` hint, README/AGENTS/sister-repos docs); dojo pin bumped
+  v0.12.1 → **v0.12.2** (llm-mailroom v0.6.0's own pin; tag verified;
+  `uv lock` green); monorepo `[tool.uv.sources]` already resolves the
+  current workspace mailroom. (b) **Reduced agent profile — human
+  correction applied: the REPORTER agent is retired, reviewers untouched**:
+  `components.yaml` moves `reporter` to `retired_agents`, adds the
+  `compile_report` node gate; the sandbox eval spec is now the
+  **computational procedural reporter** (`compile_report`, kind=nodes,
+  observation `compile-report`) — mock + live paths are deterministic
+  matter-record assembly, the `get_llm` client acquisition is GONE (zero
+  LLM calls on the reporter path; new guard test asserts it). (c) **Full
+  docclass-merged GT targets**: `data/fixtures/hf/docclass_mini.jsonl`
+  enriched for all 5 corpus doc types with `expected_subclass` from the
+  real corpus strata vocabulary (contract→Consulting Agreements,
+  merger→all_cash, corporate_record→bylaws, correspondence→attorney_demand,
+  insurance→carrier) + `expected_fields` from the 27-key corpus GT schema
+  (correspondence: intent=payment_demand + intent_source/confidence/status
+  provenance, subject_matter, keywords, claimed_amount, sentiment;
+  insurance: policy_number, insured_party, date_of_loss, claimed_amount,
+  damages_description); `hf_rows_as_manifest` propagates both into every
+  eval row (verified end-to-end: 5/5 rows carry subclass + fields).
+  (d) **Docker best practices**: Dockerfile gains non-root `USER sandbox`
+  (uid 1000, override documented) + HEALTHCHECK; compose pins all four
+  `:latest` images to versioned tags (ollama 0.33.2, vllm v0.28.0, phoenix
+  version-20.4.0, minio RELEASE.2025-09-07-16-13-09Z) — zero unpinned
+  images remain. (e) **Tests**: suite green 51 passed / 1 skipped / 0
+  failed (roster test asserts reporter∉SPECS + gates; pin-guard updated to
+  v0.12.2; reviewer evals preserved and passing). Docs currency: AGENTS.md
+  gains the Reduced-agent-profile section; docs/evals.md compile_report
+  row. Production llm-mailroom graph untouched (sandbox-profile scope per
+  human choice). Evidence: this commit.
 - **HUB-012** (done 2026-09-01) — **corpus-eda P3 summary counter stale
   (27 vs 30 figures)** — fixed: `visualizations.py::run()` now returns
   `{"figures": 30}` (disk truth — 30 PNGs written by the module), so
