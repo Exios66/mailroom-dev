@@ -1,0 +1,261 @@
+{
+ "built_at": "2026-08-28T03:36:21.511707+00:00",
+ "surfaces": [
+  "05f05e9f45ce67c9880884f0378652369fda1782ebcd3141cfeea0259c1c490b:42:120",
+  "34083b161a915165e1a4c6a0cfa01324f15d8310bf20427cea1e893dc4e1acec:42:24",
+  "b238c80e946cfa0ece004c0129708a233e129f0168d7f02cf7002f78c45133ac:42:24",
+  "fa16e25a91631122b3e1d2111dadeca05194bcf162dd22474a2890fc83fcb7cb:42:30"
+ ],
+ "source": "reports/experiment_log.jsonl",
+ "repo_url": "https://github.com/Exios66/llm-entity-extraction",
+ "run_count": 8,
+ "tasks": {
+  "docclass_classification": 4,
+  "docclass_specialist_extraction": 4
+ },
+ "models": {
+  "qwen/qwen3.7-flash": 8
+ },
+ "prompts": {
+  "sorter_docclass_v6": 2,
+  "sorter_docclass_v7": 2,
+  "contracts_specialist_docclass_v0": 1,
+  "contracts_specialist_docclass_v1": 1,
+  "insurance_claims_specialist_docclass_v0": 1,
+  "insurance_claims_specialist_docclass_v1": 1
+ },
+ "n_rows": 0,
+ "n_ok": 0,
+ "n_error": 0,
+ "total_tokens": 6241123,
+ "best_per_task": {},
+ "task_aggregates": {},
+ "scoring_guide": {
+  "bands": [
+   {
+    "min": 0.85,
+    "label": "Strong",
+    "cls": "good",
+    "meaning": "High confidence result; only minor field/family-level misses."
+   },
+   {
+    "min": 0.6,
+    "label": "Moderate",
+    "cls": "warn",
+    "meaning": "Material misses (this range overlaps the repo's ambiguous band [0.5, 0.85] that triggers a judge review pass)."
+   },
+   {
+    "min": 0.0,
+    "label": "Weak",
+    "cls": "bad",
+    "meaning": "Poor result; the model is missing or misclassifying core content."
+   }
+  ],
+  "general": "All scores are deterministic and computed locally \u2014 no LLM grading. The markdown log, manifests, and this site all read the same numbers. Compare runs only on the SAME sample (same dataset, seed, and size): accuracy deltas across different samples are meaningless.",
+  "tasks": {
+   "contract_entity_extraction": {
+    "headline": {
+     "key": "overall_extraction_score",
+     "label": "Overall extraction"
+    },
+    "summary": "How faithfully the contracts-specialist extracted every expected field from the contract text, per field's declared type.",
+    "formula": "mean of the per-field content scores over expected fields with a non-null ground-truth value",
+    "conveys": "End-to-end extraction quality: dates/money exact, names fuzzy-matched, clauses containment-scored, entity lists bipartite-matched against ground truth.",
+    "components": [
+     {
+      "key": "overall_extraction_score",
+      "label": "Overall extraction",
+      "calculation": "mean of per-field content scores",
+      "meaning": "Composite content accuracy across all expected fields."
+     },
+     {
+      "key": "field_presence",
+      "label": "Field presence",
+      "calculation": "share of expected fields the model populated (non-null/non-empty)",
+      "meaning": "Did the model produce a value at all, regardless of correctness?"
+     },
+     {
+      "key": "schema_valid",
+      "label": "Schema valid",
+      "calculation": "1.0 iff output is parseable, schema-conformant JSON",
+      "meaning": "Output-contract conformance \u2014 0 means the row was unusable."
+     },
+     {
+      "key": "per_field",
+      "label": "Per-field scores",
+      "calculation": "type-aware: date/money exact; name fuzzy (Jaro-Winkler + token-set); free_text SQuAD token F1; entity_list optimal bipartite matching at 0.6 threshold; containment = expected-token coverage",
+      "meaning": "Where exactly quality is gained or lost."
+     }
+    ]
+   },
+   "chained_sorter_extractor": {
+    "headline": {
+     "key": "extractor.overall_extraction_score",
+     "label": "Extractor score"
+    },
+    "summary": "The full sorter \u2192 specialist chain: the sorter classifies the document, then the specialist extracts with that context.",
+    "formula": "headline = the specialist's overall_extraction_score (same composite as the extraction task); the sorter's doc-type match is shown alongside",
+    "conveys": "End-to-end pipeline quality \u2014 both stages must work.",
+    "components": [
+     {
+      "key": "sorter.exact_match",
+      "label": "Sorter doc-type match",
+      "calculation": "1.0 iff doc_type == 'contract'",
+      "meaning": "The sorter sent the document down the contract path."
+     },
+     {
+      "key": "sorter.subtype_accuracy",
+      "label": "Sorter subtype accuracy",
+      "calculation": "1.0 iff doc_type AND normalized contract subtype match the CUAD folder",
+      "meaning": "Contract-family routing quality."
+     },
+     {
+      "key": "extractor.overall_extraction_score",
+      "label": "Extractor overall",
+      "calculation": "mean of per-field content scores (see extraction task)",
+      "meaning": "Field extraction quality given the sorter's context."
+     },
+     {
+      "key": "extractor.overall_verified_precision",
+      "label": "Verified precision",
+      "calculation": "factuality guard: share of predicted items that match a GT label OR are grounded in the document (token coverage \u2265 0.7)",
+      "meaning": "Truthfulness \u2014 how much of the output is real, not hallucinated."
+     },
+     {
+      "key": "extractor.category_presence",
+      "label": "Category presence",
+      "calculation": "share of the document's applicable CUAD presence-categories covered",
+      "meaning": "Did the extraction cover the labeled clauses that must appear?"
+     },
+     {
+      "key": "extractor.field_presence",
+      "label": "Field presence",
+      "calculation": "share of expected fields populated",
+      "meaning": "Completeness of output fields."
+     }
+    ]
+   },
+   "subtype_classification": {
+    "headline": {
+     "key": "sorter.subtype_accuracy",
+     "label": "Subtype accuracy (strict)"
+    },
+    "summary": "The sorter-only task: one call per document that decides the primary class (contract or not) AND the contract-subtype family.",
+    "formula": "headline = strict subtype accuracy: share of rows whose normalized predicted subtype exactly equals the CUAD ground-truth folder",
+    "conveys": "Routing quality: strict is the discriminating signal; equiv allows defensible family swaps (reseller\u2194distributor, maintenance\u2194license, development\u2194license, affiliate\u2194joint_venture).",
+    "components": [
+     {
+      "key": "doc_type_accuracy",
+      "label": "Doc-type accuracy (exact_match)",
+      "calculation": "share of rows where doc_type == 'contract'",
+      "meaning": "Primary-class correctness (every CUAD row is a contract)."
+     },
+     {
+      "key": "subtype_accuracy",
+      "label": "Subtype strict",
+      "calculation": "share of rows where normalized subtype == CUAD folder exactly",
+      "meaning": "Exact family-level routing."
+     },
+     {
+      "key": "subtype_accuracy_equiv",
+      "label": "Subtype equiv",
+      "calculation": "strict OR defensible equivalent family",
+      "meaning": "How often the model routed to a legally-defensible family."
+     },
+     {
+      "key": "confidence",
+      "label": "Confidence",
+      "calculation": "mean of the model's reported per-row confidence",
+      "meaning": "Calibration signal \u2014 how sure the model claims to be."
+     },
+     {
+      "key": "n_failed",
+      "label": "Failed rows",
+      "calculation": "rows with subtype_ok == false, broken down by failure mode",
+      "meaning": "modes: family_confusion (wrong family), function_over_form (doc_type miss), other_fallback (fell to 'other'), equivalent_family (recovered by equivalence)"
+     }
+    ]
+   },
+   "legalbench_binary_answer": {
+    "headline": {
+     "key": "accuracy",
+     "label": "QA accuracy"
+    },
+    "summary": "LegalBench suite (llm-mailroom/src/legalbench/) \u2014 CUAD contract-QA binary-answer task: yes/no questions over contracts with evidence spans, scored against the CUAD annotations.",
+    "formula": "headline = share of questions answered correctly (predicted yes/no == annotation)",
+    "conveys": "Contract-comprehension accuracy on a large, real legal QA corpus.",
+    "components": [
+     {
+      "key": "accuracy",
+      "label": "Accuracy",
+      "calculation": "share of questions with predicted == expected",
+      "meaning": "Headline comprehension quality."
+     },
+     {
+      "key": "macro_category_accuracy",
+      "label": "Macro category accuracy",
+      "calculation": "mean of per-clause-category accuracies (41 categories)",
+      "meaning": "Whether any clause family is disproportionately hard."
+     },
+     {
+      "key": "yes_f1",
+      "label": "Yes-class F1",
+      "calculation": "F1 for answering 'yes' (precision/recall over yes predictions vs yes labels)",
+      "meaning": "False-positive tendency on affirmative answers."
+     },
+     {
+      "key": "confidence_mean",
+      "label": "Confidence mean",
+      "calculation": "mean of the model's reported per-question confidence",
+      "meaning": "Calibration signal."
+     },
+     {
+      "key": "calibration_error",
+      "label": "Calibration error (ECE)",
+      "calculation": "expected calibration error over confidence/outcome pairs",
+      "meaning": "How well confidence matches observed correctness."
+     }
+    ]
+   },
+   "legalbench_multiclass_classification": {
+    "headline": {
+     "key": "accuracy",
+     "label": "Family accuracy (strict)"
+    },
+    "summary": "LegalBench suite (llm-mailroom/src/legalbench/) \u2014 CUAD contract-family classification: assign one of the 25 contract families (+ other) to each contract, scored against the family derived from the CUAD folder/title taxonomy.",
+    "formula": "headline = strict family accuracy; equiv additionally accepts defensible family swaps (same SUBTYPE_EQUIVALENCES as the sorter)",
+    "conveys": "Multiclass legal-routing accuracy with a defensible-equivalence lens.",
+    "components": [
+     {
+      "key": "accuracy",
+      "label": "Strict accuracy",
+      "calculation": "share of documents whose family key matches exactly",
+      "meaning": "Exact family-level routing."
+     },
+     {
+      "key": "accuracy_equiv",
+      "label": "Equiv accuracy",
+      "calculation": "strict OR defensible equivalent family",
+      "meaning": "Routing to a legally-defensible family."
+     },
+     {
+      "key": "macro_f1",
+      "label": "Macro F1",
+      "calculation": "mean one-vs-rest F1 over families with labels present",
+      "meaning": "Class balance-adjusted quality."
+     },
+     {
+      "key": "confidence_mean",
+      "label": "Confidence mean",
+      "calculation": "mean of the model's reported per-document confidence",
+      "meaning": "Calibration signal."
+     }
+    ]
+   }
+  },
+  "references": {
+   "scoring_md": "https://github.com/Exios66/llm-entity-extraction/blob/main/docs/SCORING.md",
+   "agents_md": "https://github.com/Exios66/llm-entity-extraction/blob/main/AGENTS.md"
+  }
+ }
+}
