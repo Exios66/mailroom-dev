@@ -25,8 +25,21 @@ Never edit it from both places in one session — develop here, sync via
   - `intent_backfill.py` — correspondence intent hydration (issue #5):
     cross-walk, Enron/AESLC sha256 join, constrained LLM pass, provenance
   - `token_budget.py` — token estimation & budget coverage
+  - `identity.py` — P0 document identity (document_id, content hashes,
+    source provenance — cast-safe, absence is '')
+  - `eval_contract.py` — P1 evaluation-contract derivations (§59 routing,
+    §57–58 stage, §31 review/retry, §43 provenance) + closed vocabularies
+    (fixture kinds, calibration quartet, matter/group, failure stages)
+  - `matter.py` — P2 grouping derivations (§14A: header threads — verified
+    absent here; subject+custodian+window reconstruction; never-mix guard)
+  - `bundles.py` — P2 §14 synthetic bundle-family generator (flagged
+    scaffold over real anchors; publish rides §84)
+  - `fixtures.py` — §68–§72A fixture content (calibration quartet at live
+    bands, arbiter scenarios, failure-stage matrix; publish rides §84)
 - `scripts/` — CLI wrappers: `publish_docclass.py`, `backfill_intent.py`,
-  `export_docclass.py`, `verify_hf.py`
+  `export_docclass.py`, `verify_hf.py`, `coverage_matrix.py` (→
+  `docs/reports/audits/docclass_coverage_matrix.*`), `expansion_priorities.py`
+  (→ `docs/reports/audits/docclass_expansion_priorities.*`)
 - `run_all.py` — 7-phase pipeline (P0 download → P6 intent coverage audit)
 - `reports/` — generated artifacts (figures/, figures_interactive/, tables/, SUMMARY_REPORT.md)
   - ALL of `reports/` is tracked in full per human directive (HUB-008) — never
