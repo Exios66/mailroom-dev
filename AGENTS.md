@@ -91,7 +91,11 @@ The four lanes: `assigned` (queued/claimed, nothing underway) →
   packages, a clean `git status` for the card's scope, Evidence naming the
   commit(s), and (for synced cards) the GitHub issue closed in the same
   commit. An agent is NOT done until its card says so.
-- **Commit discipline** — reference cards: `HUB-00N: <summary>`.
+- **Commit discipline** — reference cards: `HUB-00N: <summary>`; stage
+  targeted paths only (`git add <explicit paths>` — never `git add .`/`-A`
+  or a bare directory). Shared checkout: re-check `git status --porcelain`
+  before every commit and unstage files you don't own (HUB-024/HUB-027
+  sweep incidents).
 - **Issue routing** — board-only for small/single-session/low-risk cards;
   critical or cross-package cards get an issue in the repo where the work
   lands (this monorepo for hub scope, the package repo for package scope).
