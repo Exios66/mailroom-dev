@@ -118,8 +118,16 @@ reconciled.
 python scripts/sync_packages.py status
 python scripts/sync_packages.py pull --all
 python scripts/sync_packages.py push --package llm-mailroom
+python scripts/sync_packages.py push --package llm-mailroom --patch   # non-fast-forward fallback (HUB-012)
 python scripts/sync_packages.py snapshot
 ```
+
+Cursor writes are content-verified (HUB-021): `snapshot` refuses to advance a
+cursor past upstream content that is not actually in the package tree
+(blob-level containment, gitignored prunes exempt) — `--force` overrides
+explicitly; `push --patch` lands the monorepo delta as one fast-forward
+commit on the live upstream tip; `status` reports cursor gaps and the
+monorepo-ahead file count per package (the release-train payload).
 
 ## GitHub governance tooling (HUB-014)
 

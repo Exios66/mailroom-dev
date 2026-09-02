@@ -23,12 +23,26 @@ truth**; the standalone repos remain standalone and operational.
 python scripts/sync_packages.py status                       # drift report (fetches upstreams; --json for machines)
 python scripts/sync_packages.py pull  --package <name> --squash   # import upstream commits
 python scripts/sync_packages.py push  --package <name>       # publish monorepo commits upstream
-python scripts/sync_packages.py snapshot [--package <name>]  # re-baseline the manifest at current upstream tips
+python scripts/sync_packages.py push  --package <name> --patch    # non-fast-forward fallback (HUB-012)
+python scripts/sync_packages.py snapshot [--package <name>] [--force]  # re-baseline cursors (content-verified)
 ```
 
 - `pull`/`push` refuse to run on a dirty worktree (`--allow-dirty` overrides).
 - `pull --squash` keeps upstream history out of the monorepo log.
 - Per-package cursors live in `scripts/packages_sync.json`.
+- **Content-verified cursors (HUB-021)** — `snapshot` refuses to advance a
+  cursor past upstream content the package tree doesn't actually contain
+  (blob-level containment; gitignored prunes are exempt). The HUB-018
+  incident (snapshot-advance without a merge → next squash pull re-imported
+  the whole range) is now structurally impossible without `--force`.
+- `pull` skips the subtree merge when the upstream tip is already contained
+  in the package (the re-import loop killer).
+- `push --patch` is the scripted HUB-012 workaround: it rebuilds the
+  package's tracked files on top of the real upstream tip and lands ONE
+  fast-forward commit upstream, then re-baselines the cursor (`--dry-run`
+  prints the plan first).
+- `status` shows per-package `CURSOR GAP` flags and the monorepo-ahead file
+  count — the unpushed delta, i.e. the release-train payload (HUB-005).
 - After a pull, **re-apply monorepo-side prunes** the merge may resurrect
   (e.g. `packages/llm-entity-extraction/docs/{data,posit,posit-src}/` are
   gitignored-heavy-asset paths; gitignore does not apply to tracked files,
