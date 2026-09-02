@@ -148,11 +148,13 @@ def _deploy_to_gh_pages(
         shutil.copytree(reports_dir, work)
         print(f"  Copied {sum(1 for _ in work.rglob('*') if _.is_file())} files from {reports_dir}")
 
-        # 2. Generate index.html
+        # 2. Generate index.html + .nojekyll (disables Jekyll processing,
+        #    which breaks inline JS in Plotly interactive HTML files)
+        (work / ".nojekyll").write_text("")
         tree = _browse_tree(work, work)
         index_html = _render_index(display_title, tree, work)
         (work / "index.html").write_text(index_html)
-        print(f"  Generated index.html ({len(index_html)} bytes)")
+        print(f"  Generated index.html ({len(index_html)} bytes) + .nojekyll")
 
         # 3. Init git repo and push to gh-pages
         _run(["git", "init", "--initial-branch=gh-pages"], work)
