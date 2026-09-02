@@ -36,14 +36,14 @@ importing across separate repositories.
 
 All ten packages live in this monorepo (`packages/`) as git subtrees and
 mirror independent `Exios66/*` repositories that remain standalone and
-operational. GitHub Pages sites exist for three of them.
+operational. GitHub Pages sites exist for six of them.
 
 | Layer | Repository | GitHub Pages |
 |---|---|---|
 | Hub (central truth, this repo) | [`Exios66/mailroom-dev`](https://github.com/Exios66/mailroom-dev) | — |
-| Corpus feed | [`Exios66/Enron-Evaluation-Environment`](https://github.com/Exios66/Enron-Evaluation-Environment) | — |
-| Corpus feed | [`Exios66/claims-data-eda`](https://github.com/Exios66/claims-data-eda) | — |
-| Corpus EDA + HF upload helpers | [`Exios66/Mailroom-Corpus-EDA`](https://github.com/Exios66/Mailroom-Corpus-EDA) | — |
+| Corpus feed | [`Exios66/Enron-Evaluation-Environment`](https://github.com/Exios66/Enron-Evaluation-Environment) | [exios66.github.io/Enron-Evaluation-Environment](https://exios66.github.io/Enron-Evaluation-Environment/) |
+| Corpus feed | [`Exios66/claims-data-eda`](https://github.com/Exios66/claims-data-eda) | [exios66.github.io/claims-data-eda](https://exios66.github.io/claims-data-eda/) |
+| Corpus EDA + HF upload helpers | [`Exios66/Mailroom-Corpus-EDA`](https://github.com/Exios66/Mailroom-Corpus-EDA) | [exios66.github.io/Mailroom-Corpus-EDA](https://exios66.github.io/Mailroom-Corpus-EDA/) |
 | Prompt-experiment loop | [`Exios66/llm-entity-extraction`](https://github.com/Exios66/llm-entity-extraction) | [exios66.github.io/llm-entity-extraction](https://exios66.github.io/llm-entity-extraction/) |
 | Shared scoring engine | [`Exios66/llm-dojo-scoring`](https://github.com/Exios66/llm-dojo-scoring) | — |
 | LangGraph pipeline | [`Exios66/llm-mailroom`](https://github.com/Exios66/llm-mailroom) | — |
