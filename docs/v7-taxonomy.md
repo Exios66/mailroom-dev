@@ -4,7 +4,7 @@
 
 ## 1. The key distinction
 
-The phrase **"v7 five-class corpus"** is the correct description of the document-class surface represented in `docclass-merged` v7.
+The phrase **"v7 five-class corpus"** is the correct description of the document-class surface represented in `mailroom-corpus` v7 (the Hub dataset renamed from `docclass-merged` on 2026-09-02 — "docclass" was a placeholder; the v7 git history, pinned revision `bb57c5ad`, and all revisions survived the rename).
 
 The phrase **"five-class live Mailroom taxonomy"** is the correct description of the current Mailroom production taxonomy.
 

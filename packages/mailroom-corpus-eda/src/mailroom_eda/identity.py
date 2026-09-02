@@ -1,6 +1,6 @@
 """Stable document identity, source provenance, and content hashes.
 
-Groundwork for the docclass-merged hardening plan (§9–§11), shipping in the
+Groundwork for the mailroom-corpus hardening plan (§9–§11), shipping in the
 ``v0.2-mailroom-hardened`` release (§84). Every corpus row derives:
 
 - ``document_id`` — stable identity: unique, deterministic, stable across

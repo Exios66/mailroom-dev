@@ -1,4 +1,4 @@
-# CMS DE-SynPUF Insurance Claims — docclass-merged source card
+# CMS DE-SynPUF Insurance Claims — mailroom-corpus source card
 
 > `insurance_claim` · 600 rows (36.4% of the corpus) · 4 strata · train 536 / test 64
 > · license **CMS public-use (fully synthetic)** · one of the five source
@@ -49,7 +49,7 @@ across revisions.
 | Original data | CMS DE-SynPUF 2008–2010, Sample 1 — <https://www.cms.gov/data-research/statistics-trends-and-reports/medicare-claims-synthetic-public-use-files> (Sample-1 archives recovered via Wayback Machine; sha256 manifests in the producing repo) |
 | Rendering pipeline | [Exios66/claims-data-eda](https://github.com/Exios66/claims-data-eda) — EOB renderer + verbatim GT contract |
 | Family mirror (v5 state) | [`Lucius-Morningstar/cms-desynpuf-insurance-claims`](https://huggingface.co/datasets/Lucius-Morningstar/cms-desynpuf-insurance-claims) |
-| Form in docclass-merged | rendered EOB text in `doc_text`; `metadata.record_id` join key; GT fields on the `ground_truth` config |
+| Form in mailroom-corpus | rendered EOB text in `doc_text`; `metadata.record_id` join key; GT fields on the `ground_truth` config |
 
 ## Attribution
 
@@ -59,10 +59,10 @@ across revisions.
   synthetic** ("very limited inferential research utility" per CMS) and
   contain no real beneficiary information.
 - No formal academic publication accompanies the DE-SynPUF; cite CMS as the
-  upstream source and the docclass-merged dataset for the rendered
+  upstream source and the mailroom-corpus dataset for the rendered
   documents.
 
-## Purpose in docclass-merged
+## Purpose in mailroom-corpus
 
 1. **doc_type supervision** — 600 gold `insurance_claim` labels: the
    largest class (36.4%), balancing the formal legal blocks with a
@@ -81,7 +81,7 @@ across revisions.
    (see stats below) useful for isolating format compliance from length
    effects in evaluation.
 5. **Split-rule invariant testing** — the claims source keyed its own
-   placement on `md5(record_id)`; docclass-merged re-keys every row on the
+   placement on `md5(record_id)`; mailroom-corpus re-keys every row on the
    family `md5(filename)` rule, so claims rows are an intentional
    reconciliation case (65/400 v5 rows changed placement vs the source
    repo; the `split` column here is authoritative).

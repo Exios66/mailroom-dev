@@ -1,11 +1,11 @@
-# HF corpus — docclass-merged
+# HF corpus — mailroom-corpus
 
 The corpus family is published on the
 [Lucus-Morningstar HF org](https://huggingface.co/Lucius-Morningstar) via
 the **centralized** helpers in
 `packages/mailroom-corpus-eda/src/mailroom_eda/` — never ad-hoc upload code.
 
-## docclass-merged (verified 2026-08-31, HUB-013/012)
+## mailroom-corpus (verified 2026-08-31, HUB-013/012; renamed from `docclass-merged` 2026-09-02)
 
 | Fact | Value |
 | --- | --- |

@@ -39,7 +39,7 @@ OpenRouter model ids are rewritten to local serving tags via the overlay —
 ## HF targets aligned to the corpus
 
 `data/fixtures/hf/docclass_mini.jsonl` covers all 5 doc types with full
-docclass-merged ground-truth targets: `expected_subclass` from the corpus
+mailroom-corpus ground-truth targets: `expected_subclass` from the corpus
 strata vocabulary + `expected_fields` from the 27-key GT schema
 (correspondence intent + provenance; insurance claim entities). See
 [[HF-Corpus]].

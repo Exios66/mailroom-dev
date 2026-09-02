@@ -1,4 +1,4 @@
-# DOCCLASS_CONTRACT.md — the docclass-merged dataset contract
+# DOCCLASS_CONTRACT.md — the mailroom-corpus dataset contract
 
 **Status:** canonical bridge between the `Lucius-Morningstar/mailroom-corpus`
 corpus and the Mailroom pipeline. Companion to `docs/v7-taxonomy.md`
@@ -6,9 +6,9 @@ corpus and the Mailroom pipeline. Companion to `docs/v7-taxonomy.md`
 (frozen v0.1-working baseline). Plan reference: `docs/docclass-merged-plan.md`
 §80–§81.
 
-## 1. What docclass-merged is
+## 1. What mailroom-corpus is
 
-docclass-merged is the **canonical Mailroom ingress/evaluation corpus** — the
+mailroom-corpus is the **canonical Mailroom ingress/evaluation corpus** — the
 controlled document universe used to simulate documents arriving at the
 Mailroom (plan §1, §93). It exists to answer:
 
@@ -102,6 +102,16 @@ specialist.
 | `relationships` | document grouping/association |
 
 ## 6. Revision discipline (§44–§46)
+
+- **Dataset renamed 2026-09-02** (human directive): the Hub repo
+  `Lucius-Morningstar/docclass-merged` is now
+  `Lucius-Morningstar/mailroom-corpus` — "docclass" was always a
+  placeholder. The move preserved git history; the pinned revision
+  `bb57c5ad` resolves unchanged at the new name and the old id serves a
+  Hub redirect. The internal pipeline slug (`docclass-merged`) and the
+  `source-docclass-merged` trace tag are retained for trace-tag
+  immutability; the release marker `docclass-merged-v0.1-working` names
+  the frozen §4 baseline and is a version label, not the dataset name.
 
 - The corpus is consumed **pinned**: `FULL_CORPUS_REVISION` in
   `packages/llm-mailroom/src/pipeline/hf_corpora.py`. Never evaluate against

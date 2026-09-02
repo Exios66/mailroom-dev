@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Mirror Lucius-Morningstar/mailroom-corpus INTO a Langfuse dataset.
 
-Default corpus is the **corrected full** ``docclass-merged`` Hub set (pinned
+Default corpus is the **corrected full** ``mailroom-corpus`` Hub set (pinned
 revision via ``MAILROOM_HF_REVISION`` / ``mailroom_ui.hf_corpus``). The smaller
 ``docclass-pilot`` examples pack remains available with ``--corpus pilot``.
 
@@ -75,7 +75,7 @@ def main() -> int:
         "--corpus",
         choices=sorted(_CORPORA),
         default="merged",
-        help="Hub corpus to mirror (default: merged = corrected full docclass-merged).",
+        help="Hub corpus to mirror (default: merged = corrected full mailroom-corpus).",
     )
     parser.add_argument("--dry-run", action="store_true", help="Count rows without writing.")
     parser.add_argument(

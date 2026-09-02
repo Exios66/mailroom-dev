@@ -5,7 +5,7 @@
 ```
                     ┌── corpus feeds (colocated data) ─────────────────────┐
                     │  Enron-Evaluation-Environment   claims-data-eda      │
-                    │  mailroom-corpus-eda   (docclass-merged, P0–P6 EDA)  │
+                    │  mailroom-corpus-eda   (mailroom-corpus, P0–P6 EDA)  │
                     └──────────────────────────┬───────────────────────────┘
                                                ▼
                     ┌── prompt-experiment loop ────────────────────────────┐

@@ -9,7 +9,7 @@ importing across separate repositories.
 ```
                     ┌── corpus feeds (colocated data) ─────────────────────┐
                     │  Enron-Evaluation-Environment   claims-data-eda      │
-                    │  mailroom-corpus-eda   (docclass-merged, P0–P6 EDA)  │
+                    │  mailroom-corpus-eda   (mailroom-corpus, P0–P6 EDA)  │
                     └──────────────────────────┬───────────────────────────┘
                                                ▼
                     ┌── prompt-experiment loop ────────────────────────────┐
@@ -88,7 +88,7 @@ while cross-package architecture and corpus terminology are maintained here.
 | `packages/Enron-Evaluation-Environment` | (virtual) | [`Exios66/Enron-Evaluation-Environment`](https://github.com/Exios66/Enron-Evaluation-Environment) | Enron corpus EDA → pipeline-ready correspondence dataset |
 | `packages/claims-data-eda` | (virtual) | [`Exios66/claims-data-eda`](https://github.com/Exios66/claims-data-eda) | CMS DE-SynPUF EDA → pipeline-ready insurance_claim dataset |
 | `packages/llm-mailroom-graph` | (virtual) | [`Exios66/llm-mailroom-graph`](https://github.com/Exios66/llm-mailroom-graph) | Derived graphify knowledge-graph site of llm-mailroom |
-| `packages/mailroom-corpus-eda` | (virtual) | [`Exios66/Mailroom-Corpus-EDA`](https://github.com/Exios66/Mailroom-Corpus-EDA) | docclass-merged corpus EDA (P0–P6) + centralized HF upload helpers (`hf_interface`, `dataset_export`, `docclass_uploader`, `intent_backfill`) |
+| `packages/mailroom-corpus-eda` | (virtual) | [`Exios66/Mailroom-Corpus-EDA`](https://github.com/Exios66/Mailroom-Corpus-EDA) | mailroom-corpus corpus EDA (P0–P6) + centralized HF upload helpers (`hf_interface`, `dataset_export`, `docclass_uploader`, `intent_backfill`) |
 
 Virtual members have no build system (`package = false`) and are not installed;
 they exist so their data/code stays colocated in the single checkout.

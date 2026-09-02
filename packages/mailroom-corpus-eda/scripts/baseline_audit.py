@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""docclass-merged baseline audit (plan §4 / §85 P0).
+"""mailroom-corpus baseline audit (plan §4 / §85 P0).
 
 Freezes the current corpus as release marker ``docclass-merged-v0.1-working``:
 loads the local HF snapshot (fetched at the pinned revision), verifies the

@@ -38,7 +38,7 @@ Develop here, sync via `scripts/sync_packages.py` in mailroom-dev.
 ## Dataset cards
 
 Per-source documentation for the five corpora integrated into
-[docclass-merged](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus)
+[mailroom-corpus](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus)
 — full context, source material, attribution, and purpose of each — lives in
 [`docs/`](docs/README.md) (`docs/dataset-cards/`):
 

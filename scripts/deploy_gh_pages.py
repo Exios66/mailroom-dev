@@ -37,7 +37,7 @@ REPOS: dict[str, tuple[str, str, str]] = {
     "mailroom-corpus-eda": (
         "mailroom-corpus-eda",
         "reports",
-        "docclass-merged Corpus EDA",
+        "Mailroom Corpus EDA",
     ),
     "claims-data-eda": (
         "claims-data-eda",

@@ -57,7 +57,8 @@ python scripts/taxonomy_parity.py               # doc-class taxonomy drift (CI g
 
 ## HF Hub uploads
 
-The `docclass-merged` dataset family is published through the CENTRALIZED
+The `mailroom-corpus` dataset family (renamed from `docclass-merged`,
+2026-09-02 — "docclass" was a placeholder) is published through the CENTRALIZED
 helpers in `packages/mailroom-corpus-eda/src/mailroom_eda/` (`hf_interface`,
 `dataset_export`, `docclass_uploader`, `intent_backfill`) — never ad-hoc
 upload code. See `packages/mailroom-corpus-eda/AGENTS.md` and the

@@ -1,4 +1,4 @@
-"""§63/§64 dataset + Mailroom contract tests for docclass-merged.
+"""§63/§64 dataset + Mailroom contract tests for mailroom-corpus.
 
 §63 (dataset contract): every row has a unique deterministic document_id;
 document_type valid; subtype belongs to type; expected_fields schema-valid;

@@ -37,7 +37,7 @@ experiment identity — never mutate a prompt that has run; derive a new
 version key (see the llm-entity-extraction AGENTS.md).
 
 **Q: Which HF dataset is canonical?**
-[docclass-merged](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus)
+[mailroom-corpus](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus)
 schema v7, 1,650 rows, data rev `1acd2600` ([[HF-Corpus]]). Uploads go
 through the centralized `mailroom_eda` helpers only.
 
