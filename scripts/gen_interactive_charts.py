@@ -154,12 +154,18 @@ def gen_enron():
     ENRON_OUT.mkdir(parents=True, exist_ok=True)
     wrote = 0
 
-    # 1. Subclasses
+    # 1. Subclasses — 97.8% skew (issue #9 / HUB-025): label the dominant
+    # slice inside only; the sub-1% slivers stay visible (slice + legend +
+    # hover) but unlabeled, so Plotly's outside labels can't bunch into the
+    # title and stretch leader lines into a spike.
     sc = {"email":505929,"memo":3568,"letter":2077,"press_release":2520,
           "notice":2842,"demand":315,"meeting_request":135,"attorney_demand":4}
+    pos = ["inside"] + ["none"] * (len(sc) - 1)
     data = [{"values":list(sc.values()),"labels":list(sc.keys()),"type":"pie",
              "marker":{"colors":["#6c72ff","#38bdf8","#34d399","#fb923c","#f472b6","#a78bfa","#fbbf24","#f87171"]},
-             "textinfo":"label+percent","hole":0.35,"textfont":{"color":"#e2e4ed"}}]
+             "textinfo":"label+percent","textposition":pos,"hole":0.35,
+             "hovertemplate":"%{label}<br>%{value:,.0f} messages<br>%{percent}<extra></extra>",
+             "textfont":{"color":"#e2e4ed"}}]
     (ENRON_OUT/"01_subclasses_interactive.html").write_text(wrap("d",plot(data,layout("Enron Subclass Distribution",height=420))))
     wrote += 1
 

@@ -97,6 +97,26 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-025** (done 2026-09-02) — **Enron EDA visualization distortions
+  (#9)** — human-filed bug: the "Enron Subclass Distribution" donut rendered
+  with bunched & distorted labels (email 97.8%; the seven sub-1% subclasses
+  collapsed into slivers whose Plotly outside labels piled into the title and
+  stretched leader lines into a spike). Root cause: `scripts/
+  gen_interactive_charts.py` chart #1 used `textinfo: "label+percent"` with
+  default text positioning on a 97.8%-dominated pie — Plotly pushes sliver
+  labels outside where they collide. Fix (encoding only, data untouched):
+  per-point `textposition` — dominant slice labeled inside, slivers
+  unlabeled but kept as visible slices + legend entries, plus a rich
+  `hovertemplate` (label / comma count / percent) so no detail is hidden.
+  Static twin `01_subclasses.png` verified ALREADY correct (log-scale bar +
+  rare-subclass panel) — untouched. Artifact regenerated via the generator:
+  only `01_subclasses_interactive.html` changed (all other claims/Enron
+  charts byte-identical — determinism held); data self-consistency
+  re-verified against the screenshot (attorney_demand 4/517,075 =
+  0.000773%). Docs: index.html caption "Subclass Distribution (pie)" stays
+  accurate; no doc changes needed. Suite: Enron 74 passed / 0 failed (suite
+  does not cover hub tooling; artifact verified structurally). Issue #9
+  closed by the fix commit. Evidence: this commit.
 - **HUB-024** (done 2026-09-02) — **Core-repo changelog + semantic-version
   release chain** — human directive ("ensure our core repo is keeping a solid
   changelog and GitHub semantic version release chain … as the core repo of
