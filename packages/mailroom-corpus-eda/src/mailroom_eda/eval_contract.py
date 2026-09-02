@@ -258,6 +258,19 @@ CALIBRATION_QUARTET = (
     "correct_high", "correct_low", "wrong_high", "wrong_low",
 )
 
+#: Calibration cell → §68 fixture kind (closed mapping; fixtures.py builds
+#: rows with the cell identity in ``calibration_cell`` and the kind here so
+#: review/retry derivations stay single-sourced in eval_contract):
+#: correct_high archives; correct_low reviews (low_confidence); wrong_high is
+#: the silent-archive failure mode under test (judge catch → conflicting);
+#: wrong_low retries then escalates (retry_review → human_review).
+CONFIDENCE_CELL_FIXTURE_KIND = {
+    "correct_high": "high_confidence",
+    "correct_low": "low_confidence",
+    "wrong_high": "conflicting",
+    "wrong_low": "retry_review",
+}
+
 
 def confidence_bands() -> dict[str, dict[str, float]]:
     """§69: the routing bands read from the LIVE taxonomy.yaml (the plan's
@@ -335,6 +348,33 @@ FAILURE_STAGES = (
     "ingestion", "classification", "routing", "extraction",
     "validation", "grouping", "adjudication", "archival",
 )
+
+#: Canonical per-class ground-truth FIELD sets (GT-side names, verified by
+#: the §63 contract tests against the published schema; the two clause-list
+#: keys use the GT-side names, not the specialist's field_type names).
+#: Purpose-GT classes carry intent/subject_matter/keywords on top (§25).
+EXPECTED_EXTRACTION_FIELDS: dict[str, tuple[str, ...]] = {
+    "contract": ("cuad_clause_labels",),
+    "merger_agreement": ("maud_clause_labels",),
+    "insurance_claim": (
+        "claim_number", "policy_number", "insurer", "insured_party",
+        "claim_type", "date_of_loss", "date_filed", "claimed_amount",
+        "adjuster", "damages_description", "coverage_determination",
+        "denial_reasons", "supporting_documents",
+    ),
+    "corporate_record": (),
+    "correspondence": (),
+}
+PURPOSE_GT_CLASSES = ("corporate_record", "correspondence", "insurance_claim")
+PURPOSE_GT_KEYS = ("intent", "subject_matter", "keywords")
+
+
+def expected_gt_fields(doc_class: str) -> tuple[str, ...]:
+    """The full expected GT field set for a class (extraction + purpose)."""
+    fields = list(EXPECTED_EXTRACTION_FIELDS.get(doc_class, ()))
+    if doc_class in PURPOSE_GT_CLASSES:
+        fields.extend(PURPOSE_GT_KEYS)
+    return tuple(fields)
 
 
 def enrich_row(row: dict[str, Any]) -> dict[str, Any]:

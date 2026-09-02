@@ -203,6 +203,68 @@ constants in `mailroom_eda.eval_contract`; derivations in
 never-mix guard). This decision unblocks P2
 (group_role/relationships/multi-document cases).
 
+### 9A. Synthetic bundle families (§14 — the `synthetic_constructed` builder)
+
+`mailroom_eda.bundles` manufactures §14 bundle instances over REAL anchor
+rows: five family templates (`legal_contract_family`,
+`insurance_claim_family`, `merger_family`, `corporate_record_family`,
+`correspondence_thread_family` — the first two are §14's worked examples and
+must span ≥2 classes), each instance = one real anchor (keeps its filename
+and text, `group_role: primary`) + manufactured siblings whose `doc_text` is
+an explicit scaffold template marked
+`[SYNTHETIC SIBLING — grouping-evaluation scaffold]`. All members carry
+`matter_construction: synthetic_constructed`; manufactured members add
+`synthetic: true`, `bundle_family`, and a `MATTER-SYN-*` filename namespace
+that cannot collide with snapshot filenames. `with_duplicates` adds a
+`template_variant` duplicate per instance (§87/§12 — the only duplicate type
+a scaffold can honestly manufacture). Roles/relationships are validated
+against the closed vocabularies at build time. Seeded (`seed=42`), fully
+deterministic, returns `(rows, manifest)` — **writes nothing; publishing
+bundle rows is the §84 `v0.3-matter-aware` decision.**
+
+### 9B. Evaluation fixture content (§68–§72A — the P1/P3 content layer)
+
+`mailroom_eda.fixtures` builds the fixture CONTENT on top of the P1
+vocabularies (which stay the single source of truth — every row's
+review/retry expectations are derived through `eval_contract`, never
+hardcoded):
+
+- **§70 calibration quartet** — per class, the four
+  `correct_high/correct_low/wrong_high/wrong_low` cells probed AT the live
+  routing bands (`probes_confidence` sits just inside the band edge being
+  probed, so off-by-epsilon routing bugs are visible). Cell → fixture-kind
+  mapping is closed (`CONFIDENCE_CELL_FIXTURE_KIND`): `correct_high` →
+  `high_confidence` (archive), `correct_low` → `low_confidence` (review),
+  `wrong_high` → `conflicting` (the silent-archive failure mode under
+  test — judge catch → review), `wrong_low` → `retry_review` (retry →
+  human_review).
+- **§72A review/arbiter scenarios** — review-correction (human fixes an
+  extraction from an unreadable scan → archive) and one scenario per closed
+  arbiter outcome (`ARBITER_OUTCOMES = stands / re_extract /
+  escalate_human_review`).
+- **§58 failure-stage matrix** — one minimal failure fixture per stage of
+  `FAILURE_STAGES` (ingestion → archival), the spine P3 needs to score
+  first-pass vs. recovered success per stage.
+
+All rows use the `fixture:` filename namespace (no snapshot collisions) and
+derive specialist routing from the same registry as P1. **Scaffold-only;
+publishing fixtures is the §84 `v0.4-recovery-suite` decision.**
+
+### 9C. P4 priorities and the P5 ledger (§89–§90)
+
+- **P4**: `scripts/expansion_priorities.py` generates
+  `docs/reports/audits/docclass_expansion_priorities.{md,json}` from the
+  committed §40–41 coverage matrix — priority is evaluation value, not raw
+  row count (§89's own discipline): class families score on zero/partial
+  field gaps and scarcity (half the median class size); the corpus-level
+  scenario axes (grouping, adversarial) are high by construction;
+  `format_diversity` carries the backlog's single documented override
+  (sequencing: it pays off only once P3 fixtures graduate).
+- **P5**: `docs/reports/audits/docclass_p5_surfaces.md` is the honest
+  status ledger for every §90 surface and §25 metric group — scaffolded /
+  blocked-on-runs / blocked-on-expansion, each with its unlock. P5 surfaces
+  compute only after the §84 publication decision feeds them real runs.
+
 | Marker | Content |
 |---|---|
 | `v0.1-working` | frozen baseline (this contract's companion audit) |
