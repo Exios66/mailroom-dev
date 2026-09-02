@@ -67,6 +67,8 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
 | HUB-020 | `assigned` | **docclass eval judge prompts still grade against the retired 8-class "EXTENDED primary set"** — discovered during HUB-019 component 6: `packages/llm-entity-extraction/src/prompts_docclass.py` (judge/reviewer/arbiter/boss docclass prompts) and the byte-mirror `packages/The-Mailroom/mailroom_ui/docclass_prompts.py` instruct judges to grade against the extended 8-class list (incl. retired compliance_filing/court_opinion/due_diligence) while the docclass GT is the canonical five (plan §5/§66/§93; docs/v7-taxonomy.md §5 avoid-list). Land in THIS monorepo (human directive: all work in mailroom-dev): add NEW prompt version keys (never mutate versions that have run) with five-class + `unknown` grading language per plan §67, mirror byte-identical into The-Mailroom, leave default selection unchanged until a same-surface A/B validates v1; option-list ↔ schema-enum test parity maintained. Decision open for the human: whether the docclass arm keeps the extended surface as deliberate eval design (KANBAN-033 lineage) or moves to five-class grading. | unclaimed | — | HUB-019 Evidence 2026-09-02 |
 | HUB-022 | `needs_attention` | **docclass-merged P1 — Mailroom Evaluation Hardening (plan §86, §84A sequencing)** — human directive: proceed with the plan (committed at `docs/docclass-merged-plan.md`) after P0. P1 per §84A dependency chain (document_id → annotation_provenance → confidence-band/calibration fixtures; failure_stage + review/retry expectations → P3 fixtures): formalize `expected_fields` (preserve, never bypass — §18), formalize `annotation_provenance` (§43: source/method/model/prompt_version/confidence/reviewer/timestamp), add `expected_specialist` (§59) + `expected_stage` (§57–58), add `review_expected`/`review_reason`/`retry_expected`/recovery expectations (§31), unknown/OOD fixture vocabulary (§68) + confidence-band fixture vocabulary (§69–71), build the class×subclass×source×field coverage report (§40–41) at `docs/reports/audits/docclass_coverage_matrix.{md,json}`, extend the §63 contract tests for every new field, document the §14A matter/group backfill methodology decision (prerequisite gate for P2). No HF pushes — groundwork + local verification, published-config wiring rides the v0.2 release decision (§84). All work in mailroom-dev; publishing only through the centralized corpus-eda helpers (§44A). | GLM-5.3-Flash (opencode) 2026-09-02 | — | HUB-019 close-out (handoff directive); plan committed `02e83633`. P0 COMPLETENESS PASS (human directive): §84B pin criterion "referenced in at least one evaluation trace" was UNMET — landed `run_pipeline(dataset=...)` → dataset_name/dataset_revision/taxonomy_version on every HF-pilot trace + surgical test (8 passed); baseline audit ground_truth columns fact corrected 32→31 (the audit had counted its in-memory doc_text join; published config is 4 identity + 27 GT = 31; JSON regenerated, .md already correct). HUB-023 spawned mid-card: dataset rename landed (see HUB-023). Suite: corpus-eda 15, llm-mailroom surgical 40, dojo/agent/The-Mailroom/sandbox green. **P1 LANDED 2026-09-02 (commit `846c6e83`)**: `mailroom_eda/eval_contract.py` (§59 expected_specialist registry-derived from live taxonomy.yaml, §57–58 expected_stage, §31 review/retry expectations with closed vocabularies, §43 annotation_provenance — regimes verified exactly over all 1,650 rows: verified_join 162 / llm_zero_shot 92+deepseek-chat / human_annotated 96 / synthetic 600; §68 fixture-kind vocabulary + §70 calibration quartet + §69 confidence bands read from the LIVE taxonomy.yaml (0.97/0.88 global, per-class overrides — not the plan's illustrative 0.95/0.70); §14A/§15/§16/§58 vocabularies); `scripts/coverage_matrix.py` → §40–41 report landed (the gaps are the point: corporate_record intent 0%, correspondence subject_matter/keywords 27%, insurance adjuster 0%; §40 scenario columns at zero with an explicit no-overstatement note); §19 span schema defined in contract §5A (population rides v0.2); corpus-eda suite 29 passed. **P2 GROUNDWORK LANDED 2026-09-02 (commit `0b6ff1f9`, lucius HF audit + `mailroom_eda/matter.py`)**: §14A decision VERIFIED with data — In-Reply-To/References structurally ABSENT from the CMU maildir itself (0/350 raw files, 0/247,523 upstream dedup rows @ pin bb57c5ad, download-only) so header-thread backfill is impossible; subject populated 346/350 (≈80 degenerate → 266 meaningful, doc_text extraction matches exactly). `MATTER_CONSTRUCTION` gains `heuristic_reconstructed` (three constructions, never mixed silently; never-mix guard asserts header threads stay absent). Live §84B audit: 266/350 subjects, 19 rows in 7 multi-member heuristic threads, 331 unassigned — recorded in contract §9 as the honest grouping baseline; `synthetic_constructed` becomes the primary multi-document eval path. Corpus-eda suite 43 passed. **P2/P3/P4/P5 SCAFFOLD COMPLETE 2026-09-02 (commit `f080322b`)**: `mailroom_eda/bundles.py` (§14: five bundle-family templates over REAL anchors — §14's legal/insurance examples span >=2 classes — flagged synthetic siblings, seeded/deterministic, (rows, manifest)); `mailroom_eda/fixtures.py` (§70 calibration quartet probed AT live taxonomy.yaml bands via closed CONFIDENCE_CELL_FIXTURE_KIND mapping; §72A review-correction + arbiter stands/re_extract/escalate_human_review; §58 failure-stage matrix — all expectations derived through eval_contract, never hardcoded); `eval_contract.EXPECTED_EXTRACTION_FIELDS` GT field registry; P4 `scripts/expansion_priorities.py` -> committed `docclass_expansion_priorities.{md,json}` (evaluation value not row count; HIGH: adversarial_ambiguous, corporate_records, grouping_scenarios, insurance_workflow, merger_documents scarcity; one documented override: format_diversity); P5 `docclass_p5_surfaces.md` ledger (scaffolded / blocked-on-runs / blocked-on-expansion per §90 surface + §25 metric group). Contract §9A/§9B/§9C; package AGENTS.md layout currency. Suite: corpus-eda 65 passed. decision: the groundwork scope of this card is COMPLETE — what remains is the human §84 publication decision (v0.2 hardened fields / v0.3 bundles / v0.4 fixtures on the Hub configs); P5 surfaces compute only after that publication feeds them real runs. |
 
+| HUB-028 | `in_progress` | **mailroom-corpus v8 — synthetic insurance-claim LOB expansion + full GT conformance** — human directive 2026-09-02 ("adding, and stratifying representative samples into the mailroom-corpus, creating the official v8 release, conforming ALL of the ground truth labeling and test split nullification, in addition to including all of the metadata for all entries & ensuring the ground truths are populated"). Scope: (a) add license-compatible synthetic insurance_claim rows: GNOTHEIA (Apache-2.0) → `property` subclass (~200 rows, FNOL+invoice+police docs, strata by lossEvent) + BDR insurance-motor-claims-decision (MIT) → `auto` subclass (~150 rows, strata by accident_type × decision incl. explicit denials); (b) backfill intent/subject_matter/keywords on ALL 600 existing CMS DE-SynPUF rows (246/600 missing subject/keywords, 600/600 missing intent) via deterministic template derivation (no LLM key available); (c) conform the 27-key GT schema on every insurance row (verbatim contract: scalar GT values rendered into doc_text), full metadata (source_dataset/source_revision/source_row_id/lob/peril) on every entry; (d) test-split nullification: every test-split row carries fully-populated applicable GT (no ''/None on class-relevant keys); (e) publish v8 via centralized corpus-eda helpers (docclass_uploader/dataset_export), sha256 verify, card+manifest, docs currency, suites green. | Lucius (opencode) 2026-09-02 | — | human directive; sources verified license-compatible (XpertSystems INS-001/007/HLT-015 excluded — CC-BY-NC-4.0 conflicts with corpus CC-BY-4.0; INSURBIAS CC-BY-4.0 deferred to v9 — GT-sparse) |
+
 ## Rules that keep the board honest
 
 - **One owner per card.** Never work a card someone else owns — offer help on
@@ -97,32 +99,44 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
-- **HUB-026** (done 2026-09-02) — **Offline sandbox: remote-serving
-  integration completeness (Modal / vLLM / conda / SSH tunnels / CHTC)** —
-  human directive. Survey: Modal (`deploy/modal_vllm.py` + `modal-vllm`
-  profile) and vLLM-local (profile + compose) already existed — verified,
-  cross-linked, left intact. Landed: (a) `vllm-remote` profile with a
-  `tunnel:` block (env-var indirection — nothing secret in-repo) +
-  `mailroom_sandbox/tunnel.py` (network-free argv builders, pidfile
-  lifecycle, double-forward refusal) + `sandbox tunnel plan/up/status/down`
-  (clean `TunnelError` paths; leaves drop `parents=[shared]` so a leaf
-  `--profile` default can't clobber — the before-subcommand clobber is
-  pre-existing CLI-wide and now documented); (b)
-  `deploy/conda/environment.yml` — CPU-first portable `mailroom-sandbox`
-  env, vLLM deliberately external (own CUDA stack/container), conda-pack
-  pattern for CHTC staging; (c) `deploy/htcondor/` — `vllm_batch_eval.sub`
-  + `run_batch_eval.sh` (in-job vLLM + offline evals + `results/`
-  transfer-back: the pattern that works on CHTC's shared GPU Lab where
-  `condor_ssh_to_job` is REMOVED — verified against current CHTC docs) and
-  `vllm_serve.sub` + `serve_vllm.sh` (owned-GPU server variant) with a
-  README tying `condor_ssh_to_job` forwarding to the `vllm-remote` tunnel;
-  (d) `docs/remote-serving.md` one-pager (Modal / vLLM / tunnels / CHTC /
-  conda) + providers.md table row + deploy README + AGENTS.md + .env.example
-  tunnel vars + CHANGELOG. KNOWN_PROFILES/serving_family/tests updated
-  (`vllm-remote` pinned in the required-profiles test). Suites: sandbox 58
-  passed / 1 documented skip / 0 failed (6 new tunnel tests);
-  `py_compile` green; CLI smoke-tested (plan/status/error paths). Suites
-  run: sandbox only (hub + package-scoped change). Evidence: this commit.
+- **HUB-026** (done 2026-09-02) —
+  **Offline sandbox: remote-serving integration completeness (Modal / vLLM /
+  conda / SSH tunnels / CHTC) + CHTC annotation pass** — human directive
+  ("ensure the sandbox is fully configured for integration with Modal, vLLM,
+  a conda environment, SSH tunnels, or interfacing with CHTC"; reopen:
+  "add annotations and specifics for the use of the UW Madison CHTC services
+  … they have several fully dedicated docs online regarding their operating
+  system + requirements"). Delivery leg (`60fe58b5`): Modal (`deploy/
+  modal_vllm.py` + `modal-vllm` profile) and vLLM-local verified intact;
+  landed the `vllm-remote` profile with a `tunnel:` block (env-var
+  indirection, nothing secret in-repo), `mailroom_sandbox/tunnel.py`
+  (network-free argv builders, pidfile lifecycle, double-forward refusal),
+  `sandbox tunnel plan/up/status/down` (leaf parsers drop
+  `parents=[shared]` so leaf defaults can't clobber the parsed profile; the
+  before-subcommand clobber is pre-existing CLI-wide and now documented),
+  `deploy/conda/environment.yml` (CPU-first portable env, vLLM external,
+  conda-pack for staging), and `deploy/htcondor/` two-path templates
+  (batch eval for the shared pool / server for owned GPUs).
+  Annotation leg (this commit) — every CHTC claim grounded in their live
+  user docs: access points ap2001/ap2002 + login requirements (CHTC
+  account, NetID, Duo MFA, campus network/UW VPN, ControlMaster reuse with
+  the port-forwards-on-initial-connection rule, Mosh lacks forwarding);
+  OS strategy (RHEL-family execute nodes; Apptainer containers carry their
+  own OS — `docker://vllm/vllm-openai` direct or staged `.sif` via
+  `osdf:///chtc/staging` + `HasCHTCStaging`; conda-pack must be BUILT ON
+  THE ACCESS POINT for glibc match, never macOS; .sif builds only in
+  interactive build jobs); /staging + the live 2026 staging-transition
+  notice; the full GPU Lab roster (P100/2080Ti/A100-40/80/L40/L40S/H100/
+  H200 with capability+VRAM) + job classes (short 12h / medium 24h / long
+  7d + per-user caps, default medium) + `condor_status` exploration;
+  submit-file knobs corrected per the roster (batch → `short`,
+  `gpus_minimum_memory 24000` excludes 10–16GB cards for Qwen3-8B,
+  optional capability 8.0; `CUDA_VISIBLE_DEVICES` is HTCondor-owned;
+  `+is_resumable` backfill note) and the `ON_EXIT_OR_GRACEFUL_REMOVAL`
+  typo fixed; `condor_ssh_to_job` policy dated (2026-04-22, shared-GPU
+  removal; `condor_tail` for monitoring). Suites: sandbox 58 passed /
+  1 documented skip / 0 failed; board check 0/0. Evidence: `60fe58b5`
+  (delivery) + this commit (annotations).
 - **HUB-025** (done 2026-09-02) — **Enron EDA visualization distortions
   (#9)** — human-filed bug: the "Enron Subclass Distribution" donut rendered
   with bunched & distorted labels (email 97.8%; the seven sub-1% subclasses
