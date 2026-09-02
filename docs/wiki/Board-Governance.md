@@ -43,8 +43,11 @@ references); **warnings** are hygiene drift (pending-archive rows,
 unclaimed cards with commits, stale `in_progress`). `--strict` fails on
 warnings too. The CI gate
 [`.github/workflows/board-governance.yml`](https://github.com/Exios66/mailroom-dev/blob/main/.github/workflows/board-governance.yml)
-runs `check` + the label audit on every change to `governance/`,
-`scripts/`, or `.github/`.
+runs `check` + the label audit + the doc-class taxonomy parity gate
+(`scripts/taxonomy_parity.py`, HUB-019 §65A — fails when the canonical
+five-class surfaces disagree; also triggered by changes to the taxonomy
+surfaces themselves) on every change to `governance/`, `scripts/`, or
+`.github/`.
 
 The Projects v2 mirror (the *mailroom-hub board* project with
 Lane/Owner/Card fields) needs a one-time interactive scope grant:
