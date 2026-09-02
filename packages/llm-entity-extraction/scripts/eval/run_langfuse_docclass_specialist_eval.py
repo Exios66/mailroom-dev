@@ -78,16 +78,33 @@ INSURANCE_FIELD_KEYS = (
     "denial_reasons", "supporting_documents",
 )
 
+# HUB-035 follow-up: score the GT the corpus ACTUALLY carries for these
+# classes (HUB-022 coverage matrix) — intent/sentiment/topic for
+# correspondence; subject_matter/keywords for corporate_record. The
+# output-schema fields (sender, recipient, filing_number, ...) stay in the
+# agents' extraction schemas; corpus GT for them does not exist yet
+# (reconciliation: HUB-031/032).
 CORRESPONDENCE_FIELD_KEYS = (
-    "sender", "recipient", "additional_recipients", "communication_type",
-    "communication_date", "key_points", "demand_amount", "action_items",
-    "urgency", "referenced_communications",
+    "intent", "sentiment_label", "content_topic", "subject_matter", "keywords",
 )
 
-CORPORATE_RECORD_FIELD_KEYS = (
-    "entity_name", "record_type", "effective_date", "key_provisions",
-    "signatories", "jurisdiction", "filing_number",
-)
+CORPORATE_RECORD_FIELD_KEYS = ("subject_matter", "keywords")
+
+# Explicit scoring types for corpus GT keys outside the taxonomy output
+# schemas (dojo would otherwise fall back to _heuristic_field_type).
+GT_FIELD_TYPES = {
+    "correspondence_specialist": {
+        "intent": "name",
+        "sentiment_label": "name",
+        "content_topic": "free_text",
+        "subject_matter": "free_text",
+        "keywords": "entity_list:free_text",
+    },
+    "corporate_records_specialist": {
+        "subject_matter": "free_text",
+        "keywords": "entity_list:free_text",
+    },
+}
 
 # HUB-035: every canonical specialist family is runnable against the
 # mailroom-corpus dumps (merger_agreement has no specialist agent by design —
@@ -170,6 +187,18 @@ def select_agent_rows(dataset: list[dict], agent: str) -> list[dict]:
     return [d for d in dataset if d["expected"] in doc_types]
 
 
+def _decode_listish(value):
+    """Decode JSON-encoded list strings (corpus keywords GT shape)."""
+    if isinstance(value, str) and value.strip().startswith("["):
+        try:
+            decoded = json.loads(value)
+            if isinstance(decoded, list):
+                return decoded
+        except json.JSONDecodeError:
+            pass
+    return value
+
+
 def enrich_generic_rows(rows: list[dict], field_keys: tuple[str, ...]) -> list[dict]:
     """Attach ``expected_fields`` from flat scalar GT (mailroom-corpus dumps)."""
     for row in rows:
@@ -178,7 +207,7 @@ def enrich_generic_rows(rows: list[dict], field_keys: tuple[str, ...]) -> list[d
         for key in field_keys:
             val = gf.get(key)
             if val not in (None, "", []):
-                expected[key] = val
+                expected[key] = _decode_listish(val)
         row["expected_fields"] = expected
     return rows
 
@@ -273,7 +302,9 @@ def main_with_args(argv: list[str]) -> int:
         doc_class = CORPORATE_RECORD_DOC_TYPE
     with_truth = [d for d in dataset if d.get("expected_fields")]
 
-    field_types = get_field_types(doc_class)
+    # taxonomy schema types first; corpus-GT keys outside the output schema
+    # get the explicit GT scoring types above (deterministic, not heuristic)
+    field_types = {**get_field_types(doc_class), **GT_FIELD_TYPES.get(args.agent, {})}
     scored_fields = sorted({f for d in with_truth for f in d["expected_fields"]})
 
     log_path = args.experiment_log or default_jsonl_path()
