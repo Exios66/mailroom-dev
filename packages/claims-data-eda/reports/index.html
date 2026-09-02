@@ -92,8 +92,8 @@
 
 <div class="nav">
   <div class="nav-inner">
-    <a href="#demographics">Demographics</a>
-    <a href="#gallery">Figures</a>
+    <a href="#interactive">Interactive Charts</a>
+    <a href="#gallery">Static Figures</a>
     <a href="#reports">Reports</a>
     <a href="#data">Data</a>
   </div>
@@ -101,34 +101,21 @@
 
 <div class="container">
 
-<section id="demographics">
-  <h2>Beneficiary Demographics</h2>
-  <div class="demographics">
-    <div class="demo-card">
-      <h4>Sex</h4>
-      <div class="demo-bar">
-        <div style="width:55.3%;background:var(--accent)">F 55.3%</div>
-        <div style="width:44.7%;background:var(--accent2)">M 44.7%</div>
-      </div>
-    </div>
-    <div class="demo-card">
-      <h4>Age Band (2008)</h4>
-      <div class="demo-bar">
-        <div style="width:42.6%;background:var(--accent)">65-74</div>
-        <div style="width:28.3%;background:var(--accent2)">75-84</div>
-        <div style="width:16.4%;background:var(--green)">&lt;65</div>
-        <div style="width:12.7%;background:var(--orange)">85+</div>
-      </div>
-    </div>
-    <div class="demo-card">
-      <h4>Chronic Conditions (2010 prevalence)</h4>
-      <div class="demo-bar">
-        <div style="width:36.2%;background:var(--red)">IHD 36.2%</div>
-        <div style="width:28.3%;background:var(--orange)">Diabetes 28.3%</div>
-        <div style="width:25.1%;background:var(--accent)">HF 25.1%</div>
-        <div style="width:17.2%;background:var(--accent3)">Depression 17.2%</div>
-      </div>
-    </div>
+<section id="interactive">
+  <h2>Interactive Charts</h2>
+  <div class="gallery">
+    <div class="gallery-item"><iframe src="eda/figures_interactive/01_sex_distribution.html" loading="lazy" style="width:100%;height:320px;border:none;"></iframe><div class="caption">Sex Distribution (interactive)</div></div>
+    <div class="gallery-item"><iframe src="eda/figures_interactive/02_age_band.html" loading="lazy" style="width:100%;height:320px;border:none;"></iframe><div class="caption">Age Band Distribution</div></div>
+    <div class="gallery-item"><iframe src="eda/figures_interactive/03_race_distribution.html" loading="lazy" style="width:100%;height:320px;border:none;"></iframe><div class="caption">Race Distribution</div></div>
+    <div class="gallery-item"><iframe src="eda/figures_interactive/04_chronic_conditions.html" loading="lazy" style="width:100%;height:380px;border:none;"></iframe><div class="caption">Chronic Conditions Prevalence</div></div>
+    <div class="gallery-item"><iframe src="eda/figures_interactive/05_events_by_type.html" loading="lazy" style="width:100%;height:320px;border:none;"></iframe><div class="caption">Events by Claim Type</div></div>
+    <div class="gallery-item"><iframe src="eda/figures_interactive/06_cost_boxplots.html" loading="lazy" style="width:100%;height:320px;border:none;"></iframe><div class="caption">Cost Percentiles (box plots)</div></div>
+    <div class="gallery-item"><iframe src="eda/figures_interactive/07_top_diagnoses.html" loading="lazy" style="width:100%;height:380px;border:none;"></iframe><div class="caption">Top Inpatient Diagnoses</div></div>
+    <div class="gallery-item"><iframe src="eda/figures_interactive/08_top_hcpcs.html" loading="lazy" style="width:100%;height:380px;border:none;"></iframe><div class="caption">Top Outpatient Procedures</div></div>
+    <div class="gallery-item"><iframe src="eda/figures_interactive/09_top_drugs.html" loading="lazy" style="width:100%;height:380px;border:none;"></iframe><div class="caption">Top Drugs (NDC)</div></div>
+    <div class="gallery-item"><iframe src="eda/figures_interactive/10_annual_reimbursements.html" loading="lazy" style="width:100%;height:320px;border:none;"></iframe><div class="caption">Annual Reimbursements</div></div>
+    <div class="gallery-item"><iframe src="eda/figures_interactive/11_deaths_by_year.html" loading="lazy" style="width:100%;height:300px;border:none;"></iframe><div class="caption">Deaths by Year</div></div>
+    <div class="gallery-item"><iframe src="eda/figures_interactive/12_cost_heatmap.html" loading="lazy" style="width:100%;height:300px;border:none;"></iframe><div class="caption">Cost Percentile Heatmap</div></div>
   </div>
 </section>
 

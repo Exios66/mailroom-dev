@@ -1,6 +1,6 @@
 {
   "release_marker": "docclass-merged-v0.1-working",
-  "audited_at_utc": "2026-09-02T07:56:10Z",
+  "audited_at_utc": "2026-09-02T08:44:56Z",
   "dataset": {
     "name": "Lucius-Morningstar/docclass-merged",
     "pinned_revision": "bb57c5ad00333d239ea456fe3f2298c3ba5b5108",
@@ -32,7 +32,7 @@
       "blind": true
     },
     "ground_truth": {
-      "columns": 32,
+      "columns": 31,
       "gt_scalar_keys": 27
     }
   },

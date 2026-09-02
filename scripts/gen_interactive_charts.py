@@ -240,7 +240,7 @@ def gen_enron():
     data = [{"x":fb,"y":fp,"type":"bar","marker":{"color":"#fb923c"},
              "text":fp,"texttemplate":"%{text}%","textposition":"outside","textfont":{"color":"#e2e4ed"}}]
     (ENRON_OUT/"09_fanout.html").write_text(wrap("d",plot(data,
-        layout("Message Fan-Out (Recipients per Message)",height=380,xaxis={"gridcolor":"#2a2d3e"},yaxis":{"title":"% of messages","gridcolor":"#2a2d3e"}))))
+        layout("Message Fan-Out (Recipients per Message)",height=380,xaxis={"gridcolor":"#2a2d3e"},yaxis={"title":"% of messages","gridcolor":"#2a2d3e"}))))
     wrote += 1
 
     # 10. Thread sizes
@@ -249,7 +249,7 @@ def gen_enron():
     data = [{"x":tb,"y":tp,"type":"bar","marker":{"color":"#f472b6"},
              "text":tp,"texttemplate":"%{text}%","textposition":"outside","textfont":{"color":"#e2e4ed"}}]
     (ENRON_OUT/"10_thread_sizes.html").write_text(wrap("d",plot(data,
-        layout("Thread Size Distribution",height=380,xaxis={"gridcolor":"#2a2d3e"},yaxis":{"title":"% of threads","gridcolor":"#2a2d3e"}))))
+        layout("Thread Size Distribution",height=380,xaxis={"gridcolor":"#2a2d3e"},yaxis={"title":"% of threads","gridcolor":"#2a2d3e"}))))
     wrote += 1
 
     # 11. Duplicates
