@@ -109,6 +109,13 @@ specialist.
   after every corpus-side push (baseline Finding 1).
 - Every evaluation trace records: dataset_name, dataset_revision,
   document_id, matter_id, simulation_run_id, taxonomy_version (§45).
+  Implemented in llm-mailroom `run_pipeline(dataset=...)`: `dataset_name` /
+  `dataset_revision` come from the pinned corpus constants;
+  `taxonomy_version` currently equals the corpus schema label (`v7`, the
+  five-class label surface of `docs/v7-taxonomy.md`) until the first
+  explicit taxonomy decision gets its own `taxonomy_version` bump (§62 —
+  taxonomy and dataset version independently); live non-corpus runs carry
+  no dataset identity rather than a fabricated one.
 - Every experiment is reproducible from the tuple: dataset revision +
   taxonomy revision + prompt version + model/provider + runtime
   configuration (§46).
