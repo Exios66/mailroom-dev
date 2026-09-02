@@ -10,11 +10,12 @@
 | Field | Value |
 |---|---|
 | doc_type | `insurance_claim` |
-| Rows | 600 (36.4% of 1,650) — the largest class: v5 added 400, v6 appended 200 |
+| Rows | 600 (30% of v8's 2,000) — the CMS parent: v5 added 400, v6 appended 200; v8 adds sibling LOBs (property 200, auto 150) + full GT backfill |
 | Splits | train 536 / test 64 (`md5(filename) % 10 == 0 → test`) |
 | Strata | 4 `expected_subclass` values, exactly balanced: carrier 150, inpatient 150, outpatient 150, pde 150 |
 | Provenance keys | `metadata.source_dataset = cms-de-synpuf-2008-2010-sample1` (`metadata.source` is empty — the synthetic render *is* the original) |
 | Entered at | v5 (+400, KANBAN-084) and v6 (+200 re-render, KANBAN-105) |
+| v8 conformance | HUB-028: intent/subject/keywords backfilled on all 600; claimed_amount recovered from doc text on 10 gap rows; 3 train-only outpatient `:2` date gaps documented source-N/A |
 | License | CMS public-use terms; fully synthetic — no real PHI |
 
 ## Full context
