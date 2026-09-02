@@ -38,7 +38,7 @@ Develop here, sync via `scripts/sync_packages.py` in mailroom-dev.
 ## Dataset cards
 
 Per-source documentation for the five corpora integrated into
-[docclass-merged](https://huggingface.co/datasets/Lucius-Morningstar/docclass-merged)
+[docclass-merged](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus)
 — full context, source material, attribution, and purpose of each — lives in
 [`docs/`](docs/README.md) (`docs/dataset-cards/`):
 
@@ -76,13 +76,13 @@ centralized here (see the `huggingface` opencode skill for full docs):
 .venv/bin/python scripts/publish_docclass.py --rows data/v7_rows.jsonl \
     --stage /tmp/stage --intent-stats data/v7_intent_stats.json
 
-# publish to https://huggingface.co/datasets/Lucius-Morningstar/docclass-merged
+# publish to https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus
 HF_TOKEN=hf_... .venv/bin/python scripts/publish_docclass.py \
     --rows data/v7_rows.jsonl --stage /tmp/stage \
     --intent-stats data/v7_intent_stats.json \
     --commit-message "issue #5: v7 intent hydration" --publish
 
 # byte-verify a local export against the Hub
-.venv/bin/python scripts/verify_hf.py --repo Lucius-Morningstar/docclass-merged \
+.venv/bin/python scripts/verify_hf.py --repo Lucius-Morningstar/mailroom-corpus \
     --jsonl data/hf_export/mailroom-cuad-contracts-full.jsonl
 ```

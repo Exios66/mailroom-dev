@@ -108,7 +108,7 @@ def audit() -> dict:
         "release_marker": RELEASE_MARKER,
         "audited_at_utc": pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "dataset": {
-            "name": "Lucius-Morningstar/docclass-merged",
+            "name": "Lucius-Morningstar/mailroom-corpus",
             "pinned_revision": PINNED_REVISION,
             "schema_version": manifest_txt.get("schema_version", "7"),
             "builder": "mailroom_eda.dataset_export @ Mailroom-Corpus-EDA",

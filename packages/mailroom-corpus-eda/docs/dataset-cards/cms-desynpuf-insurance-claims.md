@@ -3,7 +3,7 @@
 > `insurance_claim` · 600 rows (36.4% of the corpus) · 4 strata · train 536 / test 64
 > · license **CMS public-use (fully synthetic)** · one of the five source
 > corpora of
-> [`Lucius-Morningstar/docclass-merged`](https://huggingface.co/datasets/Lucius-Morningstar/docclass-merged)
+> [`Lucius-Morningstar/mailroom-corpus`](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus)
 
 ## Identity
 

@@ -2,7 +2,7 @@
 
 > `contract` · 509 rows (30.8% of the corpus) · 26 strata · train 455 / test 54
 > · license **CC BY 4.0** · one of the five source corpora of
-> [`Lucius-Morningstar/docclass-merged`](https://huggingface.co/datasets/Lucius-Morningstar/docclass-merged)
+> [`Lucius-Morningstar/mailroom-corpus`](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus)
 
 ## Identity
 

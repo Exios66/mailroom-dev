@@ -1,6 +1,6 @@
 # DOCCLASS_CONTRACT.md — the docclass-merged dataset contract
 
-**Status:** canonical bridge between the `Lucius-Morningstar/docclass-merged`
+**Status:** canonical bridge between the `Lucius-Morningstar/mailroom-corpus`
 corpus and the Mailroom pipeline. Companion to `docs/v7-taxonomy.md`
 (taxonomy doctrine) and `docs/reports/audits/docclass_merged_baseline.md`
 (frozen v0.1-working baseline). Plan reference: `docs/docclass-merged-plan.md`

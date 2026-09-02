@@ -29,5 +29,5 @@ remain the release vehicles for the deployed surfaces.
 | Packages | 10 (7 built + 3 virtual members) |
 | Python | 3.11+ (workspace `requires-python >= 3.11`) |
 | Family pins | llm-mailroom **v0.6.0** · llm-dojo-scoring **v0.12.2** · llm-entity-extraction **v0.20.0** |
-| HF corpus | [docclass-merged](https://huggingface.co/datasets/Lucius-Morningstar/docclass-merged) — schema v7, 1,650 rows |
+| HF corpus | [docclass-merged](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus) — schema v7, 1,650 rows |
 | CI gate | `.github/workflows/board-governance.yml` — board invariants + label drift |

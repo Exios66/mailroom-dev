@@ -95,7 +95,7 @@ Braintrust involvement):
   `scripts/datasets/build_legalbench_full_pack.py`; published +
   byte-verified (git-blob OID vs the Hub tree, every file) by
   `scripts/datasets/publish_kanban071.py`.
-- [docclass-merged](https://huggingface.co/datasets/Lucius-Morningstar/docclass-merged) —
+- [docclass-merged](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus) —
   the merged docclass surface: 700 rows = CUAD 509 + MAUD 152 + S-1 39,
   with `expected_subclass` + `filename` as non-null strings on EVERY row
   (schema v2, KANBAN-073 — contracts use CUAD's own contract grouping,
@@ -127,5 +127,5 @@ python scripts/datasets/publish_kanban071.py --only docclass
 
 # consume from anywhere
 hf download Lucius-Morningstar/legalbench-full --repo-type dataset --local-dir data/legalbench_full_mirror
-hf download Lucius-Morningstar/docclass-merged --repo-type dataset --local-dir data/docclass_mirror
+hf download Lucius-Morningstar/mailroom-corpus --repo-type dataset --local-dir data/docclass_mirror
 ```

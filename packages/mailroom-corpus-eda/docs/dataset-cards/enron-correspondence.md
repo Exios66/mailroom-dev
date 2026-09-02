@@ -3,7 +3,7 @@
 > `correspondence` · 350 rows (21.2% of the corpus) · 8 strata · train 310 / test 40
 > · license **research use (inherited from the CMU Enron Email Dataset)** ·
 > one of the five source corpora of
-> [`Lucius-Morningstar/docclass-merged`](https://huggingface.co/datasets/Lucius-Morningstar/docclass-merged)
+> [`Lucius-Morningstar/mailroom-corpus`](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus)
 
 ## Identity
 

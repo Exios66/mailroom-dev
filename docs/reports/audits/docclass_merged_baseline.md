@@ -11,7 +11,7 @@ modifications must keep this state reproducible.
 
 | Fact | Value |
 |---|---|
-| Dataset | `Lucius-Morningstar/docclass-merged` |
+| Dataset | `Lucius-Morningstar/mailroom-corpus` |
 | Audited HF revision | `bb57c5ad00333d239ea456fe3f2298c3ba5b5108` (tip, 2026-09-02: issue #5 `intent_source` aeslc_join fix on 162 rows) |
 | Pipeline pin (`FULL_CORPUS_REVISION`) | advanced to the same revision in this audit's commit series (was `b3ec9ee7`, a pre-hydration purpose-GT push — see Findings) |
 | Schema | v7 — `default` (blind, 4 cols) + `ground_truth` (31 cols = 4 identity + 27-key GT schema) |

@@ -9,7 +9,7 @@ the **centralized** helpers in
 
 | Fact | Value |
 | --- | --- |
-| Dataset | [Lucius-Morningstar/docclass-merged](https://huggingface.co/datasets/Lucius-Morningstar/docclass-merged) |
+| Dataset | [Lucius-Morningstar/mailroom-corpus](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus) |
 | Schema | **v7** (issue #5 intent hydration) |
 | Rows | **1,650** — insurance_claim 600 · contract 509 · correspondence 350 · merger_agreement 152 · corporate_record 39 |
 | Configs | `default` (blind, 4 cols) + `ground_truth` (27-key GT schema incl. intent provenance) |

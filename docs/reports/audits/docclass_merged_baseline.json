@@ -2,7 +2,7 @@
   "release_marker": "docclass-merged-v0.1-working",
   "audited_at_utc": "2026-09-02T08:44:56Z",
   "dataset": {
-    "name": "Lucius-Morningstar/docclass-merged",
+    "name": "Lucius-Morningstar/mailroom-corpus",
     "pinned_revision": "bb57c5ad00333d239ea456fe3f2298c3ba5b5108",
     "schema_version": "7",
     "builder": "mailroom_eda.dataset_export @ Mailroom-Corpus-EDA"

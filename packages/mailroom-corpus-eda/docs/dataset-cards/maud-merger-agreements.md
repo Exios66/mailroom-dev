@@ -2,7 +2,7 @@
 
 > `merger_agreement` · 152 rows (9.2% of the corpus) · 5 strata · train 135 / test 17
 > · license **CC BY 4.0** · one of the five source corpora of
-> [`Lucius-Morningstar/docclass-merged`](https://huggingface.co/datasets/Lucius-Morningstar/docclass-merged)
+> [`Lucius-Morningstar/mailroom-corpus`](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus)
 
 ## Identity
 

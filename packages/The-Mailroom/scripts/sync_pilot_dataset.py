@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mirror Lucius-Morningstar/docclass-merged INTO a Langfuse dataset.
+"""Mirror Lucius-Morningstar/mailroom-corpus INTO a Langfuse dataset.
 
 Default corpus is the **corrected full** ``docclass-merged`` Hub set (pinned
 revision via ``MAILROOM_HF_REVISION`` / ``mailroom_ui.hf_corpus``). The smaller
@@ -48,7 +48,7 @@ _CORPORA = {
         "dataset": FULL_CORPUS_ID,
         "langfuse": "docclass-merged",
         "description": (
-            "Corrected full corpus mirrored from Lucius-Morningstar/docclass-merged "
+            "Corrected full corpus mirrored from Lucius-Morningstar/mailroom-corpus "
             "(configs: default + ground_truth)."
         ),
     },

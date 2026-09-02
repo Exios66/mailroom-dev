@@ -1,6 +1,6 @@
 # v7 taxonomy contract
 
-**Status:** canonical terminology for the `Lucius-Morningstar/docclass-merged` v7 corpus and its relationship to the live Mailroom taxonomy.
+**Status:** canonical terminology for the `Lucius-Morningstar/mailroom-corpus` v7 corpus and its relationship to the live Mailroom taxonomy.
 
 ## 1. The key distinction
 

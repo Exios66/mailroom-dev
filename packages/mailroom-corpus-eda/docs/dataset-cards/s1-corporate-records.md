@@ -3,7 +3,7 @@
 > `corporate_record` · 39 rows (2.4% of the corpus) · 5 strata · train 38 / test 1
 > · license **public domain (US government works)** · one of the five source
 > corpora of
-> [`Lucius-Morningstar/docclass-merged`](https://huggingface.co/datasets/Lucius-Morningstar/docclass-merged)
+> [`Lucius-Morningstar/mailroom-corpus`](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus)
 
 ## Identity
 

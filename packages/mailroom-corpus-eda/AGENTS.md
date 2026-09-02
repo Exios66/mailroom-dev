@@ -1,7 +1,7 @@
 # AGENTS.md — Mailroom-Corpus-EDA
 
 Exploratory data analysis (and the centralized HF upload helpers) for the
-[`Lucius-Morningstar/docclass-merged`](https://huggingface.co/datasets/Lucius-Morningstar/docclass-merged)
+[`Lucius-Morningstar/mailroom-corpus`](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus)
 corpus — 1,650 legal documents across 5 doc_types (insurance_claim,
 merger_agreement, contract, correspondence, corporate_record), 48 strata.
 
@@ -74,7 +74,7 @@ runs used to clobber the full-corpus summary with phase-partial stats.)
 
 ## HF facts (verified 2026-08-31)
 
-- Repo: `Lucius-Morningstar/docclass-merged` (v7, 1,650 rows, rev `fc1f211c`;
+- Repo: `Lucius-Morningstar/mailroom-corpus` (v7, 1,650 rows, rev `fc1f211c`;
   data tip `1acd2600` + card-only pretty_name bump).
 - Composition: insurance_claim 600, contract 509, correspondence 350,
   merger_agreement 152, corporate_record 39.
