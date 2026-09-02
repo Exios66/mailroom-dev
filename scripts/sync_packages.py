@@ -38,8 +38,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -167,7 +169,7 @@ def tree_map(rev: str, prefix: str | None = None) -> dict[str, tuple[str, str]]:
     out: dict[str, tuple[str, str]] = {}
     for line in result.stdout.splitlines():
         meta, _, path = line.partition("\t")
-        _mode, otype, osha, _size = meta.split()
+        _mode, otype, osha = meta.split()
         if base:
             if not path.startswith(base):
                 continue
@@ -176,24 +178,32 @@ def tree_map(rev: str, prefix: str | None = None) -> dict[str, tuple[str, str]]:
     return out
 
 
-def missing_upstream_paths(upstream_tip: str, package: str) -> dict[str, str]:
-    """Upstream paths NOT contained in the package dir (the HUB-018 gap check).
+def unimported_upstream_paths(upstream_tip: str, package: str) -> dict[str, str]:
+    """Upstream paths genuinely absent from the monorepo (the HUB-018 gap).
 
-    Returns {upstream_path: reason} where reason is 'missing' (no such file in
-    the package) or 'modified' (different blob content). Extra package-side
-    files (monorepo-ahead fixes) are deliberately ignored — they are the
-    unpushed delta, not a cursor lie.
+    Only 'missing' paths count as cursor lies:
+    - missing + gitignored  → the deliberate heavy-asset prune (fine; HUB-018
+      doctrine: gitignore does not apply to tracked files, so these are
+      upstream files the monorepo removes on every pull);
+    - missing + NOT ignored → content the cursor claims was imported but
+      wasn't — the actual HUB-018 failure;
+    - modified blobs        → monorepo-ahead fixes (monorepo-canonical wins);
+      they are the unpushed delta, reported by local_ahead_paths, not a gap.
     """
     tip_tree = tree_map(upstream_tip)
     pkg_tree = tree_map("HEAD", f"packages/{package}")
-    gaps: dict[str, str] = {}
-    for path, (otype, osha) in tip_tree.items():
-        have = pkg_tree.get(path)
-        if have is None:
-            gaps[path] = "missing"
-        elif have != (otype, osha):
-            gaps[path] = "modified"
-    return gaps
+    missing = [p for p in tip_tree if p not in pkg_tree]
+    ignored: set[str] = set()
+    if missing:
+        probe = git(
+            ["check-ignore", "--", *(f"packages/{package}/{p}" for p in missing)]
+        )
+        if probe.returncode in (0, 1):
+            for line in probe.stdout.splitlines():
+                rel = line.strip()
+                if rel.startswith(f"packages/{package}/"):
+                    ignored.add(rel[len(f"packages/{package}/"):])
+    return {p: "missing" for p in missing if p not in ignored}
 
 
 def local_ahead_paths(upstream_tip: str, package: str) -> list[str]:
@@ -207,7 +217,7 @@ def cursor_gap_report(package: str, synced_sha: str | None) -> dict[str, object]
     """Gap info for a recorded cursor, or None when unverifiable."""
     if not synced_sha or not rev_exists(synced_sha):
         return None
-    gaps = missing_upstream_paths(synced_sha, package)
+    gaps = unimported_upstream_paths(synced_sha, package)
     return {"contained": not gaps, "n_gap_paths": len(gaps), "sample": sorted(gaps)[:5]}
 
 
@@ -277,7 +287,7 @@ def cmd_pull(args: argparse.Namespace) -> int:
     for package in selected_packages(args):
         url = url_for(package)
         head = upstream_head(url, DEFAULT_BRANCH)
-        if head and rev_exists(head) and not missing_upstream_paths(head, package):
+        if head and rev_exists(head) and not unimported_upstream_paths(head, package):
             print(
                 f"== {package}: upstream tip {head[:12]} is already contained in "
                 "packages/"
@@ -311,6 +321,69 @@ def cmd_pull(args: argparse.Namespace) -> int:
     return 1 if failed else 0
 
 
+def patch_push(package: str, url: str, tip: str, *, dry_run: bool) -> int:
+    """HUB-012 workaround, scripted: land the monorepo delta as ONE commit on
+    top of the real upstream tip (fast-forward by construction), then
+    re-baseline the cursor. Only tracked package files propagate; upstream
+    files deleted monorepo-side are NOT carried by this path (subtree push
+    handles full-history pushes; patch pushes carry content).
+    """
+    gaps = unimported_upstream_paths(tip, package)
+    if gaps:
+        print(
+            f"!! {package}: upstream tip {tip[:12]} is NOT contained in the package "
+            f"({len(gaps)} path(s) missing/modified — pull first, then patch-push",
+            file=sys.stderr,
+        )
+        return 1
+    tmp = Path(tempfile.mkdtemp(prefix=f"sync-patch-{package}-"))
+    worktree = git(["worktree", "add", "--detach", str(tmp), tip])
+    if worktree.returncode != 0:
+        print(f"!! worktree add failed: {worktree.stderr.strip()}", file=sys.stderr)
+        return 1
+    try:
+        tracked = git(["ls-files", "-z", "--", f"packages/{package}"]).stdout.split("\0")
+        files = [p for p in tracked if p]
+        for rel in files:
+            src = REPO_ROOT / rel
+            dst = tmp / rel[len(f"packages/{package}/"):]
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+        add = git(["-C", str(tmp), "add", "-A"])
+        if add.returncode != 0:
+            print(f"!! staging failed: {add.stderr.strip()}", file=sys.stderr)
+            return 1
+        staged = git(["-C", str(tmp), "diff", "--cached", "--stat", "HEAD"])
+        n_files = len([ln for ln in staged.stdout.splitlines() if "|" in ln])
+        if not staged.stdout.strip() or n_files == 0:
+            print(f"== {package}: no content delta vs upstream tip {tip[:12]} — nothing to propagate")
+            return 0
+        stamp = git(["rev-parse", "--short", "HEAD"]).stdout.strip()
+        message = (
+            f"Monorepo propagation: {package} from mailroom-dev@{stamp}\n\n"
+            f"{n_files} tracked file(s) carried from the monorepo (source of truth "
+            "for development); subtree patch-push because the recorded cursor had "
+            "no real graft ancestry (HUB-012/HUB-021)."
+        )
+        if dry_run:
+            print(f"== DRY RUN {package}: would commit {n_files} file(s) on {tip[:12]} and push {url}")
+            print(staged.stdout.rstrip())
+            return 0
+        commit = git(["-C", str(tmp), "commit", "-m", message])
+        if commit.returncode != 0:
+            print(f"!! commit failed: {commit.stderr.strip()}", file=sys.stderr)
+            return 1
+        push = git(["-C", str(tmp), "push", url, f"HEAD:refs/heads/{DEFAULT_BRANCH}"])
+        if push.returncode != 0:
+            print(f"!! push failed: {push.stderr.strip()}", file=sys.stderr)
+            return 1
+        print(f"== {package}: propagated {n_files} file(s) to {url} (tip {tip[:12]})")
+        return 0
+    finally:
+        git(["worktree", "remove", "--force", str(tmp)])
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def cmd_push(args: argparse.Namespace) -> int:
     require_subtree()
     assert_clean_tree("push", args.allow_dirty)
@@ -319,13 +392,38 @@ def cmd_push(args: argparse.Namespace) -> int:
     failed = False
     for package in selected_packages(args):
         url = url_for(package)
+        if args.patch:
+            tip = fetch_upstream(package)
+            if tip is None:
+                print(f"!! could not fetch upstream tip for {package}", file=sys.stderr)
+                failed = True
+                continue
+            if patch_push(package, url, tip, dry_run=args.dry_run) != 0:
+                failed = True
+                continue
+            if not args.dry_run:
+                entries[package] = {
+                    "url": url,
+                    "branch": DEFAULT_BRANCH,
+                    "synced_sha": upstream_head(url, DEFAULT_BRANCH),
+                    "synced_at": utc_now(),
+                }
+            continue
         print(f"== git subtree push --prefix packages/{package} {url} {DEFAULT_BRANCH}")
+        if args.dry_run:
+            print("== DRY RUN: no push performed")
+            continue
         result = git(
             ["subtree", "push", f"--prefix=packages/{package}", url, DEFAULT_BRANCH],
             capture=False,
         )
         if result.returncode != 0:
-            print(f"!! push failed for {package}", file=sys.stderr)
+            print(
+                f"!! push failed for {package} (non-fast-forward? see HUB-012). "
+                "Re-run with --patch to land the delta as one fast-forward commit "
+                "on the current upstream tip.",
+                file=sys.stderr,
+            )
             failed = True
             continue
         entries[package] = {
@@ -348,6 +446,33 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
         if head is None:
             print(f"!! could not read upstream tip for {package}; keeping previous entry", file=sys.stderr)
             continue
+        if not rev_exists(head):
+            fetched = fetch_upstream(package)
+            if fetched is None:
+                print(
+                    f"!! upstream tip {head[:12]} for {package} has no local objects "
+                    "and the fetch failed; keeping previous entry",
+                    file=sys.stderr,
+                )
+                continue
+            head = fetched
+        gaps = unimported_upstream_paths(head, package)
+        if gaps and not args.force:
+            sample = ", ".join(sorted(gaps)[:5])
+            print(
+                f"!! refusing to snapshot {package}: upstream tip {head[:12]} is not "
+                f"contained in packages/{package} ({len(gaps)} path(s) "
+                f"missing/modified: {sample}). This is the HUB-018 cursor/content "
+                "gap — pull first (or pass --force to accept the lie explicitly).",
+                file=sys.stderr,
+            )
+            continue
+        if gaps:
+            print(
+                f"!! {package}: snapshot forced past {len(gaps)} non-contained path(s) "
+                "— the cursor now describes content the monorepo may not have",
+                file=sys.stderr,
+            )
         entries[package] = {
             "url": url,
             "branch": DEFAULT_BRANCH,
@@ -359,7 +484,9 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
     manifest["note"] = (
         "Per-package sync cursor against the standalone Exios66/* repositories. "
         "Baseline per issue #2: monorepo aligned with the standalone repos as of "
-        f"{BASELINE_SYNCED_AT} (2026-08-30 19:06 CST)."
+        f"{BASELINE_SYNCED_AT} (2026-08-30 19:06 CST). Cursor writes are "
+        "content-verified (HUB-021) — upstream tip must be contained in the "
+        "package tree unless snapshot --force is passed."
     )
     save_manifest(manifest)
     print(f"snapshot written to {MANIFEST.relative_to(REPO_ROOT)} at {now}")
@@ -390,10 +517,23 @@ def main(argv: list[str] | None = None) -> int:
     push = sub.add_parser("push", help="git subtree push packages/<name> back to upstream")
     add_common(push)
     push.add_argument("--allow-dirty", action="store_true", help="bypass the clean-worktree guard")
+    push.add_argument(
+        "--patch",
+        action="store_true",
+        help="non-fast-forward fallback (HUB-012): land tracked package files as "
+        "one commit on the current upstream tip, then re-baseline the cursor",
+    )
+    push.add_argument("--dry-run", action="store_true", help="print the plan; no pushes, no cursor writes")
     push.set_defaults(func=cmd_push)
 
     snap = sub.add_parser("snapshot", help="re-baseline the manifest at current upstream tips")
     add_common(snap)
+    snap.add_argument(
+        "--force",
+        action="store_true",
+        help="advance the cursor even when the upstream tip is not contained in "
+        "the package tree (accepts the HUB-018 cursor/content gap explicitly)",
+    )
     snap.set_defaults(func=cmd_snapshot)
 
     args = parser.parse_args(argv)
