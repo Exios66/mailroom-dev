@@ -88,13 +88,21 @@ runs used to clobber the full-corpus summary with phase-partial stats.)
 ## HF facts (verified 2026-09-02, schema v8)
 
 - Repo: `Lucius-Morningstar/mailroom-corpus` (v8, 2,000 rows; data tip
-  `bba2f750`).
+  `bba2f750`; hardened release rebuilt on v8 at `eafe1ab4`).
 - Composition: insurance_claim 950 (carrier/inpatient/outpatient/pde 600 CMS
   DE-SynPUF + property 200 GNOTHEIA + auto 150 BDR motor),
   contract 509, correspondence 350, merger_agreement 152,
   corporate_record 39.
-- Configs: `default` (blind, 4 cols) + `ground_truth` (31 cols incl. labels +
-  intent provenance `intent_source`/`intent_confidence`/`intent_status`).
+- Configs: `default` (blind, 4 cols) + `ground_truth` (60 cols incl. labels,
+  intent provenance `intent_source`/`intent_confidence`/`intent_status`, AND
+  the §84 hardened columns — identity/hashes, evaluation contract,
+  matter/group) + `bundles` (38 cols, 50 rows) + `fixtures` (30 cols, 32
+  rows). Built via `scripts/publish_hardened.py` (HUB-022) on the v8 base:
+  v7 `document_id`s unchanged (0 drift), v8 LOB rows carry their own
+  `source_corpus`/`annotation_source` (GNOTHEIA/BDR) + pinned
+  `source_revision` via `metadata.source_dataset` / `.source_revision`
+  (identity / eval_contract precedence: class map stays authoritative except
+  the insurance LOB override — never churn published document_ids).
 - Split: train 1,792 / test 208 on both configs; filename sets equal.
 - v8 insurance LOB expansion (HUB-028): property rows from
   `gratex/GNOTHEIA-synthetic-insurance-dataset` (Apache-2.0) — FNOL bundles

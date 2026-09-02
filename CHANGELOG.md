@@ -44,6 +44,23 @@ and is recorded there, not here.
   samples (ins001/007/hlt015) excluded for CC-BY-NC-4.0 license conflict;
   INSURBIAS (CC-BY-4.0) deferred to v9. Builder: `v8_build.py` +
   `scripts/build_v8.py` (7 new tests; corpus-eda suite 73 passed).
+- **§84 hardened release rebuilt on the v8 base** (HUB-032, 2026-09-02):
+  the interleaved HUB-028/HUB-022 publishes left the Hub mixed (blind
+  `default` 2,000 rows vs `ground_truth` 1,650×60) — the rebuild applies
+  the identity → eval_contract → §14A hardening chain to ALL 2,000 rows and
+  republishes `ground_truth` (60 cols) + `bundles` + `fixtures` via
+  `scripts/publish_hardened.py`. Published v7 `document_id`s unchanged
+  (0 drift over 1,474 train rows); the v8 LOB rows (200 GNOTHEIA + 150 BDR)
+  carry their own `source_corpus`/`annotation_source` (via
+  `metadata.source_dataset`) and pinned upstream `source_revision` instead
+  of collapsing into the CMS class map; annotation provenance counts now
+  950 synthetic (600 DE-SynPUF + 200 GNOTHEIA + 150 BDR);
+  thread reconstruction unchanged (19 rows in 7 threads — all
+  correspondence; insurance rows carry no custodian). Bundles re-derived
+  over the v8 base (anchor sets shift — insurance family now spans
+  carrier + auto anchors); fixtures byte-identical. Card §84 section
+  refreshed; sha256 local==hub (10/10); all §91 release gates green;
+  corpus-eda suite 73 passed.
 
 ## [0.1.0] - 2026-09-02
 

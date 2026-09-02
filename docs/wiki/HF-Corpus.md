@@ -10,12 +10,12 @@ the **centralized** helpers in
 | Fact | Value |
 | --- | --- |
 | Dataset | [Lucius-Morningstar/mailroom-corpus](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus) |
-| Schema | **v8** (insurance LOB expansion, HUB-028) |
+| Schema | **v8** (insurance LOB expansion, HUB-028; §84 hardening rebuilt on v8, HUB-032) |
 | Rows | **2,000** — insurance_claim 950 (carrier/inpatient/outpatient/pde 600 · property 200 · auto 150) · contract 509 · correspondence 350 · merger_agreement 152 · corporate_record 39 |
-| Configs | `default` (blind, 4 cols) + `ground_truth` (31-key GT schema incl. intent provenance) |
-| Split | train 1,792 / test 208, both configs; md5(filename) % 10 == 0 → test (stable) |
+| Configs | `default` (blind, 4 cols) + `ground_truth` (60 cols: 31-key GT schema incl. intent provenance + §84 hardened identity/eval-contract/matter columns) + `bundles` (38 cols, 50 rows) + `fixtures` (30 cols, 32 rows) |
+| Split | train 1,792 / test 208 on `default` + `ground_truth`; md5(filename) % 10 == 0 → test (stable) |
 | Strata | 50 (expected × expected_subclass) |
-| HF revs | data tip `bba2f750` (v8) |
+| HF revs | data tip `bba2f750` (v8); hardened-on-v8 at `eafe1ab4` |
 
 ### v8 insurance LOB expansion (HUB-028, 2026-09-02)
 
@@ -38,6 +38,26 @@ the **centralized** helpers in
   XpertSystems ins001/007/hlt015 (CC-BY-NC-4.0) excluded; INSURBIAS
   (CC-BY-4.0) deferred to v9.
 
+### §84 hardening rebuilt on v8 (HUB-032, 2026-09-02 — commit `eafe1ab4`)
+
+- **Repair**: the interleaved HUB-028/HUB-022 publishes left the Hub mixed
+  (blind `default` 2,000 rows vs `ground_truth` 1,650×60); the hardened
+  `ground_truth` is now rebuilt over ALL 2,000 rows (identity →
+  eval_contract → §14A matter chain via `scripts/publish_hardened.py`).
+- **Stability**: published v7 `document_id`s unchanged (0 drift over the
+  v7 train rows); v8 LOB rows carry their own `source_corpus` /
+  `annotation_source` (GNOTHEIA / BDR) + pinned upstream `source_revision`
+  via `metadata.source_dataset` / `.source_revision` — the class map stays
+  authoritative so published IDs never churn.
+- **Annotation provenance** (2,000 rows): synthetic 950 (600 DE-SynPUF +
+  200 GNOTHEIA + 150 BDR) · source_native 700 · verified_join 162 ·
+  llm_zero_shot 92 · human_annotated 96.
+- **Matter**: 19 rows in 7 threads (`heuristic_reconstructed`, all
+  correspondence — insurance rows carry no custodian); 1,981 unassigned.
+- **Bundles/fixtures**: re-derived over the v8 base (insurance family now
+  spans carrier + auto anchors); fixtures byte-identical. All §91 release
+  gates green; sha256 local==hub (10/10 files).
+
 ## The ground-truth schema (27 keys)
 
 `label_evidence, content_topic, topic_evidence, sentiment_score,
@@ -54,7 +74,7 @@ Corpus strata vocabulary (per doc type, used by eval targets):
 | contract | 26 incl. Consulting Agreements, Development, IP, Hosting |
 | corporate_record | articles_of_incorporation, bylaws, other, powers_of_attorney, rights_instrument |
 | correspondence | attorney_demand, demand, email, letter, meeting_request, memo, notice, press_release |
-| insurance_claim | carrier, inpatient, outpatient, pde |
+| insurance_claim | carrier, inpatient, outpatient, pde, property, auto |
 | merger_agreement | all_cash, all_stock, mixed_cash_stock, mixed_cash_stock_election, other |
 
 ## The EDA pipeline (P0–P6)
