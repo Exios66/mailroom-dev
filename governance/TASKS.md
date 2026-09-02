@@ -97,6 +97,32 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-026** (done 2026-09-02) — **Offline sandbox: remote-serving
+  integration completeness (Modal / vLLM / conda / SSH tunnels / CHTC)** —
+  human directive. Survey: Modal (`deploy/modal_vllm.py` + `modal-vllm`
+  profile) and vLLM-local (profile + compose) already existed — verified,
+  cross-linked, left intact. Landed: (a) `vllm-remote` profile with a
+  `tunnel:` block (env-var indirection — nothing secret in-repo) +
+  `mailroom_sandbox/tunnel.py` (network-free argv builders, pidfile
+  lifecycle, double-forward refusal) + `sandbox tunnel plan/up/status/down`
+  (clean `TunnelError` paths; leaves drop `parents=[shared]` so a leaf
+  `--profile` default can't clobber — the before-subcommand clobber is
+  pre-existing CLI-wide and now documented); (b)
+  `deploy/conda/environment.yml` — CPU-first portable `mailroom-sandbox`
+  env, vLLM deliberately external (own CUDA stack/container), conda-pack
+  pattern for CHTC staging; (c) `deploy/htcondor/` — `vllm_batch_eval.sub`
+  + `run_batch_eval.sh` (in-job vLLM + offline evals + `results/`
+  transfer-back: the pattern that works on CHTC's shared GPU Lab where
+  `condor_ssh_to_job` is REMOVED — verified against current CHTC docs) and
+  `vllm_serve.sub` + `serve_vllm.sh` (owned-GPU server variant) with a
+  README tying `condor_ssh_to_job` forwarding to the `vllm-remote` tunnel;
+  (d) `docs/remote-serving.md` one-pager (Modal / vLLM / tunnels / CHTC /
+  conda) + providers.md table row + deploy README + AGENTS.md + .env.example
+  tunnel vars + CHANGELOG. KNOWN_PROFILES/serving_family/tests updated
+  (`vllm-remote` pinned in the required-profiles test). Suites: sandbox 58
+  passed / 1 documented skip / 0 failed (6 new tunnel tests);
+  `py_compile` green; CLI smoke-tested (plan/status/error paths). Suites
+  run: sandbox only (hub + package-scoped change). Evidence: this commit.
 - **HUB-025** (done 2026-09-02) — **Enron EDA visualization distortions
   (#9)** — human-filed bug: the "Enron Subclass Distribution" donut rendered
   with bunched & distorted labels (email 97.8%; the seven sub-1% subclasses
