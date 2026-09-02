@@ -48,12 +48,17 @@ python scripts/eval/run_langfuse_docclass_specialist_eval.py --dry-run \
 ```
 
 GT-coverage reality (HUB-022 matrix): contracts scores 509/661 rows (CUAD
-clause GT), insurance 950/950 (full scalar GT); correspondence scores
+clause GT), insurance 950/950 (full scalar GT incl. the purpose/gist trio —
+intent · subject_matter · keywords at 100% on ALL insurance rows, v8
+conformance); correspondence scores
 350/350 against the corpus GT it actually carries (intent · sentiment_label ·
 content_topic at 100%, subject_matter/keywords at 27%) and corporate_records
 38/39 (subject_matter/keywords) — explicit GT scoring types in
 `GT_FIELD_TYPES`; the output-schema fields (sender, recipient, filing_number,
-...) still lack corpus GT (reconciliation: HUB-031/032).
+...) still lack corpus GT (reconciliation: HUB-031/032). The insurance
+specialist schema + taxonomy carry `subject_matter`/`keywords` (v8 dictation,
+HUB-028) and the prompt versioning is `insurance_claims_specialist_v0/v1/v2`
+(v2 = purpose/gist extraction rules).
 
 ## Related Files
 

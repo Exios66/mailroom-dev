@@ -76,6 +76,7 @@ INSURANCE_FIELD_KEYS = (
     "claim_type", "date_of_loss", "date_filed", "claimed_amount",
     "adjuster", "damages_description", "coverage_determination",
     "denial_reasons", "supporting_documents",
+    "subject_matter", "keywords",
 )
 
 # HUB-035 follow-up: score the GT the corpus ACTUALLY carries for these
@@ -93,6 +94,10 @@ CORPORATE_RECORD_FIELD_KEYS = ("subject_matter", "keywords")
 # Explicit scoring types for corpus GT keys outside the taxonomy output
 # schemas (dojo would otherwise fall back to _heuristic_field_type).
 GT_FIELD_TYPES = {
+    "insurance_claims_specialist": {
+        "subject_matter": "free_text",
+        "keywords": "entity_list:free_text",
+    },
     "correspondence_specialist": {
         "intent": "name",
         "sentiment_label": "name",

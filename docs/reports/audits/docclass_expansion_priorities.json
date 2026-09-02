@@ -1,7 +1,7 @@
 {
   "generated_from": "docs/reports/audits/docclass_coverage_matrix.json",
   "discipline": "do not optimize for raw row count (\u00a789) \u2014 priority is evaluation value",
-  "rows_total": 1650,
+  "rows_total": 2000,
   "median_class_rows": 350,
   "items": [
     {
@@ -21,7 +21,7 @@
       "family": "corporate_records",
       "title": "Corporate records (\u00a789: corporate records)",
       "priority": "high",
-      "rationale": "Smallest live class (39 rows vs 1,650 corpus-wide) carrying the sharpest field gap (intent 0%) \u2014 too few rows for stratified eval noise to average out; expansion is load-bearing for the corporate_records_specialist route.",
+      "rationale": "Smallest live class (39 rows vs 2,000 corpus-wide) carrying the sharpest field gap (intent 0%) \u2014 too few rows for stratified eval noise to average out; expansion is load-bearing for the corporate_records_specialist route.",
       "classes": [
         "corporate_record"
       ],
@@ -55,35 +55,6 @@
         "partial": []
       },
       "scenario_zero": [],
-      "scarcity": []
-    },
-    {
-      "family": "insurance_workflow",
-      "title": "Insurance workflow documents (\u00a789: insurance workflow)",
-      "priority": "high",
-      "rationale": "Largest class (600 rows) with adjuster at 0% and partial coverage on denial_reasons/supporting_documents \u2014 the workflow fields that distinguish a claim decision from a claim intake.",
-      "classes": [
-        "insurance_claim"
-      ],
-      "field_gaps": {
-        "zero": [
-          "insurance_claim.adjuster",
-          "insurance_claim.intent"
-        ],
-        "partial": [
-          "insurance_claim.date_of_loss 597/600",
-          "insurance_claim.date_filed 597/600",
-          "insurance_claim.claimed_amount 590/600",
-          "insurance_claim.subject_matter 354/600",
-          "insurance_claim.keywords 354/600"
-        ]
-      },
-      "scenario_zero": [
-        "insurance_claim.tested",
-        "insurance_claim.regression",
-        "insurance_claim.challenge",
-        "insurance_claim.multi_document"
-      ],
       "scarcity": []
     },
     {
@@ -128,6 +99,30 @@
         "correspondence.regression",
         "correspondence.challenge",
         "correspondence.multi_document"
+      ],
+      "scarcity": []
+    },
+    {
+      "family": "insurance_workflow",
+      "title": "Insurance workflow documents (\u00a789: insurance workflow)",
+      "priority": "medium",
+      "rationale": "Largest class (600 rows) with adjuster at 0% and partial coverage on denial_reasons/supporting_documents \u2014 the workflow fields that distinguish a claim decision from a claim intake.",
+      "classes": [
+        "insurance_claim"
+      ],
+      "field_gaps": {
+        "zero": [],
+        "partial": [
+          "insurance_claim.date_of_loss 947/950",
+          "insurance_claim.date_filed 947/950",
+          "insurance_claim.adjuster 150/950"
+        ]
+      },
+      "scenario_zero": [
+        "insurance_claim.tested",
+        "insurance_claim.regression",
+        "insurance_claim.challenge",
+        "insurance_claim.multi_document"
       ],
       "scarcity": []
     },

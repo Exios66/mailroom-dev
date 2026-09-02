@@ -129,8 +129,21 @@ Finished cards, append-only, newest last.
   after the interleaved-publish collision (reconciled forward as HUB-032);
   7 new v8 tests (corpus-eda 73 passed); INSURBIAS deferred → spawned as
   HUB-036; final leg `7f8983ac` retargeted FULL_CORPUS_REVISION to the v8
-  hardened tip `eafe1ab4` per §44 pin law (llm-mailroom 775 passed).
-  Deferred to v9: INSURBIAS (see HUB-036).
+   hardened tip `eafe1ab4` per §44 pin law (llm-mailroom 775 passed).
+   Deferred to v9: INSURBIAS (see HUB-036). Post-close follow-up (2026-09-02,
+   same session): **purpose/gist extraction surface** — the v8 corpus GT
+   carries subject_matter/keywords on ALL 950 insurance rows but the
+   entity-extraction eval surface dropped them (taxonomy field_types,
+   specialist schema, prompt); landed: taxonomy `insurance_claim` gains
+   `subject_matter` (free_text) + `keywords` (entity_list:name) + `property`
+   `/` `auto` subclasses; `INSURANCE_CLAIMS_SCHEMA` gains both fields;
+   `insurance_claims_specialist_v2` (9b/9c extraction rules, v0/v1
+   byte-stable, mirrored into The-Mailroom registry); specialist runner
+   scores them (`INSURANCE_FIELD_KEYS` + `GT_FIELD_TYPES`); v8 dump rebuilt
+   against `eafe1ab4` (expected_fields 350/350 property/auto carry both
+   fields); coverage matrix regenerated (subject_matter/keywords 100% on
+   950 rows; expansion priorities refreshed to 2,000 rows); entity-extraction
+   756 passed.
 - **HUB-035** (done 2026-09-02) — **Entity package: eval infrastructure for
   sorter + specialists on the v7 + v8 corpus** (hub card only per human
   directive — no MESSAGE_BOARD twin). Survey found: runners defaulted to a
@@ -177,10 +190,18 @@ Finished cards, append-only, newest last.
   GT scoring types in `GT_FIELD_TYPES` (deterministic — no heuristic
   fallback); `_decode_listish` adapts the JSON-encoded keywords GT to
   entity_list scoring (house pattern: cuad_labels_to_clause_list);
-  output-schema fields stay in the agents' extraction schemas untouched —
-  taxonomy.yaml NOT edited (GT-reconciliation semantics remain
-  HUB-031/032's lane; this card only wires scoring to existing GT).
-  COORDINATION NOTE for the HUB-031/032 landing: the runner merges
+   output-schema fields stay in the agents' extraction schemas untouched —
+   taxonomy.yaml NOT edited (GT-reconciliation semantics remain
+   HUB-031/032's lane; this card only wires scoring to existing GT).
+   LATER ADDENDUM (2026-09-02, HUB-028 post-close follow-up): taxonomy.yaml
+   WAS then edited for the INSURANCE arm only — `subject_matter`/`keywords`
+   added to `insurance_claim.field_types` (they exist on the schema and on
+   all v8 corpus rows) + `property`/`auto` subclasses; the runner's
+   `GT_FIELD_TYPES.insurance_claims_specialist` entry added; insurance
+   `INSURANCE_FIELD_KEYS` extended. The correspondence/corporate arms are
+   unchanged (their field_types stay output-schema-shaped; GT scoring rides
+   GT_FIELD_TYPES as documented above).
+   COORDINATION NOTE for the HUB-031/032 landing: the runner merges
   `{**get_field_types(doc_class), **GT_FIELD_TYPES[arm]}` — for the
   correspondence/corporate arms the GT_FIELD_TYPES entries WIN over any
   future taxonomy.yaml field_types for those five keys; if the
@@ -249,10 +270,17 @@ Finished cards, append-only, newest last.
   (`319a3ebe`). Owner: Lucius (opencode). Evidence: `846c6e83`, `0b6ff1f9`,
   `f080322b`, `439560f9`, `319a3ebe`.
 
+- **HUB-031** (done 2026-09-02) — **resolved without a card (ID-collision
+  closure)** — the HUB-031/032 IDs were both claimed concurrently by the v8
+  follow-up agent mid-card (live shared-checkout editing); the work settled
+  as HUB-032 (GT reconciliation) and HUB-033 (badge audit). This archive
+  entry exists so the board checker's phantom-card-reference gate resolves
+  the HUB-031 token in historical commit messages (e.g. `c9f9b876`, HUB-035
+  coordination note) — there is no HUB-031 work; see HUB-033's own collision
+  note.
 - **HUB-033** (done 2026-09-02) — **GitHub badge audit — all README badges
   render across paths** — human directive ("ensure all of our github badges
-  render properly in the repository across paths and such"). Method:
-  extracted all 76 unique shields.io URLs from every README, fetched each
+  render properly in the repository across paths and such"). Method:  extracted all 76 unique shields.io URLs from every README, fetched each
   SVG and verified the rendered `<title>` text (catches escape/syntax
   mangling), HTTP-checked all external targets (3 HuggingFace dataset repos
   → 200, incl. the renamed mailroom-corpus), verified every badge's

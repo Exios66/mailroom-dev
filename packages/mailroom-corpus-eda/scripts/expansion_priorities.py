@@ -53,7 +53,7 @@ EXPANSION_FAMILIES: tuple[dict[str, Any], ...] = (
         "title": "Corporate records (§89: corporate records)",
         "classes": ("corporate_record",),
         "rationale": (
-            "Smallest live class (39 rows vs 1,650 corpus-wide) carrying the "
+            "Smallest live class (39 rows vs 2,000 corpus-wide) carrying the "
             "sharpest field gap (intent 0%) — too few rows for stratified "
             "eval noise to average out; expansion is load-bearing for the "
             "corporate_records_specialist route."

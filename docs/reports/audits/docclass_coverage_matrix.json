@@ -1,8 +1,8 @@
 {
   "generated_from": "local snapshot @ ground_truth config (network-free)",
-  "rows_total": 1650,
+  "rows_total": 2000,
   "classes": 5,
-  "strata": 48,
+  "strata": 50,
   "class_view": {
     "contract": {
       "rows": 509,
@@ -50,27 +50,27 @@
       "multi_document": 0
     },
     "insurance_claim": {
-      "rows": 600,
-      "strata": 4,
-      "source": "cms_desynpuf",
+      "rows": 950,
+      "strata": 6,
+      "source": "cms_desynpuf (+ GNOTHEIA, BDR)",
       "specialist": "insurance_claims_specialist",
       "field_coverage": {
-        "claim_number": 600,
-        "policy_number": 600,
-        "insurer": 600,
-        "insured_party": 600,
-        "claim_type": 600,
-        "date_of_loss": 597,
-        "date_filed": 597,
-        "claimed_amount": 590,
-        "adjuster": 0,
-        "damages_description": 600,
-        "coverage_determination": 600,
-        "denial_reasons": 600,
-        "supporting_documents": 600,
-        "intent": 0,
-        "subject_matter": 354,
-        "keywords": 354
+        "claim_number": 950,
+        "policy_number": 950,
+        "insurer": 950,
+        "insured_party": 950,
+        "claim_type": 950,
+        "date_of_loss": 947,
+        "date_filed": 947,
+        "claimed_amount": 950,
+        "adjuster": 150,
+        "damages_description": 950,
+        "coverage_determination": 950,
+        "denial_reasons": 950,
+        "supporting_documents": 950,
+        "intent": 950,
+        "subject_matter": 950,
+        "keywords": 950
       },
       "tested": 0,
       "regression": 0,
@@ -289,6 +289,11 @@
     },
     {
       "class": "insurance_claim",
+      "subclass": "auto",
+      "rows": 150
+    },
+    {
+      "class": "insurance_claim",
       "subclass": "carrier",
       "rows": 150
     },
@@ -306,6 +311,11 @@
       "class": "insurance_claim",
       "subclass": "pde",
       "rows": 150
+    },
+    {
+      "class": "insurance_claim",
+      "subclass": "property",
+      "rows": 200
     },
     {
       "class": "merger_agreement",

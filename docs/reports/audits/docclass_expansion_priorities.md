@@ -7,7 +7,7 @@ is high-priority when it attacks a zero-coverage GT field or an all-zero
 scenario axis for a load-bearing class.
 
 
-Corpus: 1650 rows; median class size 350 rows. Priorities: high 5, medium 1, low 3.
+Corpus: 2000 rows; median class size 350 rows. Priorities: high 4, medium 2, low 3.
 
 ## [HIGH] Adversarial/ambiguous cases (§89; §30, §68)
 
@@ -15,19 +15,13 @@ challenge is zero for every class and the §68/§70/§72A fixture builders (fixt
 
 ## [HIGH] Corporate records (§89: corporate records)
 
-Smallest live class (39 rows vs 1,650 corpus-wide) carrying the sharpest field gap (intent 0%) — too few rows for stratified eval noise to average out; expansion is load-bearing for the corporate_records_specialist route.
+Smallest live class (39 rows vs 2,000 corpus-wide) carrying the sharpest field gap (intent 0%) — too few rows for stratified eval noise to average out; expansion is load-bearing for the corporate_records_specialist route.
 
 Evidence: zero-coverage fields: corporate_record.intent — partial fields: corporate_record.subject_matter 38/39, corporate_record.keywords 38/39 — zero scenario axes: corporate_record.tested, corporate_record.regression, corporate_record.challenge, corporate_record.multi_document — scarcity: corporate_record rows=39 (median 350).
 
 ## [HIGH] Grouping scenarios (§89: grouping scenarios; §14)
 
 multi_document is zero for every class. §14A verified the honest source-field baseline (19/350 subject-thread rows; header threads structurally absent) — real multi-document behavior is only reachable via the synthetic bundle scaffold (bundles.py) or family-sampled expansion. Highest-leverage axis in the corpus.
-
-## [HIGH] Insurance workflow documents (§89: insurance workflow)
-
-Largest class (600 rows) with adjuster at 0% and partial coverage on denial_reasons/supporting_documents — the workflow fields that distinguish a claim decision from a claim intake.
-
-Evidence: zero-coverage fields: insurance_claim.adjuster, insurance_claim.intent — partial fields: insurance_claim.date_of_loss 597/600, insurance_claim.date_filed 597/600, insurance_claim.claimed_amount 590/600, insurance_claim.subject_matter 354/600, insurance_claim.keywords 354/600 — zero scenario axes: insurance_claim.tested, insurance_claim.regression, insurance_claim.challenge, insurance_claim.multi_document.
 
 ## [HIGH] Merger documents (§89: merger documents)
 
@@ -40,6 +34,12 @@ Evidence: zero scenario axes: merger_agreement.tested, merger_agreement.regressi
 intent is 100% (v7 hydration) but subject_matter/keywords sit at 27% — the purpose-GT axis the correspondence_specialist is evaluated on is two-thirds dark; contexts (notices, demands, threads) target exactly that.
 
 Evidence: partial fields: correspondence.subject_matter 96/350, correspondence.keywords 96/350 — zero scenario axes: correspondence.tested, correspondence.regression, correspondence.challenge, correspondence.multi_document.
+
+## [MEDIUM] Insurance workflow documents (§89: insurance workflow)
+
+Largest class (600 rows) with adjuster at 0% and partial coverage on denial_reasons/supporting_documents — the workflow fields that distinguish a claim decision from a claim intake.
+
+Evidence: partial fields: insurance_claim.date_of_loss 947/950, insurance_claim.date_filed 947/950, insurance_claim.adjuster 150/950 — zero scenario axes: insurance_claim.tested, insurance_claim.regression, insurance_claim.challenge, insurance_claim.multi_document.
 
 ## [LOW] Contract subclasses (§89: contract subclasses)
 

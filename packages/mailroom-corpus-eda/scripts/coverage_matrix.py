@@ -86,7 +86,13 @@ def build(rows: list[dict]) -> dict:
             doc_class: {
                 "rows": sum(1 for r in rows if r["expected"] == doc_class),
                 "strata": sum(1 for (c, _) in strata if c == doc_class),
-                "source": SOURCE_BY_CLASS.get(doc_class, ""),
+                # class view stays the old class-map source (honest primary
+                # source per §8) but insurance now spans three: note the
+                # v8 LOB expansion in the report's source cell (HUB-028).
+                "source": (
+                    SOURCE_BY_CLASS.get(doc_class, "")
+                    + (" (+ GNOTHEIA, BDR)" if doc_class == "insurance_claim" else "")
+                ),
                 "specialist": registry.get(doc_class, ""),
                 "field_coverage": field_coverage[doc_class],
                 # §40 scenario columns — populated by later phases:
