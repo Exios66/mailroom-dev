@@ -179,7 +179,13 @@ Finished cards, append-only, newest last.
   entity_list scoring (house pattern: cuad_labels_to_clause_list);
   output-schema fields stay in the agents' extraction schemas untouched —
   taxonomy.yaml NOT edited (GT-reconciliation semantics remain
-  HUB-031/032's lane; this card only wires scoring to existing GT). Dry
+  HUB-031/032's lane; this card only wires scoring to existing GT).
+  COORDINATION NOTE for the HUB-031/032 landing: the runner merges
+  `{**get_field_types(doc_class), **GT_FIELD_TYPES[arm]}` — for the
+  correspondence/corporate arms the GT_FIELD_TYPES entries WIN over any
+  future taxonomy.yaml field_types for those five keys; if the
+  reconciliation types them differently, update GT_FIELD_TYPES in the same
+  commit (HUB-035 owner keeping the runner honest, observed 2026-09-02). Dry
   runs verified: correspondence 350/350 scored, corporate_records 38/39.
   Runbook GT paragraph updated. Suite: entity FULL 754 passed / 28 skipped /
   0 failed. Original Evidence: the delivery commit (`557b76e6`); follow-up
