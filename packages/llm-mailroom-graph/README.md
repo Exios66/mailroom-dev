@@ -1,27 +1,44 @@
-# llm-mailroom-graph
+<div align="center">
 
-Interactive knowledge graph of [llm-mailroom](https://github.com/Exios66/llm-mailroom), rebuilt 2026-08-31 from commit [`d93894a`](https://github.com/Exios66/llm-mailroom/commit/d93894a6600470bed67e5a2a4f403368577b0f5b).
+# 🔗 llm-mailroom-graph
 
-Live site: https://exios66.github.io/llm-mailroom-graph/
+**Interactive knowledge graph of [llm-mailroom](https://github.com/Exios66/llm-mailroom) — the 13-node LangGraph pipeline visualized as a walkable architecture map.**
 
-## How to read it
+[![Python 3.11+](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Extractor](https://img.shields.io/badge/extractor-graphify%200.9.53-orange)](https://github.com/nicholasgasior/graphify)
+[![Live Site](https://img.shields.io/badge/live-site-blue)](https://exios66.github.io/llm-mailroom-graph/)
 
-The old map dumped every test fixture and vendored OpenRouter skill into one unlabeled force-layout (2,022 nodes, communities named `conftest.py`). This rebuild is scoped to **production `src/`** and is meant to be walked, not stared at.
+**Live site:** [exios66.github.io/llm-mailroom-graph](https://exios66.github.io/llm-mailroom-graph/)
+
+</div>
+
+---
+
+## How to Read It
+
+<div align="center">
 
 | Page | What it is |
-|---|---|
-| [Architecture map](./index.html) | Default view. Three zoom levels: **layers → modules → symbols**. Conveyor strip jumps to the 13 LangGraph nodes. Comments hidden until you ask. Double-click isolates a neighborhood. |
+|:---|:---|
+| [Architecture map](./index.html) | Default view. Three zoom levels: **layers → modules → symbols**. Conveyor strip jumps to the 13 LangGraph nodes. |
 | [Module tree](./tree.html) | Filesystem collapsible tree of the same graph. |
 | [Report](./report.html) | God nodes, communities, bridges, suggested questions. |
 | [Classic vis](./graph.html) | Graphify's stock force-directed canvas, if you want the hairball. |
 | [GRAPH_REPORT.md](./GRAPH_REPORT.md) | Machine-written audit trail. |
 
+</div>
+
 ## Corpus
 
-- **Included:** `src/agents`, `graph`, `pipeline`, `api`, `storage`, `observability`, `llm`, `schemas`, `langchain_agents`, `legalbench`, `scripts`
-- **Excluded:** `src/tests`, `notebooks`, `.opencode/skills` (vendored assistant tools), docs
-- **Extractor:** graphify 0.9.53, `--code-only` AST, 0 LLM tokens
-- **Stats (2026-08-31):** 1,905 code symbols · 4,557 edges · 104 communities · 130 source files
+| Metric | Value |
+|:---|:---|
+| **Included** | `src/agents`, `graph`, `pipeline`, `api`, `storage`, `observability`, `llm`, `schemas`, `langchain_agents`, `legalbench`, `scripts` |
+| **Excluded** | `src/tests`, `notebooks`, `.opencode/skills` (vendored assistant tools), docs |
+| **Extractor** | graphify 0.9.53, `--code-only` AST, 0 LLM tokens |
+| **Code symbols** | 1,905 |
+| **Edges** | 4,557 |
+| **Communities** | 104 |
+| **Source files** | 130 |
 
 ## Rebuild
 
@@ -34,6 +51,21 @@ graphify cluster-only /tmp/llm-mailroom --no-label --no-viz --resolution 0.4 --e
 graphify tree --graph /tmp/llm-mailroom/graphify-out/graph.json --output tree.html --label llm-mailroom
 ```
 
-Then regenerate `index.html` / `report.html` from `graph.json` (community labels are architectural, not hub-file names):
-- `graphify export html --graph /tmp/llm-mailroom/graphify-out/graph.json` → `graph.html`
-- `python3 scripts/regenerate_graph_site.py /tmp/llm-mailroom/graphify-out/graph.json .` → `index.html` + `report.html`
+Then regenerate `index.html` / `report.html` from `graph.json`:
+
+```bash
+graphify export html --graph /tmp/llm-mailroom/graphify-out/graph.json → graph.html
+python3 scripts/regenerate_graph_site.py /tmp/llm-mailroom/graphify-out/graph.json . → index.html + report.html
+```
+
+---
+
+<div align="center">
+
+**[llm-mailroom](https://github.com/Exios66/llm-mailroom)** ·
+**[llm-entity-extraction](https://github.com/Exios66/llm-entity-extraction)** ·
+**[llm-dojo-scoring](https://github.com/Exios66/llm-dojo-scoring)**
+
+<sub>Built by the governed evaluation family under <a href="https://github.com/Exios66">@Exios66</a> · 2026</sub>
+
+</div>
