@@ -101,6 +101,16 @@ specialist.
 | `retry_expected` | recovery behavior |
 | `relationships` | document grouping/association |
 
+## 5A. Evidence spans (§19)
+
+Extraction ground truth gains optional span-level evidence where the source
+corpus has exact annotations (field, value, start, end) — CUAD clauses,
+dates, monetary values, identifiers, parties. The v7 `ground_truth` config
+carries no spans (label-level GT only; verified 31 columns), so the span
+schema is defined here as the contract and population rides the first
+sanctioned schema revision (v0.2 release decision, §84) — never silently
+absent: absent spans are the explicit `''` corpus convention.
+
 ## 6. Revision discipline (§44–§46)
 
 - **Dataset renamed 2026-09-02** (human directive): the Hub repo
@@ -148,6 +158,30 @@ an explicit PII review note in Evidence. Matter-aware and recovery releases
 add their own gates (§91).
 
 ## 8. Releases (§84)
+
+## 9. Matter/group backfill methodology (§14A — the P2 prerequisite decision)
+
+Grouping ground truth is backfilled by an explicit, honestly-labeled method —
+never a silent default:
+
+1. **`source_native_thread`** (used first, where it genuinely exists):
+   Enron correspondence carries real thread/date/sender structure — a reply
+   chain is a legitimate `group_role: correspondence` sequence with real
+   matter structure. `matter_construction: source_native_thread`.
+2. **`synthetic_constructed`** (only where no natural sibling exists):
+   standalone contracts/records get manufactured bundles (e.g. contract +
+   plausible amendment/exhibit) declared a matter FOR GROUPING-EVALUATION
+   PURPOSES. `matter_construction: synthetic_constructed` — flagged, never
+   presented as discovered structure.
+
+The two constructions are never mixed silently: any coverage report that
+counts "matters" reports source-native and synthetically-constructed rows
+as separate columns (a merged count overstates how much real multi-document
+behavior is tested). Vocabulary (closed): `MATTER_CONSTRUCTION`,
+`GROUP_ROLES` (§16), `RELATIONSHIP_TYPES` (§15), `DUPLICATE_TYPES` (§12),
+`FAILURE_STAGES` (§58) — all machine-read constants in
+`mailroom_eda.eval_contract`. This decision unblocks P2
+(group_role/relationships/multi-document cases).
 
 | Marker | Content |
 |---|---|
