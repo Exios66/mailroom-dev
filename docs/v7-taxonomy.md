@@ -89,7 +89,7 @@ Extraction target dimension
 
 The pending GEPA task refers to a "5 doc class & associated subclass set." The intended experiment should be recorded as:
 
-> **Sorter prompt mutation on the v7 five-class corpus, using the class × subclass strata represented by `docclass-merged` v7.**
+> **Sorter prompt mutation on the v7 five-class corpus, using the class × subclass strata represented by `mailroom-corpus` v7.**
 
 The experiment now evaluates the same five top-level classes used by the production pipeline. `compliance_filing` is not part of the canonical sorter output contract or any corpus/evaluation surface.
 

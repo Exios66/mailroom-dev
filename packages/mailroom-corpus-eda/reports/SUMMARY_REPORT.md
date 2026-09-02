@@ -1,6 +1,6 @@
 # Docclass Merged Corpus — EDA Summary Report
 
-Generated: 2026-08-31 · Pipeline: `run_all.py` (P0–P6) · Data: `Lucius-Morningstar/docclass-merged` (v7)
+Generated: 2026-08-31 · Pipeline: `run_all.py` (P0–P6) · Data: `Lucius-Morningstar/mailroom-corpus` (v7)
 
 ## Executive Summary
 

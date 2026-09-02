@@ -67,7 +67,7 @@ python scripts/seed_demo.py    # seed demo traces INTO Langfuse (planned, M5)
 python scripts/demo_review_tray.py --check-api  # working REVIEW tray vs fake /v1 producer
 python scripts/run_production_pilot.py --check   # HF subset + eval scorer (needs sibling llm-mailroom)
 python scripts/run_production_pilot.py --real    # live Qwen 3.7-Flash pilot → Langfuse, then eval
-python scripts/eval_pipeline.py --session pilot-hf-...   # score existing traces vs docclass-merged GT
+python scripts/eval_pipeline.py --session pilot-hf-...   # score existing traces vs mailroom-corpus GT
 python scripts/release.py --help     # semver release workflow (see below)
 scripts/publish_pages.sh       # build site/ + push gh-pages:/docs (NO Actions;
                                # one-time UI toggle: Pages → gh-pages → /docs)

@@ -12,7 +12,7 @@
 
 | Script | Purpose |
 |:---|:---|
-| `build_docclass_merged.py` | Build the docclass-merged dataset |
+| `build_mailroom_corpus.py` | Build the mailroom-corpus dataset |
 | `process_cuad.py` | Process CUAD contract data |
 | `process_maud.py` | Process MAUD merger agreement data |
 
