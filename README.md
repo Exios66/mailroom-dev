@@ -108,6 +108,7 @@ mailroom-dev/
 │   ├── board_state.py     # board machine-readable parser + CI gate
 │   ├── sync_packages.py   # subtree ↔ standalone repo sync
 │   ├── taxonomy_parity.py # taxonomy drift detector (CI gate)
+│   ├── release_chain.py   # hub changelog ↔ semver tag ↔ version gate (HUB-024)
 │   └── deploy_gh_pages.py # local GH Pages deploy (no Actions)
 └── packages/              # all ten packages (subtree + virtual)
 ```
@@ -156,7 +157,10 @@ python scripts/board_state.py status            # live board snapshot (--json fo
 python scripts/board_state.py check             # board invariants; exit 1 on structural errors
 python scripts/github_labels.py audit           # label taxonomy drift (CI gate)
 python scripts/taxonomy_parity.py               # doc-class taxonomy drift (CI gate, HUB-019 §65A)
-./docs/wiki/sync-wiki.sh                        # push docs/wiki/ to the GitHub wiki
+python scripts/release_chain.py status          # hub release chain: tags, changelog sections, hub version
+python scripts/release_chain.py check           # chain invariants; exit 1 on structural errors
+python scripts/release_chain.py cut X.Y.Z       # cut a hub release (dry run; --apply writes, --tag tags)
+./docs/wiki/sync-wiki.sh                        # push docs/wiki/ source to the GitHub wiki (--check for drift)
 ```
 
 See `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE/`, `.github/labels.json`, `scripts/board_state.py`, and `governance/TASKS.md` for the full governance contract.

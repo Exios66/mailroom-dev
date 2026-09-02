@@ -3,6 +3,37 @@
 The monorepo is the development source of truth; upstream repositories
 remain the release vehicles for the deployed surfaces (HF Spaces, Railway).
 
+## Hub release chain (HUB-024)
+
+The hub (mailroom-dev) versions **itself** with a Keep a Changelog +
+Semantic Versioning chain:
+
+- `CHANGELOG.md` (root) accumulates work under `[Unreleased]` between
+  releases; every hub release is an annotated git tag `vX.Y.Z`
+  (`mailroom-hub vX.Y.Z` message) mirrored as a GitHub Release cut from the
+  matching changelog section. While the hub is `0.x`, a MINOR bump may carry
+  breaking workspace changes; PATCH is fixes-only.
+- `scripts/release_chain.py` is the chain governor: `status` (snapshot),
+  `check` (invariants — a version tag must never exist without its
+  changelog section, sections must be semver + strictly descending, the hub
+  pyproject version must never sit behind the newest tag), and `cut X.Y.Z`
+  (stamps `[Unreleased]` into a dated section, bumps the hub
+  `pyproject.toml` version; `--apply` writes, `--tag` tags; never commits
+  or pushes).
+- Enforcement: `.github/workflows/release-governance.yml` runs `check` on
+  every `v*` tag push; `board-governance.yml` runs it on hub-scope path
+  changes.
+- Cut a release:
+
+  ```bash
+  python scripts/release_chain.py cut X.Y.Z --apply --tag
+  git push origin main vX.Y.Z     # the commit (with its HUB-0NN reference), then the tag
+  gh release create vX.Y.Z --notes-from-tag --title "vX.Y.Z"
+  ```
+
+- Package versions at a hub release are recorded in that release's
+  changelog section (see the `[0.1.0]` section for the baseline).
+
 ## Release train (HUB-005 scope)
 
 1. **Propagate monorepo work upstream**

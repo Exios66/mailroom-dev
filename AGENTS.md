@@ -52,6 +52,9 @@ python scripts/board_state.py status            # live board snapshot (--json fo
 python scripts/board_state.py check             # board invariants; exit 1 on structural errors
 python scripts/github_labels.py audit           # label taxonomy drift (CI gate)
 python scripts/taxonomy_parity.py               # doc-class taxonomy drift (CI gate, HUB-019 §65A)
+python scripts/release_chain.py status          # hub release-chain snapshot (tags, sections, version)
+python scripts/release_chain.py check           # chain invariants; exit 1 on structural errors (CI gate)
+python scripts/release_chain.py cut X.Y.Z       # stamp [Unreleased] -> section + bump hub version (dry run; --apply/--tag)
 ./docs/wiki/sync-wiki.sh                        # push docs/wiki/ source to the GitHub wiki (--check for drift)
 ```
 
@@ -127,6 +130,14 @@ reconciles the mirrors; the monorepo is the development source of truth.
   `[tool.uv.sources]` tables — never delete a pin line to "fix" resolution.
 - Bump a pin only when cutting a release of the pinned package (see
   `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py`, release-time only).
+- Hub releases (the monorepo itself) follow the release chain (HUB-024):
+  accumulate changes under `CHANGELOG.md` `[Unreleased]`, then
+  `python scripts/release_chain.py cut X.Y.Z --apply --tag` — it stamps the
+  section with today's date, bumps the hub `pyproject.toml` version, and
+  creates the annotated `vX.Y.Z` tag (`mailroom-hub vX.Y.Z` message).
+  Committing and pushing stay with the caller; a GitHub Release is cut from
+  the changelog section. `scripts/release_chain.py check` + the
+  `release-governance.yml` gate enforce tag↔section parity and semver order.
 - Heavy assets (docs demos/screenshots, example PDFs, report archives) are
   pruned from this repo — keep them out; reference the upstream repos.
   EXCEPTION: the mailroom-corpus-eda EDA deliverables (`reports/figures/`,

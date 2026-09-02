@@ -15,6 +15,7 @@
 | [`board_state.py`](board_state.py) | Parse and validate the governance board | `python scripts/board_state.py status` |
 | [`github_labels.py`](github_labels.py) | Label taxonomy audit (CI gate) | `python scripts/github_labels.py audit` |
 | [`taxonomy_parity.py`](taxonomy_parity.py) | Doc-class taxonomy drift (CI gate) | `python scripts/taxonomy_parity.py` |
+| [`release_chain.py`](release_chain.py) | Hub release chain: changelog ↔ semver tags ↔ hub version (CI gate) | `python scripts/release_chain.py check` |
 | [`sync_packages.py`](sync_packages.py) | Reconcile package mirrors (status/pull/push/snapshot) | `python scripts/sync_packages.py status` |
 
 ## Package Sync
