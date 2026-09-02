@@ -2,8 +2,8 @@
 
 Exploratory data analysis (and the centralized HF upload helpers) for the
 [`Lucius-Morningstar/docclass-merged`](https://huggingface.co/datasets/Lucius-Morningstar/docclass-merged)
-corpus — 1,210 legal documents across 5 doc_types (contract, insurance_claim,
-merger_agreement, correspondence, corporate_record), 48 strata.
+corpus — 1,650 legal documents across 5 doc_types (insurance_claim,
+merger_agreement, contract, correspondence, corporate_record), 48 strata.
 
 Mirror of the standalone `Exios66/Mailroom-Corpus-EDA` repo; in the monorepo
 it lives at `packages/mailroom-corpus-eda` as a virtual uv member (no build).
@@ -21,19 +21,34 @@ Never edit it from both places in one session — develop here, sync via
   - `visualizations_interactive.py` — P4 Plotly HTML figures (18)
   - `hf_interface.py` — centralized Hub client (upload, sha256 verify)
   - `dataset_export.py` — cast-safe JSONL (KANBAN-076/088), parquet staging, manifests
-  - `docclass_uploader.py` — docclass v6 publish, surgical card render, leak guard
+  - `docclass_uploader.py` — docclass v7 publish, surgical card render, leak guard
+  - `intent_backfill.py` — correspondence intent hydration (issue #5):
+    cross-walk, Enron/AESLC sha256 join, constrained LLM pass, provenance
   - `token_budget.py` — token estimation & budget coverage
-- `scripts/` — CLI wrappers: `publish_docclass.py`, `export_docclass.py`, `verify_hf.py`
-- `run_all.py` — 6-phase pipeline (P0 download → P5 export staging)
+- `scripts/` — CLI wrappers: `publish_docclass.py`, `backfill_intent.py`,
+  `export_docclass.py`, `verify_hf.py`
+- `run_all.py` — 7-phase pipeline (P0 download → P6 intent coverage audit)
 - `reports/` — generated artifacts (figures/, figures_interactive/, tables/, SUMMARY_REPORT.md)
+  - ALL of `reports/` is tracked in full per human directive (HUB-008) — never
+    prune it and never commit regenerated variants of `figures_interactive/`:
+    each Plotly HTML embeds a random per-render div UUID, so regenerated
+    figures can never be byte-identical. The committed files are the canonical
+    upstream bytes; treat local regeneration as scratch output only.
 
 ## Commands
 
 ```bash
-.venv/bin/python run_all.py                      # full pipeline P0-P5
+.venv/bin/python run_all.py                      # full pipeline P0-P6
 .venv/bin/python run_all.py --phases P3 P4       # figures only
-.venv/bin/python scripts/export_docclass.py --help
+.venv/bin/python scripts/backfill_intent.py --check
+.venv/bin/python scripts/publish_docclass.py --help
 ```
+
+**Summary writes**: `reports/SUMMARY_REPORT.json` is written only by a
+full-pipeline run (all seven phases). `--phases` subset runs — and
+`--no-interactive`, whose summary would be missing the P4 section — leave the
+summary untouched; per-phase results print to stdout only. (HUB-009: subset
+runs used to clobber the full-corpus summary with phase-partial stats.)
 
 ## Conventions
 
@@ -44,18 +59,36 @@ Never edit it from both places in one session — develop here, sync via
   Metadata must be cast-safe (uniform keys, string-typed), JSONL must be
   line-boundary-safe (U+2028/U+2029/NEL), and labels NEVER ride in the blind
   `default` config.
-- **Interactive HTML figures** (~4MB each, Plotly-inlined) are REGENERABLE via
-  `run_all.py --phases P4` — they are pruned from the monorepo mirror (heavy
-  assets stay in the standalone repo; see mailroom-dev AGENTS.md).
+- **Interactive HTML figures** are TRACKED IN FULL per human directive
+  (HUB-008): each Plotly HTML embeds a random per-render div UUID, so
+  regenerating can never be byte-identical — the committed files are the
+  canonical upstream bytes; treat local regeneration as scratch only.
+- **Intent backfill** (issue #5): never hand-edit `data/backfill/intent_labels.jsonl`;
+  re-run `scripts/backfill_intent.py` (checkpointed — the LLM pass skips rows
+  already in the sidecar). The canonical vocabulary is the closed 8-class set
+  in `intent_backfill.CANONICAL_INTENTS`; `other` is the explicit fallback,
+  never null.
 - **Split rule**: md5(filename) % 10 == 0 → test (90/10), stable across rebuilds.
 - **Determinism**: `RANDOM_STATE = 42`; rebuilds of JSONL/parquet must be
   byte-identical (sorted rows, deterministic order).
 
-## HF facts (verified 2026-08)
+## HF facts (verified 2026-09-01)
 
-- Repo: `Lucius-Morningstar/docclass-merged` (v6, 1,210 rows).
-- Configs: `default` (blind, 4 cols) + `ground_truth` (28 cols incl. labels).
-- Split: train 1,081 / test 129 on both configs; filename sets equal.
+- Repo: `Lucius-Morningstar/docclass-merged` (v7, 1,650 rows; provenance-fix
+  data tip `bb57c5ad` — intent_source corrected to the issue #5 hydration
+  paths, labels/confidences byte-identical to `1acd2600`).
+- Composition: insurance_claim 600, contract 509, correspondence 350,
+  merger_agreement 152, corporate_record 39.
+- Configs: `default` (blind, 4 cols) + `ground_truth` (31 cols incl. labels +
+  intent provenance `intent_source`/`intent_confidence`/`intent_status`).
+- Split: train 1,474 / test 176 on both configs; filename sets equal.
+- v7 intent hydration (issue #5): 350/350 correspondence rows carry a
+  canonical 8-class intent (payment_demand, notice, analysis, request, update,
+  meeting_invite, press_communication, other); `intent_source` = hydration
+  path, disjoint and summing to 350: 96 manual + 162 aeslc_join (sha256
+  exact-body join-assisted pass vs the AESLC/Enron mirrors — the mirrors
+  carry no intent annotations) + 92 llm_zero_shot (deepseek-chat,
+  OpenRouter), 1 flagged_review. All 8 classes present in the test split.
 - Related: `enron-correspondence-dedup`, `mailroom-cuad-contracts-full`,
   `mailroom-s1-corporate-records`, `mailroom-maud-contracts`.
 

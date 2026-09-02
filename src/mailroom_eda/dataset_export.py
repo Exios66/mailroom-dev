@@ -107,6 +107,7 @@ def stage_parquet(
             "denial_reasons", "supporting_documents",
             "cuad_clause_labels", "maud_clause_labels",
             "intent", "subject_matter", "keywords",
+            "intent_source", "intent_confidence", "intent_status",
         ]
 
     def _blind_row(r: dict) -> dict:
@@ -165,6 +166,7 @@ def build_manifest(
     append_stats: dict,
     file_stats: dict,
     stripped_n: int,
+    intent_stats: dict | None = None,
 ) -> str:
     """Generate manifest.txt content."""
     from collections import Counter
@@ -189,17 +191,41 @@ def build_manifest(
         )
     else:
         ins_segment = (
-            "                   +0 insurance_claim rows THIS REVISION — the +200 "
-            "boost is\n                   deferred to a follow-up v6 revision "
-            "(claims-data-eda staging\n                   lost to tmp cleanup; card "
-            "residue).\n"
+            f"                   +{ins_n} insurance_claim rows this revision — no "
+            f"new claims beyond the parent 400 (v6 rev2 published 600; "
+            f"composition derives from the fused dump, never hand-typed).\n"
         )
 
+    if intent_stats:
+        corr_rows = intent_stats.get("correspondence_rows") or intent_stats.get("rows_total", 0)
+        manual_n = intent_stats.get("manual_total", 0)
+        aeslc_n = intent_stats.get("aeslc_join_total", intent_stats.get("aeslc_joined", 0))
+        llm_n = intent_stats.get("llm_zero_shot_total") or intent_stats.get("llm_zero_shot", 0)
+        intent_segment = (
+            f"intent_backfill : v7 correspondence intent hydration (issue #5): "
+            f"{corr_rows} rows, "
+            f"{intent_stats.get('coverage_pct', 0)}% non-null intent;\n"
+            f"                   intent_source = hydration PATH (disjoint values "
+            f"summing to {corr_rows}):\n"
+            f"                   manual {manual_n} (purpose-GT push), aeslc_join {aeslc_n} "
+            f"(sha256 exact-body\n                   join-assisted pass vs "
+            f"snoop2head/enron_aeslc_emails +\n                   Yale-LILY/aeslc — the "
+            f"mirrors carry NO intent annotations; the\n                   join supplies "
+            f"provenance + recovered subject_line as constrained context),\n"
+            f"                   llm_zero_shot {llm_n}; flagged_review "
+            f"{intent_stats.get('flagged_review', 0)};\n"
+            f"                   columns intent_source / intent_confidence / "
+            f"intent_status ride the\n                   ground_truth config "
+            f"(KANBAN issue #5 Phase 4).\n"
+        )
+    else:
+        intent_segment = ""
+
     built = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    return f"""docclass-merged manifest — schema v6 (KANBAN-105)
+    return f"""docclass-merged manifest — schema v7 (issue #5 intent hydration)
 =================================================
 built_utc        : {built}
-schema_version   : 6
+schema_version   : 7
 rows_total       : {len(rows)} ({dict(sorted(types.items()))})
 rows_by_config   : default train={counts[("default", "train")]} test={counts[("default", "test")]}; ground_truth train={counts[("ground_truth", "train")]} test={counts[("ground_truth", "test")]}
 strata           : {len(strata)} (expected x expected_subclass)
@@ -210,7 +236,7 @@ v6_additions     : +{corr_n} correspondence rows (stratified sha256-filename dra
                     sentiment reproduce the Hub GT on every row; KANBAN-103 overrides
                     honored, {corr_overrides} override hits) from
                     Lucius-Morningstar/enron-correspondence-dedup;
-{ins_segment}original_files   : {file_stats.get("n", 0)} upstream originals under files/ ({file_stats.get("bytes", 0) // 1048576} MB) —
+{ins_segment}{intent_segment}original_files   : {file_stats.get("n", 0)} upstream originals under files/ ({file_stats.get("bytes", 0) // 1048576} MB) —
                     contract {fb.get("contract", 0)} CUAD source PDFs (theatticusproject/cuad),
                     merger_agreement {fb.get("merger_agreement", 0)} MAUD contract_N.txt (Zenodo 7500064),
                     corporate_record {fb.get("corporate_record", 0)} EDGAR exhibit originals.

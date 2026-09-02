@@ -6,8 +6,8 @@ insured_party,1.0,1.0,1.0,1.0
 claim_type,1.0,1.0,1.0,1.0
 date_of_loss,1.0,1.0,1.0,1.0
 date_filed,1.0,1.0,1.0,1.0
-claimed_amount,0.98,1.0,1.0,1.0
-adjuster,0.85,0.89,0.88,0.92
+claimed_amount,1.0,1.0,1.0,1.0
+adjuster,1.0,1.0,1.0,1.0
 damages_description,1.0,1.0,1.0,1.0
 coverage_determination,1.0,1.0,1.0,1.0
 denial_reasons,1.0,1.0,1.0,1.0

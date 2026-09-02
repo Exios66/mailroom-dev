@@ -87,7 +87,7 @@ def audit_jsonl_parity(blind: pd.DataFrame, gt: pd.DataFrame) -> dict:
         diffs = Counter()
         for i in common:
             a, c = _norm_md(joined.loc[i, "metadata"]), _norm_md(b.loc[i, "metadata"])
-            for k in set(a) | set(c):
+            for k in sorted(set(a) | set(c)):
                 if a.get(k) != c.get(k):
                     diffs[k] += 1
         out["metadata_field_diff_counts"] = dict(diffs.most_common(10))
@@ -117,10 +117,9 @@ def audit_schema(blind: pd.DataFrame, gt: pd.DataFrame) -> dict:
 
 def metadata_coverage(blind: pd.DataFrame, gt: pd.DataFrame) -> pd.DataFrame:
     meta = _meta_series(blind)
-    cov = pd.DataFrame({"doc_type": gt["expected"].values}, index=blind.index)
-    cov = pd.concat([cov, meta], axis=1)
-    tbl = cov.groupby("doc_type").apply(
-        lambda g: g.drop(columns=["doc_type"]).notna().mean().T, include_groups=True
+    cov = pd.concat([gt["expected"].rename("doc_type"), meta], axis=1)
+    tbl = cov.set_index("doc_type").groupby(level=0).apply(
+        lambda g: g.notna().mean().T
     )
     return tbl
 

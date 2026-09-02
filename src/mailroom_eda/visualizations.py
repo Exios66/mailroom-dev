@@ -156,7 +156,7 @@ def fig_length_by_subclass(blind: pd.DataFrame, gt: pd.DataFrame) -> None:
     fig, ax = plt.subplots(figsize=(10, 6.5))
     bp = ax.boxplot(
         [subset.loc[subset["subclass"] == s, "tokens"].values for s in order],
-        vert=False, labels=order, patch_artist=True, showfliers=False,
+        vert=False, tick_labels=order, patch_artist=True, showfliers=False,
     )
     for patch, s in zip(bp["boxes"], order):
         dt = subset.loc[subset["subclass"] == s, "doc_type"].mode()[0]
@@ -508,7 +508,7 @@ def fig_claim_subtype_fields(gt: pd.DataFrame) -> None:
     fig, ax = plt.subplots(figsize=(8, 6.5))
     sns.heatmap(fill, annot=True, fmt=".2f", cmap="viridis", vmin=0, vmax=1,
                 cbar_kws={"label": "fill rate"}, ax=ax)
-    ax.set_title("Claim field fill rate by subtype (n=400)")
+    ax.set_title(f"Claim field fill rate by subtype (n={len(claims)})")
     fig.tight_layout()
     fig.savefig(FIG_DIR / "19_claim_subtype_fields.png")
     plt.close(fig)
@@ -974,7 +974,7 @@ def run(save: bool = True) -> dict:
     fig_metadata_cardinality(meta)
 
     tables = save_eda_tables(blind, gt, meta) if save else {}
-    return {"figures": 27, "tables": tables}
+    return {"figures": 30, "tables": tables}
 
 
 if __name__ == "__main__":
