@@ -1,0 +1,42 @@
+# Dependabot for the mailroom-dev monorepo (HUB-030).
+#
+# SCOPE NOTE — why packages/*/ manifests are deliberately absent:
+# every package under packages/ is a git-subtree mirror of an independent
+# Exios66 repo (see AGENTS.md "Sub-package sync", scripts/sync_packages.py).
+# Dependabot PRs against those manifests would (a) create monorepo-ahead
+# drift against the sync driver's cursors, and (b) bump release-time-only
+# git pins (e.g. llm-dojo-scoring @ vX.Y.Z inside llm-mailroom) against the
+# workspace-pins law. Dependency freshness for the family is therefore
+# handled per-package in the standalone repos; this config covers the hub
+# itself plus the actively maintained sandbox deploy surface.
+
+version: 2
+updates:
+  # Hub workspace: root pyproject.toml dev group + uv.lock (Dependabot
+  # supports uv via the pip ecosystem). Group dev deps so routine bumps
+  # arrive as one reviewable PR; PRs should keep `uv lock --check` green.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      hub-dev-deps:
+        applies-to: version-updates
+        dependency-type: "development"
+
+  # Hub CI: action refs in .github/workflows/ (checkout, setup-python, …).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Offline sandbox image (HUB-015 pins doctrine): base-image bumps land as
+  # monorepo-side changes and ride the HUB-005 release train upstream.
+  # Other packages' Dockerfiles are excluded — same mirror rationale as above.
+  - package-ecosystem: "docker"
+    directory: "/packages/local-mailroom-sandbox/deploy"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3

@@ -104,6 +104,21 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-030** (done 2026-09-02) — **Dependabot config for the monorepo** —
+  human directive ("generate the appropriate dependabot.yml"). Landed
+  `.github/dependabot.yml` with three ecosystems and the exclusions that
+  make it appropriate to THIS repo: (a) root `pip` (uv workspace; Dependabot
+  supports uv.lock via the pip ecosystem) with one grouped PR for the dev
+  group, weekly; (b) `github-actions` for `.github/workflows/`, weekly;
+  (c) `docker` for `packages/local-mailroom-sandbox/deploy/` (the actively
+  maintained offline image; HUB-015 version-pinning doctrine — bumps keep
+  the pins honest), monthly, riding the HUB-005 release train upstream.
+  DELIBERATELY excluded with an in-file rationale: all `packages/*/`
+  pip manifests — subtree mirrors of independent Exios66 repos; Dependabot
+  PRs against them would create monorepo-ahead drift against the sync
+  driver's cursors AND bump release-time-only git pins against the
+  workspace-pins law (AGENTS.md). Claimed + landed in one commit
+  (config-only, single-pass). Board check 0/0. Evidence: this commit.
 - **HUB-029** (done 2026-09-02) — **Team norm: targeted `git add <paths>`
   only** — human directive ("a team norm of targeted git add <paths> only"),
   codifying the fix for the two shared-checkout sweep incidents (HUB-024,
