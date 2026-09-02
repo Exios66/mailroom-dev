@@ -174,12 +174,12 @@ def enrich_generic_rows(rows: list[dict], field_keys: tuple[str, ...]) -> list[d
     """Attach ``expected_fields`` from flat scalar GT (mailroom-corpus dumps)."""
     for row in rows:
         gf = row.get("gt_fields") or {}
-        expected: dict = {}
+        expected = dict(row.get("expected_fields") or {})
         for key in field_keys:
             val = gf.get(key)
             if val not in (None, "", []):
                 expected[key] = val
-        row["expected_fields"] = expected or (row.get("expected_fields") or {})
+        row["expected_fields"] = expected
     return rows
 
 
@@ -227,9 +227,6 @@ def main_with_args(argv: list[str]) -> int:
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
 
-    (openrouter_key,) = require_env("OPENROUTER_API_KEY")
-    require_env("BRAINTRUST_API_KEY")
-
     available = list_prompts()
     if args.prompt_version not in available:
         parser.error(f"Unknown prompt version {args.prompt_version!r}. Available: {available}")
@@ -276,9 +273,6 @@ def main_with_args(argv: list[str]) -> int:
         doc_class = CORPORATE_RECORD_DOC_TYPE
     with_truth = [d for d in dataset if d.get("expected_fields")]
 
-    if not with_truth:
-        parser.error(f"No rows carry ground truth for agent {args.agent!r}.")
-
     field_types = get_field_types(doc_class)
     scored_fields = sorted({f for d in with_truth for f in d["expected_fields"]})
 
@@ -286,12 +280,24 @@ def main_with_args(argv: list[str]) -> int:
     md_log_path = default_md_path()
 
     if args.dry_run:
+        if not with_truth:
+            gt_keys = sorted({k for d in dataset for k in (d.get("gt_fields") or {})})
+            print(f"Dry run: {len(dataset)} rows for {args.agent}, but NONE carry "
+                  f"schema GT ({doc_class} field_types) — live scoring would refuse. "
+                  f"Corpus GT keys present: {gt_keys[:12]}... "
+                  "(GT reconciliation: HUB-031/032; wiring itself is OK)")
+            print(f"  agent={args.agent} prompt={args.prompt_version} model={args.model}")
+            return 0
         print(f"Dry run: {len(with_truth)}/{len(dataset)} scored rows -> '{experiment_name}'")
         print(f"  agent={args.agent} prompt={args.prompt_version} model={args.model}")
         print(f"  fields scored: {scored_fields[:12]}{'...' if len(scored_fields) > 12 else ''}")
         if args.agent == "contracts_specialist" and not args.chunked:
             print("  WARNING: --chunked off — long-contract extraction may truncate")
         return 0
+
+    # keys are required only for LIVE runs — dry-run stays keyless (HUB-035)
+    (openrouter_key,) = require_env("OPENROUTER_API_KEY")
+    require_env("BRAINTRUST_API_KEY")
 
     tracer, tracing_backend, tracing_meta = resolve_tracer(
         session_id=experiment_name,

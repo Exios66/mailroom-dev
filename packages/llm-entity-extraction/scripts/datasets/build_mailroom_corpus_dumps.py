@@ -33,10 +33,16 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from scripts.datasets._jsonl_safety import safe_jsonl_line  # noqa: E402
+
+PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 DATASET_ID = "Lucius-Morningstar/mailroom-corpus"
 DEFAULT_REVISION = "bb57c5ad"  # v7: docclass-merged-v0.1-working freeze (HUB-019)
 IDENTITY_KEYS = ("filename", "expected", "expected_subclass", "split")
+# package-internal config anchors to the file (data paths stay CWD-relative,
+# matching every other runner in this package)
+TAXONOMY_PATH = PACKAGE_ROOT / "config" / "taxonomy.yaml"
 
 # canonical specialist families (taxonomy.yaml doc_classes + runner arms)
 SPECIALIST_ARMS = {
@@ -45,6 +51,24 @@ SPECIALIST_ARMS = {
     "correspondence_specialist": frozenset({"correspondence"}),
     "corporate_records_specialist": frozenset({"corporate_record"}),
 }
+
+
+def class_schema_keys() -> dict[str, frozenset[str]]:
+    """doc_class -> extraction field keys, from the repo taxonomy.
+
+    ``expected_fields`` must stay schema-clean: the specialist runners score
+    the union of its keys, so provenance/identity GT columns (document_id,
+    annotation_method, expected_specialist, ...) must never leak in.
+    """
+    import yaml
+
+    taxonomy = yaml.safe_load(TAXONOMY_PATH.read_text(encoding="utf-8"))
+    out: dict[str, frozenset[str]] = {}
+    for node in taxonomy.get("doc_classes") or []:
+        key = node.get("key")
+        if key:
+            out[key] = frozenset((node.get("field_types") or {}).keys())
+    return out
 
 
 def sha256_file(path: Path) -> str:
@@ -56,30 +80,42 @@ def sha256_file(path: Path) -> str:
 
 
 def write_jsonl(path: Path, rows: list[dict]) -> None:
+    """KANBAN-088-safe writer: shared helper strips line-boundary hazards."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as fh:
         for row in rows:
-            fh.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
-
-
-def _row_records(split_rows) -> list[dict]:
-    """Normalize a datasets.Dataset split (or list[dict]) into plain dicts."""
-    return [dict(r) for r in split_rows]
+            fh.write(safe_jsonl_line(row, sort_keys=True) + "\n")
 
 
 def load_split_configs(revision: str, dataset_id: str):
-    """Load (default, ground_truth) per split at the pinned revision."""
-    from datasets import load_dataset  # lazy: keeps the module import offline
+    """Load (default, ground_truth) per split at the pinned revision.
+
+    Pulls the staged parquet shards via ``huggingface_hub`` (already a
+    workspace dependency — no ``datasets`` requirement) and returns plain
+    row dicts, so tests can monkeypatch this function with list fixtures.
+    """
+    from huggingface_hub import snapshot_download
+    import pyarrow.parquet as pq
+
+    snapshot = Path(snapshot_download(
+        dataset_id, repo_type="dataset", revision=revision,
+        allow_patterns=["parquet/*/*.parquet"],
+    ))
+
+    def _read(split_dir: str) -> list[dict]:
+        rows: list[dict] = []
+        for shard in sorted((snapshot / split_dir).glob("*.parquet")):
+            rows.extend(pq.read_table(shard).to_pylist())
+        return rows
 
     out = {}
     for split in ("train", "test"):
-        blind = load_dataset(dataset_id, "default", split=split, revision=revision)
-        truth = load_dataset(dataset_id, "ground_truth", split=split, revision=revision)
-        out[split] = (_row_records(blind), _row_records(truth))
+        out[split] = (_read(f"parquet/default/{split}"),
+                      _read(f"parquet/ground_truth/{split}"))
     return out
 
 
-def build_dump_rows(split_configs: dict) -> list[dict]:
+def build_dump_rows(split_configs: dict, schema_keys: dict[str, frozenset[str]] | None = None) -> list[dict]:
     """Join default+ground_truth on filename into flat eval rows."""
     rows: list[dict] = []
     for split, (blind, truth) in sorted(split_configs.items()):
@@ -95,9 +131,12 @@ def build_dump_rows(split_configs: dict) -> list[dict]:
                 k: v for k, v in gt.items()
                 if k not in IDENTITY_KEYS and v not in (None, "", [])
             }
+            allowed = schema_keys.get(gt.get("expected")) if schema_keys else None
             expected_fields = {
                 k: v for k, v in gt_fields.items()
-                if not k.startswith("source_") and k != "content_sha256"
+                if (allowed is not None and k in allowed)
+                or (allowed is None and not k.startswith("source_")
+                    and k != "content_sha256")
             }
             doc_text = str(blind_row.get("doc_text") or "")
             if not doc_text.strip():
@@ -110,6 +149,9 @@ def build_dump_rows(split_configs: dict) -> list[dict]:
                 "expected_subclass": gt.get("expected_subclass") or "",
                 "expected_fields": expected_fields,
                 "gt_fields": gt_fields,
+                # default-config provenance/stratification metadata rides along
+                # so the dump is a complete representation of BOTH configs
+                "metadata": blind_row.get("metadata") or {},
                 "split": split,
             })
     return rows
@@ -135,16 +177,18 @@ def main_with_args(argv: list[str] | None = None) -> int:
             split: (blind[: args.limit], truth[: args.limit])
             for split, (blind, truth) in split_configs.items()
         }
-    rows = build_dump_rows(split_configs)
+    rows = build_dump_rows(split_configs, class_schema_keys())
     if not rows:
         parser.error("no rows built — check the revision/config join")
 
-    out_dir = REPO_ROOT / args.out_dir
-    manifest_dir = REPO_ROOT / args.manifest_dir
+    # CWD-relative like every other runner path (the package root IS the cwd
+    # for documented runs) — keeps tmp_path-based tests hermetic.
+    out_dir = Path(args.out_dir)
+    manifest_dir = Path(args.manifest_dir)
     dump_path = out_dir / f"mailroom_corpus_{args.label}.jsonl"
     write_jsonl(dump_path, rows)
 
-    files = [{"path": str(dump_path.relative_to(REPO_ROOT)),
+    files = [{"path": str(dump_path),
               "rows": len(rows),
               "sha256": sha256_file(dump_path)}]
     for arm, doc_types in sorted(SPECIALIST_ARMS.items()):
@@ -154,7 +198,7 @@ def main_with_args(argv: list[str] | None = None) -> int:
             continue
         arm_path = manifest_dir / f"mailroom_corpus_{args.label}_{arm}.jsonl"
         write_jsonl(arm_path, arm_rows)
-        files.append({"path": str(arm_path.relative_to(REPO_ROOT)),
+        files.append({"path": str(arm_path),
                       "rows": len(arm_rows),
                       "sha256": sha256_file(arm_path)})
 
@@ -176,10 +220,10 @@ def main_with_args(argv: list[str] | None = None) -> int:
     manifest_path.write_text(json.dumps(build_manifest, indent=2) + "\n",
                              encoding="utf-8")
 
-    print(f"dump:  {dump_path.relative_to(REPO_ROOT)} ({len(rows)} rows)")
+    print(f"dump:  {dump_path} ({len(rows)} rows)")
     for entry in files[1:]:
         print(f"arm:   {entry['path']} ({entry['rows']} rows)")
-    print(f"build: {manifest_path.relative_to(REPO_ROOT)}")
+    print(f"build: {manifest_path}")
     return 0
 
 
