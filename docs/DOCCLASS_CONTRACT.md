@@ -221,6 +221,12 @@ a scaffold can honestly manufacture). Roles/relationships are validated
 against the closed vocabularies at build time. Seeded (`seed=42`), fully
 deterministic, returns `(rows, manifest)` — **writes nothing; publishing
 bundle rows is the §84 `v0.3-matter-aware` decision.**
+**PUBLISHED 2026-09-02** (bundles config, 50 rows) — together with the
+§27–§29/§48 STREAM tier: `bundles.build_streams` interleaves the bundle
+matters round-robin (`RUN-SIM-001`, `simulation_run_id` +
+`sequence_position` per row, §27) with no-matter `distractor` rows on a
+fixed cadence (§29), so the published `streams` config (62 rows/39 cols) is
+the Mode B ingress simulation.
 
 ### 9B. Evaluation fixture content (§68–§72A — the P1/P3 content layer)
 
