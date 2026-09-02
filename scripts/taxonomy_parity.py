@@ -153,7 +153,7 @@ def parse_doc_classes(source: str) -> list[dict]:
 
     entries: list[dict] = []
     current: dict | None = None
-    item_indent = None
+    field_indent = None  # indent of an entry-level field (nested maps go deeper)
     for line in lines[start:]:
         if not line.strip() or line.lstrip().startswith("#"):
             continue
@@ -161,24 +161,29 @@ def parse_doc_classes(source: str) -> list[dict]:
         if indent == 0:
             break  # next top-level key: block over
         stripped = line.strip()
-        if stripped.startswith("- "):
+        is_item = stripped.startswith("- ")
+        if is_item:
             if "key:" not in stripped:
                 raise Drift(f"taxonomy.yaml: doc_classes list item without 'key:': {stripped!r}")
             current = {}
             entries.append(current)
-            item_indent = indent
+            field_indent = indent + 2  # continuation fields align after "- "
             stripped = stripped[2:].strip()
-        elif current is None:
-            raise Drift(f"taxonomy.yaml: unexpected line under doc_classes: {line.strip()!r}")
-        elif item_indent is not None and indent <= item_indent and not stripped.startswith("- "):
-            raise Drift(f"taxonomy.yaml: unexpected dedent inside doc_classes entry: {line.strip()!r}")
-        if ":" in stripped:
-            field, _, value = stripped.partition(":")
-            field = field.strip()
-            if field in {"key", "status", "specialist", "schema"} and current is not None:
-                if field in current:
-                    raise Drift(f"taxonomy.yaml: duplicate field {field!r} in one doc_classes entry")
-                current[field] = value.strip().strip("'\"")
+            capture = True  # marker-line fields are entry-level by definition
+        else:
+            if current is None:
+                raise Drift(f"taxonomy.yaml: unexpected line under doc_classes: {line.strip()!r}")
+            if field_indent is not None and indent < field_indent:
+                raise Drift(f"taxonomy.yaml: unexpected dedent inside doc_classes entry: {line.strip()!r}")
+            capture = indent == field_indent
+        if not capture or ":" not in stripped:
+            continue
+        field, _, value = stripped.partition(":")
+        field = field.strip()
+        if field in {"key", "status", "specialist", "schema"}:
+            if field in current:
+                raise Drift(f"taxonomy.yaml: duplicate field {field!r} in one doc_classes entry")
+            current[field] = value.strip().strip("'\"")
     if not entries:
         raise Drift("taxonomy.yaml: doc_classes block parsed to zero entries")
     for entry in entries:
