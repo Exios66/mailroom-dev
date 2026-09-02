@@ -5,10 +5,10 @@ Canonical v7 families (HUB-035): contracts (+ merger_agreement), insurance
 claims, correspondence, corporate records. Merger_agreement has no dedicated
 specialist agent — the contracts arm owns that pair.
 
-Runs ``ContractsSpecialist`` or ``InsuranceClaimsSpecialist`` over the
-docclass-merged v5 local JSONL (``gt_fields`` from HF ground_truth config),
-scores against CUAD clause labels (contracts) or insurance scalar GT
-(insurance_claim rows), and appends ONE record to the repo experiment log.
+Runs a specialist agent (contracts, insurance, correspondence, or corporate
+records) over the docclass local JSONL dumps (``gt_fields`` from the HF
+ground_truth config), scores field-type-aware against the class's scalar GT,
+and appends ONE record to the repo experiment log.
 
 Designed for same-surface A/B: pin the exact row list with
 ``--filename-manifest`` (export from ``run_langfuse_docclass_eval.py
