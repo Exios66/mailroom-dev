@@ -21,6 +21,7 @@ from conftest import (
     FIVE_CLASSES,
     PURPOSE_GT_CLASSES,
     PURPOSE_GT_KEYS,
+    taxonomy_field_types,
 )
 
 from mailroom_eda.dataset_export import assign_split
