@@ -111,8 +111,8 @@ def test_mailroom_contract_fixture(fixture_rows):
 
 
 def test_row_contract_snapshot(snapshot_rows):
-    """Full-corpus §63 run against the pinned local snapshot (1,650 rows)."""
-    assert len(snapshot_rows) == 1650
+    """Full-corpus §63 run against the pinned local snapshot (v8, 2,000 rows)."""
+    assert len(snapshot_rows) == 2000
     _check_row_contract(snapshot_rows)
 
 

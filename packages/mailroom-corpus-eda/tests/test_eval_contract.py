@@ -159,9 +159,9 @@ def test_row_level_invariants_over_fixture_rows(fixture_rows):
 
 
 def test_enrichment_over_full_snapshot(snapshot_rows):
-    """§84B: 100% of rows carry a valid evaluation contract (full corpus)."""
+    """§84B: 100% of rows carry a valid evaluation contract (v8 full corpus)."""
     enriched = ec.enrich_rows(snapshot_rows)
-    assert len(enriched) == 1650
+    assert len(enriched) == 2000
     for row in enriched:
         assert row["expected_specialist"] in ec.SPECIALISTS
         assert row["expected_stage"] in ec.TERMINAL_STAGES
@@ -169,12 +169,13 @@ def test_enrichment_over_full_snapshot(snapshot_rows):
         assert row["annotation_source"] != ""
     # provenance regimes over the real corpus: intent-derived methods on the
     # 350 correspondence rows (verified 162 joins / 92 llm / 96 manual),
-    # synthetic on all 600 insurance rows, source_native elsewhere.
+    # synthetic on all 950 insurance rows (600 DE-SynPUF + 200 GNOTHEIA +
+    # 150 BDR — v8 LOB expansion, HUB-028), source_native elsewhere.
     methods = {m: sum(1 for r in enriched if r["annotation_method"] == m) for m in
                ("verified_join", "llm_zero_shot", "human_annotated", "synthetic")}
     assert methods == {
         "verified_join": 162, "llm_zero_shot": 92,
-        "human_annotated": 96, "synthetic": 600,
+        "human_annotated": 96, "synthetic": 950,
     }
 
 
