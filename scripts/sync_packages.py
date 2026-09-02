@@ -142,6 +142,76 @@ def selected_packages(args: argparse.Namespace) -> list[str]:
 
 
 # --------------------------------------------------------------------------- #
+# content containment (HUB-021)
+# --------------------------------------------------------------------------- #
+
+
+def rev_exists(rev: str) -> bool:
+    return git(["rev-parse", "--verify", "--quiet", f"{rev}^{{commit}}"]).returncode == 0
+
+
+def tree_map(rev: str, prefix: str | None = None) -> dict[str, tuple[str, str]]:
+    """{path: (objecttype, objectsha)} for ``rev``, rooted at ``prefix``.
+
+    ``prefix=None`` maps an upstream tip (repo-root paths). A package prefix
+    maps the monorepo side; paths are returned relative to the package root
+    so the two maps are directly comparable.
+    """
+    args = ["ls-tree", "-r", rev]
+    if prefix:
+        args.append(prefix)
+    result = git(args)
+    if result.returncode != 0:
+        raise RuntimeError(f"git ls-tree failed for {rev}: {result.stderr.strip()}")
+    base = f"{prefix.strip('/')}/" if prefix else ""
+    out: dict[str, tuple[str, str]] = {}
+    for line in result.stdout.splitlines():
+        meta, _, path = line.partition("\t")
+        _mode, otype, osha, _size = meta.split()
+        if base:
+            if not path.startswith(base):
+                continue
+            path = path[len(base):]
+        out[path] = (otype, osha)
+    return out
+
+
+def missing_upstream_paths(upstream_tip: str, package: str) -> dict[str, str]:
+    """Upstream paths NOT contained in the package dir (the HUB-018 gap check).
+
+    Returns {upstream_path: reason} where reason is 'missing' (no such file in
+    the package) or 'modified' (different blob content). Extra package-side
+    files (monorepo-ahead fixes) are deliberately ignored — they are the
+    unpushed delta, not a cursor lie.
+    """
+    tip_tree = tree_map(upstream_tip)
+    pkg_tree = tree_map("HEAD", f"packages/{package}")
+    gaps: dict[str, str] = {}
+    for path, (otype, osha) in tip_tree.items():
+        have = pkg_tree.get(path)
+        if have is None:
+            gaps[path] = "missing"
+        elif have != (otype, osha):
+            gaps[path] = "modified"
+    return gaps
+
+
+def local_ahead_paths(upstream_tip: str, package: str) -> list[str]:
+    """Package-side tracked paths absent from or differing at the tip."""
+    tip_tree = tree_map(upstream_tip)
+    pkg_tree = tree_map("HEAD", f"packages/{package}")
+    return sorted(p for p, blob in pkg_tree.items() if tip_tree.get(p) != blob)
+
+
+def cursor_gap_report(package: str, synced_sha: str | None) -> dict[str, object] | None:
+    """Gap info for a recorded cursor, or None when unverifiable."""
+    if not synced_sha or not rev_exists(synced_sha):
+        return None
+    gaps = missing_upstream_paths(synced_sha, package)
+    return {"contained": not gaps, "n_gap_paths": len(gaps), "sample": sorted(gaps)[:5]}
+
+
+# --------------------------------------------------------------------------- #
 # commands
 # --------------------------------------------------------------------------- #
 
