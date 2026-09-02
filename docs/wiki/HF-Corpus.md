@@ -12,7 +12,7 @@ the **centralized** helpers in
 | Dataset | [Lucius-Morningstar/mailroom-corpus](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus) |
 | Schema | **v8** (insurance LOB expansion, HUB-028; §84 hardening rebuilt on v8, HUB-032) |
 | Rows | **2,000** — insurance_claim 950 (carrier/inpatient/outpatient/pde 600 · property 200 · auto 150) · contract 509 · correspondence 350 · merger_agreement 152 · corporate_record 39 |
-| Configs | `default` (blind, 4 cols) + `ground_truth` (60 cols: 31-key GT schema incl. intent provenance + §84 hardened identity/eval-contract/matter columns) + `bundles` (38 cols, 50 rows) + `fixtures` (30 cols, 32 rows) |
+| Configs | `default` (blind, 4 cols) + `ground_truth` (60 cols: 31-key GT schema incl. intent provenance + §84 hardened identity/eval-contract/matter columns) + `bundles` (38 cols, 50 rows) + `streams` (39 cols, 62 rows — §27–§29/§48 STREAM tier: `RUN-SIM-001` interleaved ingress, 12 no-matter distractors) + `fixtures` (30 cols, 32 rows) |
 | Split | train 1,792 / test 208 on `default` + `ground_truth`; md5(filename) % 10 == 0 → test (stable) |
 | Strata | 50 (expected × expected_subclass) |
 | HF revs | data tip `bba2f750` (v8); hardened-on-v8 at `eafe1ab4` |
@@ -57,6 +57,12 @@ the **centralized** helpers in
 - **Bundles/fixtures**: re-derived over the v8 base (insurance family now
   spans carrier + auto anchors); fixtures byte-identical. All §91 release
   gates green; sha256 local==hub (10/10 files).
+- **Streams (v0.3 addendum, 2026-09-02)**: NEW `streams` config — §27–§29/
+  §48 STREAM eval tier. `RUN-SIM-001` interleaves the 10 bundle matters
+  round-robin (A1 B1 A2 C1 B2 … — never matter-contiguous, §28) with 12
+  `distractor` rows injected every 4 positions (real corpus rows carrying no
+  matter/group, §29); every row is `simulation_run_id` + `sequence_position`
+  reproducible (§27). 62 rows total (39 cols).
 
 ## The ground-truth schema (27 keys)
 

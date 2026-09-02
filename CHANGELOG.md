@@ -61,6 +61,13 @@ and is recorded there, not here.
   carrier + auto anchors); fixtures byte-identical. Card §84 section
   refreshed; sha256 local==hub (10/10); all §91 release gates green;
   corpus-eda suite 73 passed.
+- **§84 v0.3 STREAM eval tier** (2026-09-02): NEW `streams` config (§27–§29/
+  §48) — `RUN-SIM-001` interleaves the 10 bundle matters round-robin
+  (A1 B1 A2 C1 B2 … — §28 never matter-contiguous) with 12 no-matter
+  `distractor` rows on a 4-position cadence (§29); every row carries
+  `simulation_run_id` + `sequence_position` (strictly reproducible, §27).
+  62 rows / 39 cols; published + sha256-verified (13/13). Stream builder
+  `mailroom_eda.bundles.build_streams` with 3 new tests.
 
 ## [0.1.0] - 2026-09-02
 

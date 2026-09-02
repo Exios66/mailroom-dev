@@ -303,5 +303,127 @@ def synthetic_bundles(
 
 
 def bundle_specialist(row: dict[str, Any]) -> str:
-    """Routing expectation for a bundle member (same registry as P1)."""
+    """Specialist for a bundle row — from its``expected`` doc class."""
     return SPECIALIST_BY_CLASS.get(str(row.get("expected") or ""), "")
+
+
+#: §27 stream-mode marker: an ingress stream row carries a reproducible
+#: ``simulation_run_id`` + ``sequence_position``. §48's STREAM eval tier.
+STREAM_FIELDS = (
+    "filename", "doc_text", "expected", "expected_subclass", "split",
+    "synthetic", "bundle_family", "bundle_anchor_filename", "duplicate_type",
+    "document_id", "source_corpus", "source_document_id", "source_filename",
+    "source_revision", "content_sha256", "normalized_text_sha256",
+    "expected_specialist", "expected_stage", "review_expected", "review_reason",
+    "retry_expected", "expected_post_retry_state",
+    "annotation_source", "annotation_method", "annotation_model",
+    "annotation_prompt_version", "annotation_confidence", "annotation_reviewer",
+    "annotation_timestamp",
+    "matter_id", "matter_construction", "group_id", "group_role",
+    "thread_position", "thread_size", "thread_evidence",
+    "relationships", "related_document_ids",
+    "simulation_run_id", "sequence_position", "stream_role",
+)
+
+#: §28 interleave shape: A1 B1 A2 C1 B2 A3 C2 — never matter-contiguous.
+#: §29 distractors: stream rows that are NOT part of the target matter.
+DISTRACTOR_ROLE = "distractor"
+
+
+def build_streams(
+    bundle_rows: list[dict[str, Any]],
+    *,
+    run_id: str = "RUN-SIM-001",
+    seed: int = 42,
+    distractor_every: int = 4,
+    distractor_pool: list[dict[str, Any]] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Interleave bundle members into ONE reproducible ingress stream (§27–§29).
+
+    §27: ``simulation_run_id`` (+``sequence_position``) makes the exact
+    incoming sequence reproducible. §28: members of different matters are
+    interleaved (``matter A doc1, matter B doc1, matter A doc2, ...``) rather
+    than delivered matter-contiguous, so grouping must use evidence, not
+    stream proximity. §29: ``distractor`` rows (real corpus rows that belong
+    to NO matter in the stream) are injected on a fixed cadence.
+
+    ``bundle_rows`` are the ``synthetic_bundles`` output (already flagged);
+    distractors come from ``distractor_pool`` (by default the bundle's own
+    anchor rows of a DIFFERENT family — honest cross-family distractors).
+    Rows return in stream order with ``stream_role`` member|distractor.
+    """
+    rng = random.Random(seed)
+
+    if not bundle_rows:
+        raise ValueError("build_streams: no bundle rows")
+
+    # group bundle members by matter (§28: interleave matters, not docs)
+    matters: dict[str, list[dict[str, Any]]] = {}
+    order: list[str] = []
+    for row in bundle_rows:
+        mid = str(row.get("matter_id") or "")
+        if not mid:
+            continue
+        if mid not in matters:
+            matters[mid] = []
+            order.append(mid)
+        matters[mid].append(row)
+
+    if distractor_pool is None:
+        distractor_pool = [
+            r for r in bundle_rows
+            if str(r.get("matter_id") or "") != ""
+        ]
+    # §29 distractors are REAL rows with NO matter in this stream: use
+    # non-bundle rows if the caller supplied a pool; otherwise fall back to
+    # anchors of other bundle families (always present in a multi-family run).
+    distractors = [dict(r) for r in distractor_pool if not r.get("matter_id")]
+    if not distractors:
+        distractors = [dict(r) for r in distractor_pool]
+    rng.shuffle(distractors)
+
+    stream: list[dict[str, Any]] = []
+    seq = 0
+    idx = {mid: 0 for mid in order}
+
+    # round-robin across matters until all members are emitted (§28)
+    active = True
+    distractor_credit = 0
+    while active:
+        active = False
+        for mid in order:
+            members = matters[mid]
+            if idx[mid] < len(members):
+                active = True
+                row = dict(members[idx[mid]])
+                idx[mid] += 1
+                seq += 1
+                row["simulation_run_id"] = run_id
+                row["sequence_position"] = seq
+                row["stream_role"] = "member"
+                stream.append(row)
+
+                # §29 cadence: inject one distractor per N stream positions
+                distractor_credit += 1
+                if distractor_credit >= distractor_every and distractors:
+                    distractor_credit = 0
+                    d = dict(distractors.pop())
+                    seq += 1
+                    d["simulation_run_id"] = run_id
+                    d["sequence_position"] = seq
+                    d["stream_role"] = DISTRACTOR_ROLE
+                    d["matter_id"] = ""
+                    d["group_id"] = ""
+                    d["group_role"] = ""
+                    d["matter_construction"] = ""
+                    stream.append(d)
+
+    return stream, {
+        "run_id": run_id,
+        "seed": seed,
+        "members": sum(1 for r in stream if r["stream_role"] == "member"),
+        "distractors": sum(1 for r in stream if r["stream_role"] == DISTRACTOR_ROLE),
+        "matters": len(order),
+        "sequence_reproducible": True,
+        "interleave": "round-robin across matters (§28)",
+    }

@@ -122,3 +122,40 @@ def test_missing_anchor_class_skips_honestly():
         seed=42, families=("legal_contract_family",),
     )
     assert rows == [] and manifest["families"] == {}
+
+
+def test_streams_interleave_matters_round_robin(anchors):
+    """§28: A1 B1 A2 C1 ... — members of different matters never arrive
+    matter-contiguous (A A B B); sequence_position strictly increases."""
+    bundle_rows, _ = bd.synthetic_bundles(anchors, seed=42, with_duplicates=True)
+    stream, manifest = bd.build_streams(bundle_rows, run_id="RUN-SIM-001")
+    members = [r for r in stream if r["stream_role"] == "member"]
+    assert len(stream) == len(members) + manifest["distractors"]
+    positions = [r["sequence_position"] for r in stream]
+    assert positions == sorted(set(positions))
+    # round-robin: consecutive members alternate matters (A1 B1 A2 B2 ...)
+    # — a matter-contiguous block (A A B B) would break the §28 interleave
+    first = [str(r["matter_id"]) for r in members[:6]]
+    assert len(set(first)) >= 2
+    assert first[0] != first[1], f"matters contiguous in {first}"
+
+
+def test_stream_distractors_carry_no_matter(anchors):
+    """§29: distractor rows belong to NO matter in the stream and keep their
+    real identity (no synthetic_constructed flag from the bundle)."""
+    bundle_rows, _ = bd.synthetic_bundles(anchors, seed=42, with_duplicates=True)
+    stream, manifest = bd.build_streams(bundle_rows, distractor_every=2)
+    distractors = [r for r in stream if r["stream_role"] == bd.DISTRACTOR_ROLE]
+    assert distractors, "expected distractors on this cadence"
+    for d in distractors:
+        assert d["matter_id"] == "" and d["group_id"] == ""
+        assert d["stream_role"] == "distractor"
+    # the stream is reproducible (§27): same seed/args → same sequence
+    stream_b, manifest_b = bd.build_streams(bundle_rows, distractor_every=2)
+    assert json.dumps(stream, sort_keys=True) == json.dumps(stream_b, sort_keys=True)
+    assert manifest == manifest_b
+
+
+def test_stream_requires_bundle_rows():
+    with pytest.raises(ValueError):
+        bd.build_streams([])

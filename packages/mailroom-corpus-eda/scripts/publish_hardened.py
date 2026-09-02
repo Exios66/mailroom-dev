@@ -46,6 +46,7 @@ from mailroom_eda import bundles as bd  # noqa: E402
 from mailroom_eda import fixtures as fx  # noqa: E402
 from mailroom_eda import identity, matter  # noqa: F401,E402
 from mailroom_eda import eval_contract as ec  # noqa: E402
+from mailroom_eda.bundles import STREAM_FIELDS  # noqa: E402
 from mailroom_eda.config import REPO_ID  # noqa: E402
 from mailroom_eda.dataset_export import assign_split, safe_jsonl_line  # noqa: E402
 from mailroom_eda.docclass_uploader import upsert_section  # noqa: E402
@@ -143,6 +144,43 @@ def build_bundle_rows(rows: list[dict]) -> tuple[list[dict], dict]:
     return out, manifest
 
 
+def build_stream_rows(bundle_rows: list[dict], rows: list[dict]) -> tuple[list[dict], dict]:
+    """§27–§29/§48 STREAM eval tier: interleave the bundle matters into one
+    reproducible ingress stream with distractors (real, no-matter rows)."""
+    bundle_fns = {r["filename"] for r in bundle_rows}
+    # distractors: ANTIBUNDLE rows (never in any matter) — draw from the
+    # non-bundle corpus rows of OTHER classes so the distractor is honestly
+    # unrelated to every matter in the stream.
+    distractor_pool = [
+        dict(r) for r in rows
+        if r["filename"] not in bundle_fns
+    ]
+    stream_rows, manifest = bd.build_streams(
+        bundle_rows, run_id="RUN-SIM-001", distractor_every=4,
+        distractor_pool=distractor_pool,
+    )
+    out = []
+    for row in stream_rows:
+        enriched = identity.enrich_row(row)
+        enriched = ec.enrich_row(enriched)
+        if str(enriched.get("synthetic") or "") == "true":
+            enriched["source_corpus"] = ""
+            enriched["source_document_id"] = ""
+            enriched["annotation_method"] = "synthetic"
+            enriched["annotation_source"] = ""
+        if enriched.get("stream_role") == bd.DISTRACTOR_ROLE:
+            # distractors belong to NO matter — strip any bundle-adjacent
+            # fields and keep honest identity/provenance
+            enriched["matter_id"] = ""
+            enriched["group_id"] = ""
+            enriched["group_role"] = ""
+            enriched["matter_construction"] = ""
+            enriched["bundle_anchor_filename"] = ""
+        enriched["split"] = assign_split(str(enriched["filename"]))
+        out.append(enriched)
+    return out, manifest
+
+
 def build_fixture_rows() -> list[dict]:
     out = []
     for row in fx.build_fixture_suite():
@@ -156,7 +194,8 @@ def _scalar(v: object) -> str:
     return "" if v is None else str(v)
 
 
-def stage_configs(rows: list[dict], bundle_rows: list[dict], fixture_rows: list[dict], stage_dir: Path) -> dict:
+def stage_configs(rows: list[dict], bundle_rows: list[dict], fixture_rows: list[dict],
+                  stream_rows: list[dict], stage_dir: Path) -> dict:
     import pyarrow as pa
     import pyarrow.parquet as pq
 
@@ -170,6 +209,7 @@ def stage_configs(rows: list[dict], bundle_rows: list[dict], fixture_rows: list[
         for config, subset in (
             ("ground_truth", [r for r in rows if r["split"] == split]),
             ("bundles", [r for r in bundle_rows if r["split"] == split]),
+            ("streams", [r for r in stream_rows if r["split"] == split]),
             ("fixtures", [r for r in fixture_rows if r["split"] == split]),
         ):
             if config == "ground_truth":
@@ -191,15 +231,16 @@ def stage_configs(rows: list[dict], bundle_rows: list[dict], fixture_rows: list[
                         else:
                             rec[name] = _scalar(r.get(name))
                     table_rows.append(rec)
-            elif config == "bundles":
+            elif config in ("bundles", "streams"):
+                names = STREAM_FIELDS if config == "streams" else BUNDLE_FIELDS
                 schema = pa.schema(
                     [pa.field(name, pa.list_(pa.string()) if name in MATTER_LISTS else pa.string())
-                     for name in BUNDLE_FIELDS]
+                     for name in names]
                 )
                 table_rows = []
                 for r in subset:
                     rec = {}
-                    for name in BUNDLE_FIELDS:
+                    for name in names:
                         rec[name] = (
                             [str(x) for x in (r.get(name) or [])] if name in MATTER_LISTS
                             else _scalar(r.get(name))
@@ -222,7 +263,7 @@ def stage_configs(rows: list[dict], bundle_rows: list[dict], fixture_rows: list[
 
 
 def verify_stage(rows: list[dict], bundle_rows: list[dict], fixture_rows: list[dict],
-                 stage_dir: Path, counts: dict) -> None:
+                 stream_rows: list[dict], stage_dir: Path, counts: dict) -> None:
     """Hard verification before anything leaves the machine."""
     import pandas as pd
 
@@ -285,8 +326,31 @@ def verify_stage(rows: list[dict], bundle_rows: list[dict], fixture_rows: list[d
     assert set(sf["failure_stage"]) - {""} == set(ec.FAILURE_STAGES)
     assert set(sf["fixture_kind"]).issubset(set(ec.FIXTURE_KINDS))
     assert set(sf["arbiter_outcome"]) - {""} == set(fx.ARBITER_OUTCOMES)
+
+    # streams (§27–§29/§48): reproducible interleave, distractors carry no
+    # matter, sequence positions strictly increasing per run
+    ss = pd.concat([
+        pd.read_parquet(f)
+        for split in ("train", "test")
+        for f in sorted((stage_dir / "parquet" / "streams" / split).glob("*.parquet"))
+    ], ignore_index=True)
+    assert len(ss) == len(stream_rows) == counts[("streams", "train")] + counts[("streams", "test")]
+    assert set(ss["stream_role"]) == {"member", bd.DISTRACTOR_ROLE}
+    distractors = ss[ss["stream_role"] == bd.DISTRACTOR_ROLE]
+    assert (distractors["matter_id"] == "").all(), "distractor carries a matter"
+    assert (distractors["group_id"] == "").all()
+    members = ss[ss["stream_role"] == "member"]
+    assert set(members["matter_construction"]) == {"synthetic_constructed"}
+    pos = ss["sequence_position"].astype(int).tolist()
+    # the stream is one sequence: positions are unique and exactly 1..N
+    # (the split configs scatter them — train/test are subsets of one run).
+    assert len(pos) == len(set(pos)), "duplicate sequence positions"
+    assert sorted(pos) == list(range(1, len(ss) + 1)), \
+        "sequence positions not contiguous 1..N"
+    assert ss["simulation_run_id"].nunique() == 1
     print(f"verify_stage OK — GT {len(staged)}, bundles {len(sb)} "
-          f"({len(manufactured)} manufactured), fixtures {len(sf)}")
+          f"({len(manufactured)} manufactured), streams {len(ss)} "
+          f"({len(distractors)} distractors), fixtures {len(sf)}")
 
 
 CARD_BODY = """## Mailroom evaluation hardening (v0.2/v0.3/v0.4, 2026-09-02)
@@ -340,6 +404,14 @@ exist in this corpus family):
   they claim NO source provenance (`source_corpus` = '') and
   `annotation_method` = `synthetic`. Roles/relationships come ONLY from the
   closed GROUP_ROLES/RELATIONSHIP_TYPES vocabularies.
+* NEW `streams` config (§27–§29/§48 STREAM eval tier): the bundle members
+  interleaved into ONE reproducible ingress stream — `RUN-SIM-001`,
+  round-robin across the bundle matters (A1 B1 A2 C1 B2 ... — never
+  matter-contiguous, §28), with `distractor` rows injected every 4
+  positions (real corpus rows from outside every matter, `matter_id`/`group_id`
+  empty, §29). Every row carries `simulation_run_id` +
+  `sequence_position` (strictly increasing, §27 reproduces the exact
+  incoming sequence).
 
 **v0.4-recovery-suite** — NEW `fixtures` config (§68–§72A fixture content;
 `fixture:` filename namespace, so these are evaluation scenarios, not
@@ -393,6 +465,7 @@ def main() -> int:
 
     rows = enrich_gt_rows(load_snapshot_rows())
     bundle_rows, bundle_manifest = build_bundle_rows(rows)
+    stream_rows, stream_manifest = build_stream_rows(bundle_rows, rows)
     fixture_rows = build_fixture_rows()
 
     stage_dir = args.stage_dir
@@ -400,12 +473,13 @@ def main() -> int:
         shutil.rmtree(stage_dir)
     stage_dir.mkdir(parents=True)
 
-    counts = stage_configs(rows, bundle_rows, fixture_rows, stage_dir)
-    verify_stage(rows, bundle_rows, fixture_rows, stage_dir, counts)
+    counts = stage_configs(rows, bundle_rows, fixture_rows, stream_rows, stage_dir)
+    verify_stage(rows, bundle_rows, fixture_rows, stream_rows, stage_dir, counts)
 
     for name, subset in (
         ("ground_truth_hardened.jsonl", rows),
         ("bundles.jsonl", bundle_rows),
+        ("streams.jsonl", stream_rows),
         ("fixtures.jsonl", fixture_rows),
     ):
         with (stage_dir / name).open("w", encoding="utf-8") as fh:
@@ -429,9 +503,14 @@ def main() -> int:
             f"rows      : ground_truth {counts[('ground_truth', 'train')] + counts[('ground_truth', 'test')]}"
             f" (train {counts[('ground_truth', 'train')]}, test {counts[('ground_truth', 'test')]})"
             f"; bundles {counts[('bundles', 'train')] + counts[('bundles', 'test')]}"
+            f"; streams {counts[('streams', 'train')] + counts[('streams', 'test')]}"
+            f" ({stream_manifest['distractors']} distractors)"
             f"; fixtures {counts[('fixtures', 'train')] + counts[('fixtures', 'test')]}",
             f"matter    : {dict(Counter(r.get('matter_construction') or 'unassigned' for r in rows))}",
             f"bundles   : seed 42, families {bundle_manifest['families']}",
+            f"streams   : {stream_manifest['run_id']} (members {stream_manifest['members']},"
+            f" matters {stream_manifest['matters']}, distractors {stream_manifest['distractors']},"
+            f" interleave round-robin)",
             f"fixtures  : {dict(Counter(r['fixture_kind'] for r in fixture_rows))}",
             "sha256    :",
             *[f"  {k}  {v}" for k, v in sha_table.items()],

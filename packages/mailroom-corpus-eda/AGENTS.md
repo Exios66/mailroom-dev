@@ -96,7 +96,9 @@ runs used to clobber the full-corpus summary with phase-partial stats.)
 - Configs: `default` (blind, 4 cols) + `ground_truth` (60 cols incl. labels,
   intent provenance `intent_source`/`intent_confidence`/`intent_status`, AND
   the §84 hardened columns — identity/hashes, evaluation contract,
-  matter/group) + `bundles` (38 cols, 50 rows) + `fixtures` (30 cols, 32
+  matter/group) + `bundles` (38 cols, 50 rows) + `streams` (39 cols, 62 rows
+  — §27–§29/§48 STREAM tier: `RUN-SIM-001` interleaved ingress stream over
+  the bundle matters, 12 no-matter distractors) + `fixtures` (30 cols, 32
   rows). Built via `scripts/publish_hardened.py` (HUB-022) on the v8 base:
   v7 `document_id`s unchanged (0 drift), v8 LOB rows carry their own
   `source_corpus`/`annotation_source` (GNOTHEIA/BDR) + pinned
