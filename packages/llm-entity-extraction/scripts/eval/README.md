@@ -48,9 +48,12 @@ python scripts/eval/run_langfuse_docclass_specialist_eval.py --dry-run \
 ```
 
 GT-coverage reality (HUB-022 matrix): contracts scores 509/661 rows (CUAD
-clause GT), insurance 950/950 (full scalar GT); correspondence +
-corporate_records carry no schema-shaped GT yet — dry-run reports the gap
-and live scoring refuses until the HUB-031/032 GT reconciliation lands.
+clause GT), insurance 950/950 (full scalar GT); correspondence scores
+350/350 against the corpus GT it actually carries (intent · sentiment_label ·
+content_topic at 100%, subject_matter/keywords at 27%) and corporate_records
+38/39 (subject_matter/keywords) — explicit GT scoring types in
+`GT_FIELD_TYPES`; the output-schema fields (sender, recipient, filing_number,
+...) still lack corpus GT (reconciliation: HUB-031/032).
 
 ## Related Files
 

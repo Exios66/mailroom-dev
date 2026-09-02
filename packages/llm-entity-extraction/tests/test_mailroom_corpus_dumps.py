@@ -21,6 +21,7 @@ from scripts.datasets.build_mailroom_corpus_dumps import (
 from scripts.eval.run_langfuse_docclass_specialist_eval import (
     CORRESPONDENCE_FIELD_KEYS,
     CORPORATE_RECORD_FIELD_KEYS,
+    GT_FIELD_TYPES,
     SPECIALIST_DOC_TYPES,
     enrich_generic_rows,
     select_agent_rows,
@@ -155,18 +156,37 @@ def test_select_agent_rows_per_arm():
 
 def test_enrich_generic_rows_prefers_nonempty_gt():
     rows = [{
-        "gt_fields": {"sender": "gc@enron.com", "demand_amount": "", "urgency": "high"},
+        "gt_fields": {"intent": "request", "content_topic": "", "keywords": "[\"a\"]"},
         "expected_fields": {"stale": "precomputed"},
     }]
     enrich_generic_rows(rows, CORRESPONDENCE_FIELD_KEYS)
     # fresh GT wins when present; precomputed values survive for empty slots
-    assert rows[0]["expected_fields"]["sender"] == "gc@enron.com"
-    assert rows[0]["expected_fields"]["urgency"] == "high"
+    assert rows[0]["expected_fields"]["intent"] == "request"
+    assert rows[0]["expected_fields"]["keywords"] == ["a"]
     assert rows[0]["expected_fields"]["stale"] == "precomputed"
-    assert "demand_amount" not in rows[0]["expected_fields"]
+    # empty GT never overwrites
+    assert "content_topic" not in rows[0]["expected_fields"]
 
 
-def test_corporate_record_keys_match_taxonomy_schema():
-    assert "entity_name" in CORPORATE_RECORD_FIELD_KEYS
-    assert "filing_number" in CORPORATE_RECORD_FIELD_KEYS
-    assert "key_points" in CORRESPONDENCE_FIELD_KEYS
+def test_gt_keys_match_corpus_reality():
+    """Arms score the GT the corpus carries (HUB-022 matrix), not the
+    output schemas — sender/filing_number GT does not exist yet."""
+    assert set(CORRESPONDENCE_FIELD_KEYS) == {
+        "intent", "sentiment_label", "content_topic", "subject_matter", "keywords"}
+    assert set(CORPORATE_RECORD_FIELD_KEYS) == {"subject_matter", "keywords"}
+    assert GT_FIELD_TYPES["correspondence_specialist"]["intent"] == "name"
+    assert GT_FIELD_TYPES["correspondence_specialist"]["keywords"] == "entity_list:free_text"
+
+
+def test_enrich_decodes_json_encoded_list_gt():
+    rows = [{
+        "gt_fields": {"keywords": '["voice mail", "demand letter"]',
+                      "intent": "request"},
+    }]
+    enrich_generic_rows(rows, CORRESPONDENCE_FIELD_KEYS)
+    assert rows[0]["expected_fields"]["keywords"] == ["voice mail", "demand letter"]
+    assert rows[0]["expected_fields"]["intent"] == "request"
+    # non-JSON strings pass through untouched
+    rows = [{"gt_fields": {"subject_matter": "payment dispute over services"}}]
+    enrich_generic_rows(rows, ("subject_matter",))
+    assert rows[0]["expected_fields"]["subject_matter"] == "payment dispute over services"

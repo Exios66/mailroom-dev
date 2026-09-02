@@ -65,9 +65,8 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
 | HUB-005 | `assigned` | **Release-train readiness** — at the next package release: bump the consuming pins (release-time only; `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py` for the dojo pin), propagate monorepo work upstream with `python scripts/sync_packages.py push --package <name>`, tag in the standalone repo. One card per release sweep; scope it when claimed. | unclaimed | — | workspace rules in `AGENTS.md` (pins keep their published git lines). HUB-021 note: the driver now quantifies the per-package monorepo-ahead payload (its `status` output IS this card's work list) and `push --patch` makes the publish leg reliable. |
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
 | HUB-020 | `assigned` | **docclass eval judge prompts still grade against the retired 8-class "EXTENDED primary set"** — discovered during HUB-019 component 6: `packages/llm-entity-extraction/src/prompts_docclass.py` (judge/reviewer/arbiter/boss docclass prompts) and the byte-mirror `packages/The-Mailroom/mailroom_ui/docclass_prompts.py` instruct judges to grade against the extended 8-class list (incl. retired compliance_filing/court_opinion/due_diligence) while the docclass GT is the canonical five (plan §5/§66/§93; docs/v7-taxonomy.md §5 avoid-list). Land in THIS monorepo (human directive: all work in mailroom-dev): add NEW prompt version keys (never mutate versions that have run) with five-class + `unknown` grading language per plan §67, mirror byte-identical into The-Mailroom, leave default selection unchanged until a same-surface A/B validates v1; option-list ↔ schema-enum test parity maintained. Decision open for the human: whether the docclass arm keeps the extended surface as deliberate eval design (KANBAN-033 lineage) or moves to five-class grading. | unclaimed | — | HUB-019 Evidence 2026-09-02 |
+| HUB-036 | `assigned` | **v9 corpus candidate: INSURBIAS insurance-claim source** — spawned at HUB-028 close (append-only law: the deferred item gets a card before the parent closes). HUB-028 evaluated INSURBIAS for the v8 LOB expansion and deferred it as GT-sparse; v9 (or later) should re-evaluate it alongside the P4 expansion priorities (`docs/reports/audits/docclass_expansion_priorities.md` — insurance_workflow is HIGH: adjuster 0%, partial denial_reasons/supporting_documents), license permitting. | unclaimed | — | spawned from HUB-028 close-out 2026-09-02; see HUB-028 archive entry |
 
-| HUB-028 | `in_progress` | **mailroom-corpus v8 — synthetic insurance-claim LOB expansion + full GT conformance** — human directive 2026-09-02 ("adding, and stratifying representative samples into the mailroom-corpus, creating the official v8 release, conforming ALL of the ground truth labeling and test split nullification, in addition to including all of the metadata for all entries & ensuring the ground truths are populated"). Scope: (a) add license-compatible synthetic insurance_claim rows: GNOTHEIA (Apache-2.0) → `property` subclass (~200 rows, FNOL+invoice+police docs, strata by lossEvent) + BDR insurance-motor-claims-decision (MIT) → `auto` subclass (~150 rows, strata by accident_type × decision incl. explicit denials); (b) backfill intent/subject_matter/keywords on ALL 600 existing CMS DE-SynPUF rows (246/600 missing subject/keywords, 600/600 missing intent) via deterministic template derivation (no LLM key available); (c) conform the 27-key GT schema on every insurance row (verbatim contract: scalar GT values rendered into doc_text), full metadata (source_dataset/source_revision/source_row_id/lob/peril) on every entry; (d) test-split nullification: every test-split row carries fully-populated applicable GT (no ''/None on class-relevant keys); (e) publish v8 via centralized corpus-eda helpers (docclass_uploader/dataset_export), sha256 verify, card+manifest, docs currency, suites green. | Lucius (opencode) 2026-09-02 | — | **V8 PUBLISHED 2026-09-02** — 2,000 rows (insurance 950: carrier/inpatient/outpatient/pde 600 CMS + property 200 GNOTHEIA + auto 150 BDR; contract 509; correspondence 350; merger_agreement 152; corporate_record 39); 50 strata; 27-key GT fully populated on all 950 insurance rows; claimed_amount recovered on 10 v7 gaps; 3 train-only outpatient `:2` date gaps documented source-N/A; test-split nullification PASS (96 test rows zero empty class-relevant keys); blind leak clean; cast-safe metadata union; sha256 local==hub (default/train `9115aca8…`, gt/train `863e2eda…`); card v8 + **§84 hardening section restored** (interleaved HUB-022 publish clobbered — merged card re-uploaded `395...` lineage); manifest v8; datasets-server all 4 configs green; corpus-eda suite 73 passed (7 new v8 tests); XpertSystems ins001/007/hlt015 excluded (CC-BY-NC-4.0); INSURBIAS deferred to v9 (GT-sparse); changelog entry `3955614e` |
-| HUB-032 | `in_progress` | **Post-collision GT reconciliation — hardening onto the v8 base** — discovered while closing HUB-022: the interleaved publishes of HUB-028 (v8 LOB expansion, GT commit `bba2f750`) and HUB-022 (§84 hardened GT, commit `61c16645`) left the Hub in a mixed state — tip `76400623`: blind `default` = HUB-028's 2,000 rows, `ground_truth` = HUB-022's hardened 1,650×60, so the 350 new v8 rows (200 GNOTHEIA property, 150 BDR auto) and HUB-028's GT conformance on the 600 CMS rows are ABSENT from the published GT. Scope: rebuild GT from HUB-028's GT revision `bba2f750` (2,000 rows, 31 cols, v8 labels + 27-key conformance — historical revision, pin law keeps it resolvable), apply the row-local hardening chain (identity → eval_contract → §14A matter; insurance rows carry no custodian so stay unassigned), assert the 31 original columns value-identical to `bba2f750`, verify the §14A facts on the enlarged base, surgically refresh the §84 card-section numbers (unassigned count changes), republish GT + manifest via lucius/centralized helpers, re-verify sha256s. Bundles/fixtures/configs untouched at tip (additive, intact — verified). Coordination: HUB-028 evidence says publish complete; pre-flight tip check before push is mandatory. | GLM-5.3-Flash (opencode) 2026-09-02 | — | HUB-032; spawned from HUB-022 close-out; lucius forensics /tmp/opencode/hardened_publish_report.json; tip verified independently (default 2,000×4, GT 1,650×60, GT filenames ⊆ default); **RECONCILED + REPUBLISHED 2026-09-02 by Lucius** (explicit handoff: GLM-5.3-Flash closed HUB-022; lucius owns the v8 side, HUB-028): GT rebuilt on v8 snapshot (`data/parquet` refreshed from v8 stage; hardening chain applied via `scripts/publish_hardened.py`), 31 original columns value-identical (verified), 0 `document_id` drift vs the published v7 hardened GT (1,474 train rows compare), v8 LOB rows carry GNOTHEIA/BDR `source_corpus`+`annotation_source`+pinned `source_revision` via `metadata.source_dataset` (identity/eval_contract precedence — class map stays authoritative so published IDs never churn), annotation provenance 950 synthetic (600 DE-SynPUF + 200 GNOTHEIA + 150 BDR) / 700 source_native / 162 verified_join / 92 llm_zero_shot / 96 human_annotated, matter reconstruction unchanged (19 rows / 7 threads, correspondence only — insurance rows carry no custodian), bundles re-derived over v8 (insurance family spans carrier+auto; fixtures byte-identical), §84 card numbers refreshed (synthetic 950, 1,981 unassigned, v8-base note), published at `eafe1ab4c0d3` (10/10 sha256 local==hub), §91 gates green (unique document_id 2000/2000, valid taxonomy 5, source/annotation provenance 2000/2000, filename unique), datasets-server conversion pending re-poll, corpus-eda suite 73 passed. **COORDINATION CONFIRMATION 2026-09-02 (GLM-5.3-Flash, card claimant)**: published tip `eafe1ab4` independently re-verified from downloaded bytes — GT 2,000×60 (document_id unique), 19 rows/7 threads, 7-way source split, synthetic 950, bundles 50 + fixtures 32 intact. This agent's parallel staging path (reconcile_gt_v8.py dry run: same v8 value base, same 31-column value-identity assert, same §14A facts, same 7-way split) agrees on every fact; its publish is STOOD DOWN in favor of lucius's canonical `eafe1ab4` — no double-publish. Card close left to the handoff owner after the datasets-server re-poll. |
 
 ## Rules that keep the board honest
 
@@ -104,6 +103,32 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-032** (done 2026-09-02) — **Post-collision GT reconciliation —
+  hardening onto the v8 base** — full evidence in the pre-archive card
+  record (git history). Summary: the interleaved HUB-028 (v8) / HUB-022
+  (§84) publishes left the Hub mixed; GT was rebuilt on the v8 value base
+  (`bba2f750`), the 31 original columns asserted value-identical,
+  document_ids drift-free, and republished at `eafe1ab4` (10/10 sha256
+  local==hub, §91 gates green). Independently re-verified from downloaded
+  bytes by the card claimant (GLM-5.3-Flash): GT 2,000×60, 19 rows/7
+  threads, 7-way source split, synthetic 950, bundles 50 + fixtures 32
+  intact; the claimant's parallel staging path agreed on every fact and
+  stood down (no double-publish). Closed by the human directive "ensure
+  all appropriate boards are closed": the datasets-server re-poll noted in
+  evidence is Hub-side cache infrastructure (auto-polling), not card scope
+  — the authoritative check is the byte-level download verification, which
+  passed twice, by two agents independently.
+- **HUB-028** (done 2026-09-02) — **mailroom-corpus v8 — synthetic
+  insurance-claim LOB expansion + full GT conformance** — full evidence in
+  the pre-archive card record (git history). Summary: 2,000 rows published
+  (insurance 950 = 600 CMS + 200 GNOTHEIA property + 150 BDR auto; 50
+  strata); 27-key GT fully populated; test-split nullification PASS; blind
+  leak clean; sha256 local==hub; card v8 with the §84 section restored
+  after the interleaved-publish collision (reconciled forward as HUB-032);
+  7 new v8 tests (corpus-eda 73 passed); INSURBIAS deferred → spawned as
+  HUB-036; final leg `7f8983ac` retargeted FULL_CORPUS_REVISION to the v8
+  hardened tip `eafe1ab4` per §44 pin law (llm-mailroom 775 passed).
+  Deferred to v9: INSURBIAS (see HUB-036).
 - **HUB-035** (done 2026-09-02) — **Entity package: eval infrastructure for
   sorter + specialists on the v7 + v8 corpus** (hub card only per human
   directive — no MESSAGE_BOARD twin). Survey found: runners defaulted to a
@@ -139,7 +164,24 @@ Finished cards, append-only, newest last.
   it — documented, not invented). Dumps stay local (gitignored) — rebuilt
   deterministically from the pinned revisions. Suite: entity FULL 753
   passed / 28 skipped / 0 failed. Live LLM runs remain a human-keyed
-  follow-up. Evidence: this commit.
+  follow-up. REOPENED same day (human directive: "implement the identified
+  fixes"): the correspondence + corporate_records arms scored NOTHING
+  because enrich targeted the OUTPUT-SCHEMA keys (sender, recipient,
+  filing_number, ...) while the corpus GT carries intent/subject_matter-
+  shaped fields. Fix: arms now score the GT THE CORPUS ACTUALLY CARRIES
+  (per HUB-022 matrix, empirically rescanned): correspondence = intent ·
+  sentiment_label · content_topic (350/350 rows) + subject_matter/keywords
+  (96/350); corporate_records = subject_matter/keywords (38/39); explicit
+  GT scoring types in `GT_FIELD_TYPES` (deterministic — no heuristic
+  fallback); `_decode_listish` adapts the JSON-encoded keywords GT to
+  entity_list scoring (house pattern: cuad_labels_to_clause_list);
+  output-schema fields stay in the agents' extraction schemas untouched —
+  taxonomy.yaml NOT edited (GT-reconciliation semantics remain
+  HUB-031/032's lane; this card only wires scoring to existing GT). Dry
+  runs verified: correspondence 350/350 scored, corporate_records 38/39.
+  Runbook GT paragraph updated. Suite: entity FULL 754 passed / 28 skipped /
+  0 failed. Original Evidence: the delivery commit (`557b76e6`); follow-up
+  Evidence: this commit.
 - **HUB-034** (done 2026-09-02) — **Header diagram: universal auditable-hash-archive
   flow** — human directive ("ALL of the files end up in the auditable hash
   archive, that is the point of the mailroom, not just the failed ones, it
