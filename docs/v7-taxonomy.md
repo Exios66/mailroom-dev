@@ -1,0 +1,123 @@
+# v7 taxonomy contract
+
+**Status:** canonical terminology for the `Lucius-Morningstar/docclass-merged` v7 corpus and its relationship to the live Mailroom taxonomy.
+
+## 1. The key distinction
+
+The phrase **"v7 five-class corpus"** is the correct description of the document-class surface represented in `docclass-merged` v7.
+
+The phrase **"six live taxonomy classes"** is the correct description of the current Mailroom production taxonomy.
+
+These are **not contradictory**:
+
+- The live pipeline taxonomy contains six classes.
+- The v7 Hugging Face corpus represents five of those classes.
+- `compliance_filing` is a live pipeline class but has zero rows in `docclass-merged` v7.
+- `court` and `dd` are retired and are not v7 classes.
+
+Therefore, v7 should **never** be described as a "five doc class and subclass set" when the intent is to describe the full production taxonomy. It is a **five-class corpus slice of the six-class live taxonomy, with class × subclass strata represented for those five classes**.
+
+## 2. Canonical vocabularies
+
+### Live Mailroom document classes
+
+```text
+contract
+merger_agreement
+corporate_record
+correspondence
+compliance_filing
+insurance_claim
+```
+
+### v7 represented document classes
+
+```text
+contract
+merger_agreement
+corporate_record
+correspondence
+insurance_claim
+```
+
+The v7 corpus therefore has **5 represented document classes** and an **honest coverage gap** for `compliance_filing`.
+
+### Subclass
+
+`expected_subclass` is a **second-level document-type label**, not another document class and not an intent label.
+
+Examples used by the current sandbox/fixtures include:
+
+| Document class | Example subclass |
+|---|---|
+| `contract` | `Consulting Agreements` |
+| `merger_agreement` | `all_cash` |
+| `corporate_record` | `bylaws` |
+| `correspondence` | `attorney_demand` |
+| `insurance_claim` | `carrier` |
+
+The exact subclass vocabulary is corpus-derived and should be treated as a stratum vocabulary, not promoted into the top-level production taxonomy unless explicitly adopted by the pipeline configuration.
+
+## 3. Intent is a separate dimension
+
+Correspondence intent is **not a subclass**.
+
+For v7, correspondence rows may carry canonical intent plus provenance fields:
+
+```text
+intent
+intent_source
+intent_confidence
+intent_status
+```
+
+For example, `payment_demand` is an intent value. It should not be described as a correspondence subclass merely because it is evaluated alongside class/subclass fields.
+
+This gives the v7 label model three distinct concepts:
+
+```text
+Document class
+    └── expected_subclass
+
+Correspondence-specific semantic dimension
+    └── intent + intent provenance
+
+Extraction target dimension
+    └── expected_fields
+```
+
+## 4. Why issue #7 needs this wording
+
+The pending GEPA task refers to a "5 doc class & associated subclass set." The intended experiment should be recorded as:
+
+> **Sorter prompt mutation on the v7 five-class corpus, using the class × subclass strata represented by `docclass-merged` v7.**
+
+If the experiment evaluates production coverage, it must separately report the sixth live class, `compliance_filing`, as **unrepresented in v7**, rather than implying that v7 defines the production taxonomy.
+
+## 5. Canonical naming rules
+
+Use:
+
+- **"v7 five-class corpus"** for the represented document-class surface.
+- **"six-class live Mailroom taxonomy"** for the production taxonomy.
+- **"class × subclass strata"** for the v7 stratification.
+- **"correspondence intent"** for the intent dimension.
+- **"27-key ground-truth schema"** for the current extraction/ground-truth field surface where that schema is being discussed.
+
+Avoid:
+
+- "v7 five-class taxonomy" — v7 is a corpus/schema revision, not the production taxonomy.
+- "five doc class taxonomy" — collapses corpus coverage into production taxonomy.
+- "intent subclass" — conflates two label dimensions.
+- "8-class v7 taxonomy" — the canonical eight-class language applies to the intent vocabulary used in correspondence backfill, not the document-class taxonomy.
+
+## 6. Source-of-truth implementation
+
+The implementation records the distinction directly in `packages/llm-mailroom/src/pipeline/hf_corpora.py`:
+
+- `FULL_CORPUS_SCHEMA = "v7"`
+- `HUB_CLASSES` contains the five represented classes.
+- The live six-class taxonomy remains in the Mailroom taxonomy configuration.
+- `compliance_filing` is explicitly documented as having zero Hub rows.
+
+The canonical operational pipeline diagram is `docs/assets/mailroom-pipeline.svg`. It uses the same terminology and explicitly labels the v7 corpus as five represented classes versus six live taxonomy classes.
