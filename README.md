@@ -10,13 +10,16 @@ Multi-agent legal-document pipeline · Prompt-experiment loop · Deterministic s
 [![uv workspace](https://img.shields.io/badge/uv-workspace-6C63FF)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-<img src="docs/assets/mailroom-pipeline.svg" alt="The 13-node LangGraph pipeline visualization" width="880"/>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/mailroom-processing-banner-dark.svg">
+  <img src="docs/assets/mailroom-processing-banner.svg" alt="Mailroom processing pipeline — six stages from intake to routing, with human-in-the-loop review and cross-cutting services" width="880"/>
+</picture>
 
 </div>
 
 ---
 
-> **Canonical architecture & taxonomy:** See the [canonical Mailroom pipeline](docs/assets/mailroom-pipeline-svg) and the [v7 taxonomy specification](docs/v7-taxonomy.md). These are the root-level sources of truth for the pipeline visualization and v7 terminology.
+> **Canonical architecture & taxonomy:** See the [canonical Mailroom pipeline](docs/assets/mailroom-pipeline.svg) and the [v7 taxonomy specification](docs/v7-taxonomy.md). These are the root-level sources of truth for the pipeline visualization and v7 terminology.
 
 ## Architecture
 
