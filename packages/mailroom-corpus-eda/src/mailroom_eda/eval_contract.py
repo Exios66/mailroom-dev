@@ -197,6 +197,13 @@ def annotation_provenance(row: dict[str, Any]) -> dict[str, str]:
     """
     doc_class = str(row.get("expected") or "")
     source = SOURCE_BY_CLASS.get(doc_class, "")
+    md = row.get("metadata") or {}
+    if doc_class == "insurance_claim":
+        source_dataset = md.get("source_dataset")
+        if source_dataset and "cms-de-synpuf" not in str(source_dataset):
+            # v8 LOB expansion (HUB-028): GNOTHEIA / BDR rows annotate from
+            # their own dataset, not the CMS fused source.
+            source = str(source_dataset)
     method, model, prompt_version = "source_native", "", ""
     confidence = ""
     reviewer, timestamp = "", ""
@@ -210,7 +217,11 @@ def annotation_provenance(row: dict[str, Any]) -> dict[str, str]:
     # timestamp: the v7 builder does not track per-row annotation timestamps —
     # cast-safe '' (same rule as identity.source_revision, §43 groundwork).
     if doc_class == "insurance_claim":
-        method = "synthetic"  # CMS DE-SynPUF: synthetic by design (§4A/§39)
+        # class/subclass GT for CMS DE-SynPUF + the v8 synthetic expansion
+        # (GNOTHEIA / BDR) derives from the synthetic source corpus itself
+        # (§4A/§39), so the primary label regime stays ``synthetic``; the
+        # intent annotation regime is carried on intent_source separately.
+        method = "synthetic"
     return {
         "source": source,
         "method": method,

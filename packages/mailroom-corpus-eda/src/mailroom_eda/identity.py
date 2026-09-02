@@ -65,8 +65,22 @@ def normalized_text_sha256(text: str) -> str:
 
 
 def source_corpus(row: dict[str, Any]) -> str:
-    """Originating corpus for a row, from its canonical class (§8, §10)."""
-    return SOURCE_CORPUS_BY_CLASS.get(str(row.get("expected") or ""), "unknown")
+    """Originating corpus for a row (§8, §10).
+
+    The class map stays authoritative for the five fused sources (published
+    document_ids are derived from it — never churn them). The v8 LOB
+    expansion (HUB-028) added insurance rows from GNOTHEIA / BDR, which do
+    not collapse into the class-level CMS mapping; those rows carry their
+    exact HF dataset id in ``metadata.source_dataset`` and override the map
+    (the CMS rows keep ``cms_desynpuf`` so their published IDs are stable).
+    """
+    md = row.get("metadata") or {}
+    doc_class = str(row.get("expected") or "")
+    if doc_class == "insurance_claim":
+        source_dataset = md.get("source_dataset")
+        if source_dataset and "cms-de-synpuf" not in str(source_dataset):
+            return str(source_dataset)
+    return SOURCE_CORPUS_BY_CLASS.get(doc_class, "unknown")
 
 
 def source_document_id(row: dict[str, Any]) -> str:
@@ -102,9 +116,17 @@ def enrich_row(row: dict[str, Any]) -> dict[str, Any]:
     out["source_corpus"] = source_corpus(row)
     out["source_document_id"] = source_document_id(row)
     out["source_filename"] = str(row.get("filename") or "")
-    # Per-row source revision is not tracked by the v7 builder; cast-safe ""
-    # until a future builder revision records it (§10 groundwork).
+    # Per-row source revision: the v7 builder did not track it (cast-safe ''
+    # per §10 groundwork). The v8 LOB rows carry the pinned upstream dataset
+    # revision in metadata.source_revision — preserve it where the source
+    # override applies (same gate as source_corpus, so published v7 rows
+    # keep the '' convention and their stable identities).
     out["source_revision"] = str(row.get("source_revision") or "")
+    if not out["source_revision"]:
+        md = row.get("metadata") or {}
+        if (str(row.get("expected") or "") == "insurance_claim"
+                and "cms-de-synpuf" not in str(md.get("source_dataset") or "")):
+            out["source_revision"] = str(md.get("source_revision") or "")
     out["content_sha256"] = content_sha256(str(row.get("doc_text") or ""))
     out["normalized_text_sha256"] = normalized_text_sha256(str(row.get("doc_text") or ""))
     return out

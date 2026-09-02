@@ -307,9 +307,13 @@ forced releases). Blind `default` config is UNCHANGED (4 columns, no labels).
   §73 vocabulary reserved for fixtures), `retry_expected`/
   `expected_post_retry_state`, `annotation_source`/`annotation_method`
   (`verified_join` 162 / `llm_zero_shot` 92 / `human_annotated` 96 /
-  `synthetic` 600 (DE-SynPUF) / `source_native` 700) /`annotation_model`/
+  `synthetic` 950 (DE-SynPUF 600 + GNOTHEIA 200 + BDR 150) /
+  `source_native` 700) /`annotation_model`/
   `annotation_prompt_version`/`annotation_confidence`/`annotation_reviewer`/
-  `annotation_timestamp`.
+  `annotation_timestamp`. Built on the v8 base (2,000 rows, HUB-028): the
+  v8 LOB rows carry their own dataset as `source_corpus` /
+  `annotation_source` (GNOTHEIA / BDR) and their pinned upstream
+  `source_revision`; published v7 `document_id`s are unchanged (0 drift).
 
 **v0.3-matter-aware** — §14A methodology (verified 2026-09-02 against the
 raw CMU maildir: In-Reply-To/References are structurally ABSENT — 0/350 raw
@@ -319,8 +323,10 @@ exist in this corpus family):
   `group_role`, `relationships` (list), `related_document_ids` (list),
   `thread_position`, `thread_size`, `thread_evidence`. Populated ONLY via
   `heuristic_reconstructed` (normalized subject + custodian + 30-day window,
-  degenerate subjects excluded): **19 rows in 7 threads; 331 rows
-  unassigned** — honest baseline, counted separately, never merged into a
+  degenerate subjects excluded): **19 rows in 7 threads; 1,981 rows
+  unassigned** (all threads are correspondence; the v8 insurance LOB rows
+  carry no header-thread evidence) — honest baseline, counted separately,
+  never merged into a
   "matters" total. `source_native_thread` stays implemented (guarded) for
   future feeds that carry real reply headers.
 * NEW `bundles` config (§14 synthetic families, flagged
