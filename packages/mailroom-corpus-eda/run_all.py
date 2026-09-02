@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Run the complete Mailroom docclass EDA pipeline (P0-P5).
+"""Run the complete Mailroom docclass EDA pipeline (P0-P6).
 
 Usage:
     python run_all.py                 # everything
-    python run_all.py --phases P1 P2  # subset (SUMMARY_REPORT.json untouched)
+    python run_all.py --phases P1 P2  # subset
     python run_all.py --no-interactive
 """
 from __future__ import annotations
@@ -140,12 +140,15 @@ PHASES = {
     "P6": p6_intent_coverage,
 }
 
+# Canonical full-pipeline phase set — the summary-write gate compares against
+# this fixed snapshot, never against a (potentially patched) PHASES mapping.
+FULL_PIPELINE = tuple(sorted(PHASES))
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--phases", default="P0,P1,P2,P3,P4,P5,P6",
-                        help="comma-separated phases to run (default: all; "
-                             "a subset leaves SUMMARY_REPORT.json untouched)")
+                        help="comma-separated phases to run (default: all)")
     parser.add_argument("--no-interactive", action="store_true",
                         help="skip P4 interactive HTML figures")
     args = parser.parse_args()
@@ -168,43 +171,49 @@ def main() -> int:
             print(f"ERROR phase {phase}: {exc}")
             results[phase] = {"error": str(exc)}
 
-    # Summary — written ONLY for a full-pipeline run (all six phases).
-    # A subset run's results would clobber the full-corpus summary with
-    # phase-partial stats (HUB-009); per-phase output stays on stdout.
-    full_run = set(wanted) == set(PHASES)
+    # Summary
+    summary_path = ROOT / "reports" / "SUMMARY_REPORT.json"
 
+    def _rel(p):
+        if isinstance(p, Path):
+            try:
+                return str(p.relative_to(ROOT))
+            except ValueError:
+                return str(p)
+        return p
+
+    results = json.loads(json.dumps(results, default=str))
+
+    def _walk(d):
+        if isinstance(d, dict):
+            return {k: _walk(v) for k, v in d.items()}
+        if isinstance(d, list):
+            return [_walk(v) for v in d]
+        if isinstance(d, str) and d.startswith(str(ROOT)):
+            return _rel(Path(d))
+        return d
+
+    results = _walk(results)
+
+    # Summary — HUB-009: SUMMARY_REPORT.json is written ONLY by a complete,
+    # error-free full-pipeline run (all seven phases). Subset runs — and
+    # --no-interactive, whose summary would be missing the P4 section — leave
+    # the existing full-corpus summary untouched; per-phase results print to
+    # stdout only.
+    failed = [p for p, r in results.items() if "error" in r]
+    full_run = tuple(sorted(results)) == FULL_PIPELINE and not failed
     if full_run:
-        summary_path = ROOT / "reports" / "SUMMARY_REPORT.json"
-
-        def _rel(p):
-            if isinstance(p, Path):
-                try:
-                    return str(p.relative_to(ROOT))
-                except ValueError:
-                    return str(p)
-            return p
-
-        results = json.loads(json.dumps(results, default=str))
-
-        def _walk(d):
-            if isinstance(d, dict):
-                return {k: _walk(v) for k, v in d.items()}
-            if isinstance(d, list):
-                return [_walk(v) for v in d]
-            if isinstance(d, str) and d.startswith(str(ROOT)):
-                return _rel(Path(d))
-            return d
-
-        results = _walk(results)
         summary_path.parent.mkdir(parents=True, exist_ok=True)
         with open(summary_path, "w") as fh:
             json.dump(results, fh, indent=2, default=str)
         print(f"\nSummary written -> {summary_path}")
+    elif failed:
+        print(f"\nSummary NOT written — phase errors: {failed} "
+              f"(existing summary left untouched)")
     else:
-        print("\nSubset run: SUMMARY_REPORT.json left untouched (would "
-              "clobber full-corpus stats; run all phases to regenerate).")
+        print(f"\nSummary NOT written — subset run ({', '.join(sorted(results))}); "
+              f"only full-pipeline runs (P0-P6) write the summary")
 
-    failed = [p for p, r in results.items() if "error" in r]
     if failed:
         print(f"FAILED phases: {failed}")
         return 1
