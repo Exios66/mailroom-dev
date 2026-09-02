@@ -229,6 +229,10 @@ def cmd_status(args: argparse.Namespace) -> int:
         if head and synced_sha:
             count = git(["rev-list", "--count", f"{synced_sha}..{head}"])
             drift = int(count.stdout.strip()) if count.returncode == 0 else None
+        gap = cursor_gap_report(package, synced_sha)
+        ahead = None
+        if head and rev_exists(head):
+            ahead = len(local_ahead_paths(head, package))
         rows.append(
             {
                 "package": package,
@@ -240,6 +244,9 @@ def cmd_status(args: argparse.Namespace) -> int:
                 "synced_at": entry.get("synced_at"),
                 "new_upstream_commits": drift,
                 "up_to_date": drift == 0,
+                "cursor_gap": gap["n_gap_paths"] if gap and not gap["contained"] else 0,
+                "cursor_gap_sample": (gap or {}).get("sample") if gap and not gap["contained"] else [],
+                "local_ahead_files": ahead,
             }
         )
     if args.json:
@@ -248,9 +255,15 @@ def cmd_status(args: argparse.Namespace) -> int:
     for row in rows:
         drift = row["new_upstream_commits"]
         state = "in sync" if drift == 0 else f"{drift} new upstream commit(s)" if drift is not None else "unknown drift"
+        flags = []
+        if row["cursor_gap"]:
+            flags.append(f"CURSOR GAP ({row['cursor_gap']} path(s): {', '.join(row['cursor_gap_sample'])})")
+        if row["local_ahead_files"]:
+            flags.append(f"{row['local_ahead_files']} file(s) monorepo-ahead")
+        suffix = f"  [{'; '.join(flags)}]" if flags else ""
         print(
             f"{row['package']:<32} {state:<28} upstream={row['upstream_head'][:12]} "
-            f"synced={str(row['synced_sha'])[:12] or '-'} @ {row['synced_at'] or '-'}"
+            f"synced={str(row['synced_sha'])[:12] or '-'} @ {row['synced_at'] or '-'}{suffix}"
         )
     return 0
 
@@ -263,6 +276,20 @@ def cmd_pull(args: argparse.Namespace) -> int:
     failed = False
     for package in selected_packages(args):
         url = url_for(package)
+        head = upstream_head(url, DEFAULT_BRANCH)
+        if head and rev_exists(head) and not missing_upstream_paths(head, package):
+            print(
+                f"== {package}: upstream tip {head[:12]} is already contained in "
+                "packages/"
+                f"{package} (nothing to import) — re-baseline with 'snapshot' instead"
+            )
+            entries[package] = {
+                "url": url,
+                "branch": DEFAULT_BRANCH,
+                "synced_sha": head,
+                "synced_at": utc_now(),
+            }
+            continue
         print(f"== git subtree pull --prefix packages/{package} {url} {DEFAULT_BRANCH}"
               + (" --squash" if args.squash else ""))
         cmd = ["subtree", "pull", f"--prefix=packages/{package}", url, DEFAULT_BRANCH]
@@ -274,11 +301,10 @@ def cmd_pull(args: argparse.Namespace) -> int:
             failed = True
             continue
         # Record the exact upstream tip that was merged in.
-        head = upstream_head(url, DEFAULT_BRANCH)
         entries[package] = {
             "url": url,
             "branch": DEFAULT_BRANCH,
-            "synced_sha": head,
+            "synced_sha": upstream_head(url, DEFAULT_BRANCH),
             "synced_at": utc_now(),
         }
     save_manifest(manifest)
