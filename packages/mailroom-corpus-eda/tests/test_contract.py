@@ -36,6 +36,11 @@ def _check_row_contract(rows: list[dict]) -> None:
     enriched = enrich_rows(rows)
     ids = [r["document_id"] for r in enriched]
     assert len(ids) == len(set(ids)), "document_id must be unique (§9, §63)"
+    # content hashes must be real, not a hollow constant (the ground_truth
+    # config carries no doc_text — it must be joined in from default first)
+    assert len({r["content_sha256"] for r in enriched}) > 1, (
+        "content_sha256 constant across rows — doc_text missing?"
+    )
 
     subclass_to_type: dict[str, str] = {}
     for row in enriched:
@@ -118,5 +123,7 @@ def test_mailroom_contract_snapshot(snapshot_rows):
 def test_snapshot_gt_schema_is_27_key(snapshot_rows):
     """The published ground_truth config stays inside the 27-key GT schema
     (plus the four identity columns filename/expected/expected_subclass/split)."""
-    cols = set(snapshot_rows[0].keys())
+    # doc_text is joined in from the default config by the test harness;
+    # it is not a ground_truth config column.
+    cols = set(snapshot_rows[0].keys()) - {"doc_text"}
     assert cols == GT_KEY_SET | {"filename", "expected", "expected_subclass", "split"}

@@ -67,7 +67,9 @@ def load_fixture_rows() -> list[dict]:
 
 
 def load_snapshot_rows() -> list[dict]:
-    """Ground-truth config rows from the local HF snapshot (both splits)."""
+    """Ground-truth config rows from the local HF snapshot (both splits),
+    with doc_text joined in from the default config by filename (the GT
+    config carries no text — blind/label split)."""
     import pandas as pd
 
     frames = []
@@ -77,6 +79,16 @@ def load_snapshot_rows() -> list[dict]:
     if not frames:
         return []
     df = pd.concat(frames, ignore_index=True)
+    blind_dir = SNAPSHOT_GT.parent / "default"
+    blind = []
+    for split in ("train", "test"):
+        for f in sorted((blind_dir / split).glob("*.parquet")):
+            blind.append(pd.read_parquet(f, columns=["filename", "doc_text"]))
+    text_by_filename = dict(
+        zip(pd.concat(blind, ignore_index=True)["filename"],
+            pd.concat(blind, ignore_index=True)["doc_text"])
+    )
+    df["doc_text"] = df["filename"].map(text_by_filename)
     return df.to_dict("records")
 
 
