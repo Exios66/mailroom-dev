@@ -52,7 +52,7 @@ jobs:
   board-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 500  # commit cross-checks scan recent history
       - uses: actions/setup-python@v5
@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true  # needs the `project` token scope; advisory until enforced
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
