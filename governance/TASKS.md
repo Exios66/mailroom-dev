@@ -65,7 +65,6 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
 | HUB-005 | `assigned` | **Release-train readiness** — at the next package release: bump the consuming pins (release-time only; `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py` for the dojo pin), propagate monorepo work upstream with `python scripts/sync_packages.py push --package <name>`, tag in the standalone repo. One card per release sweep; scope it when claimed. | unclaimed | — | workspace rules in `AGENTS.md` (pins keep their published git lines). HUB-021 note: the driver now quantifies the per-package monorepo-ahead payload (its `status` output IS this card's work list) and `push --patch` makes the publish leg reliable. |
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
 | HUB-020 | `assigned` | **docclass eval judge prompts still grade against the retired 8-class "EXTENDED primary set"** — discovered during HUB-019 component 6: `packages/llm-entity-extraction/src/prompts_docclass.py` (judge/reviewer/arbiter/boss docclass prompts) and the byte-mirror `packages/The-Mailroom/mailroom_ui/docclass_prompts.py` instruct judges to grade against the extended 8-class list (incl. retired compliance_filing/court_opinion/due_diligence) while the docclass GT is the canonical five (plan §5/§66/§93; docs/v7-taxonomy.md §5 avoid-list). Land in THIS monorepo (human directive: all work in mailroom-dev): add NEW prompt version keys (never mutate versions that have run) with five-class + `unknown` grading language per plan §67, mirror byte-identical into The-Mailroom, leave default selection unchanged until a same-surface A/B validates v1; option-list ↔ schema-enum test parity maintained. Decision open for the human: whether the docclass arm keeps the extended surface as deliberate eval design (KANBAN-033 lineage) or moves to five-class grading. | unclaimed | — | HUB-019 Evidence 2026-09-02 |
-| HUB-021 | `in_progress` | **Sync driver: reliable upstream propagation** — human directive ("fix the upstream propagation issue"). The subtree cursor mechanics caused every recent reconciliation incident: HUB-018 snapshot-advanced a cursor past content never subtree-merged (next squash pull re-imported the range); HUB-012 subtree push went non-fast-forward (snapshot-based cursor ancestry) and needed a manual patch-push; HUB-009's summary guard went upstream out-of-band. Fix `scripts/sync_packages.py`: content-containment checks (blob-tree compare of `packages/<name>` vs upstream tip) before `snapshot` advances a cursor (refuse with guidance unless `--force`) and before `pull --squash` re-imports content-equal tips; `push --patch` fallback (scripted HUB-012 workaround: upstream tip + tracked-file diff → single commit → fast-forward push → cursor re-baseline, `--dry-run` default-off safety); `status` surfaces cursor/content gaps and monorepo-ahead drift. Pushes stay explicit (release-time only per workspace rules). | GLM-5.3-Flash (opencode) 2026-09-02 | — | HUB-018 process note; HUB-012 patch-push precedent. LANDED: containment oracle = blob-tree compare (`tree_map`) with gitignore-aware missing-path exemption (pruned heavy assets are doctrine, not drift — HUB-004/018) and modified-path separation (monorepo-ahead ≠ gap). Verified: throwaway fixture sims of both incidents (HUB-018 gap → refusal; honest cursor → clean; HUB-012 → dry-run plan then ONE fast-forward commit `6026b9a` directly on the old tip carrying the monorepo fix, post-push cursor verifies clean); live: `status` 10/10 in sync, 0 cursor gaps, monorepo-ahead counts quantified (corpus-eda 56, llm-mailroom 23, sandbox 20, entity 17, The-Mailroom 6, agent-mailroom 4, Enron 2, claims 1, graph 1, dojo 0 = the HUB-005 release-train payload); content-verified `snapshot` green for all 10; clean-tree guard re-verified. Docs currency: README sync section + wiki Sub-Package-Sync. |
 
 ## Rules that keep the board honest
 
@@ -97,6 +96,33 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-021** (done 2026-09-02) — **Sync driver: reliable upstream
+  propagation** — human directive ("fix the upstream propagation issue").
+  The subtree cursor mechanics behind every recent reconciliation incident
+  are now structurally guarded in `scripts/sync_packages.py`:
+  (a) containment oracle — blob-tree compare (`tree_map`) of
+  `packages/<name>` vs the upstream tip, gitignore-aware (pruned heavy
+  assets are doctrine, not drift — HUB-004/018) with modified paths
+  reported separately as monorepo-ahead delta; (b) `snapshot` refuses to
+  advance a cursor past non-contained upstream content unless `--force`
+  accepts the gap explicitly (HUB-018 structurally impossible by default);
+  (c) `pull` skips the subtree merge and re-baselines when the tip is
+  already contained (re-import loop killer); (d) `push --patch` — the
+  scripted HUB-012 workaround: tracked package files rebuilt on the real
+  upstream tip, ONE fast-forward commit landed upstream, cursor
+  re-baselined (`--dry-run` prints the plan; plain-push failure now points
+  at `--patch`); (e) `status` surfaces `CURSOR GAP` flags + per-package
+  monorepo-ahead file counts (the HUB-005 release-train payload:
+  corpus-eda 56, llm-mailroom 23, sandbox 20, entity 17, The-Mailroom 6,
+  agent-mailroom 4, Enron 2, claims 1, graph 1, dojo 0). Pushes remain
+  explicit (release-time only per workspace rules). Verified: throwaway
+  fixture sims of both incidents (HUB-018 gap → refusal; honest cursor →
+  clean; HUB-012 → dry-run plan then one fast-forward commit directly on
+  the old tip carrying the monorepo fix, post-push cursor verifies clean);
+  live `status` 10/10 in sync with 0 cursor gaps; content-verified
+  `snapshot` green for all 10; clean-tree guard re-verified. Docs currency:
+  README sync section + wiki Sub-Package-Sync. Hub tooling only — no
+  package suite impact. Evidence: `80ee2308`.
 - **HUB-019** (done 2026-09-02) — **docclass-merged corpus hardening P0 —
   baseline freeze, dataset contract, identity/provenance schema, taxonomy
   parity gate** — human directive: implement the docclass-merged plan §85
