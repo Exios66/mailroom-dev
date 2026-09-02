@@ -117,7 +117,9 @@ Finished cards, append-only, newest last.
   all appropriate boards are closed": the datasets-server re-poll noted in
   evidence is Hub-side cache infrastructure (auto-polling), not card scope
   — the authoritative check is the byte-level download verification, which
-  passed twice, by two agents independently.
+  passed twice, by two agents independently. Board-close edit note: these
+  archives + the HUB-036 spawn rode commit `edc1b033` (another agent's
+  sweep — the documented HUB-024/027/029 pattern; content verified).
 - **HUB-028** (done 2026-09-02) — **mailroom-corpus v8 — synthetic
   insurance-claim LOB expansion + full GT conformance** — full evidence in
   the pre-archive card record (git history). Summary: 2,000 rows published
