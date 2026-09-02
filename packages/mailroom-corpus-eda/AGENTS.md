@@ -85,15 +85,29 @@ runs used to clobber the full-corpus summary with phase-partial stats.)
 - **Determinism**: `RANDOM_STATE = 42`; rebuilds of JSONL/parquet must be
   byte-identical (sorted rows, deterministic order).
 
-## HF facts (verified 2026-08-31)
+## HF facts (verified 2026-09-02, schema v8)
 
-- Repo: `Lucius-Morningstar/mailroom-corpus` (v7, 1,650 rows, rev `fc1f211c`;
-  data tip `1acd2600` + card-only pretty_name bump).
-- Composition: insurance_claim 600, contract 509, correspondence 350,
-  merger_agreement 152, corporate_record 39.
+- Repo: `Lucius-Morningstar/mailroom-corpus` (v8, 2,000 rows; data tip
+  `bba2f750`).
+- Composition: insurance_claim 950 (carrier/inpatient/outpatient/pde 600 CMS
+  DE-SynPUF + property 200 GNOTHEIA + auto 150 BDR motor),
+  contract 509, correspondence 350, merger_agreement 152,
+  corporate_record 39.
 - Configs: `default` (blind, 4 cols) + `ground_truth` (31 cols incl. labels +
   intent provenance `intent_source`/`intent_confidence`/`intent_status`).
-- Split: train 1,474 / test 176 on both configs; filename sets equal.
+- Split: train 1,792 / test 208 on both configs; filename sets equal.
+- v8 insurance LOB expansion (HUB-028): property rows from
+  `gratex/GNOTHEIA-synthetic-insurance-dataset` (Apache-2.0) — FNOL bundles
+  stratified by loss event, determination `pending` (no adjudication in
+  source); auto rows from
+  `bdr-ai-org/insurance-motor-claims-decision-v1` (MIT) — decision letters
+  stratified by accident type × APPROVE/REVIEW/REJECT (all reject rows
+  included), feature-grounded denial reasons, adjuster pseudonyms. Full GT
+  conformance: all 950 insurance rows carry intent/subject/keywords +
+  provenance (CMS template-derived backfill); claimed_amount recovered from
+  doc text on 10 v7 gap rows; 3 train-only outpatient `:2` date gaps
+  documented as source-N/A; test-split nullification enforced (zero empty
+  class-relevant keys).
 - v7 intent hydration (issue #5): 350/350 correspondence rows carry a
   canonical 8-class intent (payment_demand, notice, analysis, request, update,
   meeting_invite, press_communication, other); 96 manual + 254 llm_zero_shot
@@ -101,5 +115,10 @@ runs used to clobber the full-corpus summary with phase-partial stats.)
   1 flagged_review. All 8 classes present in the test split.
 - Related: `enron-correspondence-dedup`, `mailroom-cuad-contracts-full`,
   `mailroom-s1-corporate-records`, `mailroom-maud-contracts`.
+
+License note: the corpus card is CC-BY-4.0; v8 additions are Apache-2.0
+(GNOTHEIA) + MIT (BDR). XpertSystems ins001/ins007/hlt015 samples are
+CC-BY-NC-4.0 and were excluded; INSURBIAS (CC-BY-4.0) is deferred to v9
+(narratives only, no decision GT).
 
 See the `huggingface` opencode skill for the full Hub-interfacing workflow.

@@ -5,18 +5,38 @@ The corpus family is published on the
 the **centralized** helpers in
 `packages/mailroom-corpus-eda/src/mailroom_eda/` — never ad-hoc upload code.
 
-## mailroom-corpus (verified 2026-08-31, HUB-013/012; renamed from `docclass-merged` 2026-09-02)
+## mailroom-corpus (v8 — verified 2026-09-02, HUB-028; renamed from `docclass-merged` 2026-09-02)
 
 | Fact | Value |
 | --- | --- |
 | Dataset | [Lucius-Morningstar/mailroom-corpus](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus) |
-| Schema | **v7** (issue #5 intent hydration) |
-| Rows | **1,650** — insurance_claim 600 · contract 509 · correspondence 350 · merger_agreement 152 · corporate_record 39 |
-| Configs | `default` (blind, 4 cols) + `ground_truth` (27-key GT schema incl. intent provenance) |
-| Split | train 1,474 / test 176, both configs; md5(filename) % 10 == 0 → test (stable) |
-| Strata | 48 (expected × expected_subclass) |
-| HF revs | data tip `1acd2600` · card rev `fc1f211c` (pretty_name v6→v7) |
-| v7 intent hydration | 350/350 correspondence rows carry a canonical 8-class intent (96 manual + 254 llm_zero_shot + 162 AESLC/Enron joins, 1 flagged_review); 100% coverage, all 8 classes in test |
+| Schema | **v8** (insurance LOB expansion, HUB-028) |
+| Rows | **2,000** — insurance_claim 950 (carrier/inpatient/outpatient/pde 600 · property 200 · auto 150) · contract 509 · correspondence 350 · merger_agreement 152 · corporate_record 39 |
+| Configs | `default` (blind, 4 cols) + `ground_truth` (31-key GT schema incl. intent provenance) |
+| Split | train 1,792 / test 208, both configs; md5(filename) % 10 == 0 → test (stable) |
+| Strata | 50 (expected × expected_subclass) |
+| HF revs | data tip `bba2f750` (v8) |
+
+### v8 insurance LOB expansion (HUB-028, 2026-09-02)
+
+- **property (200)**: `gratex/GNOTHEIA-synthetic-insurance-dataset` (Apache-2.0)
+  — FNOL bundles (notice + invoices + police confirmations + photo evidence)
+  stratified by loss event (fire/water/storm/burglary/…); determination
+  `pending` (honest — no adjudication in the source).
+- **auto (150)**: `bdr-ai-org/insurance-motor-claims-decision-v1` (MIT) —
+  decision letters stratified by accident type × APPROVE/REVIEW/REJECT (all
+  reject rows included); feature-grounded denial reasons; adjuster pseudonyms;
+  determination approved/pending/denied.
+- **Full GT conformance**: all 950 insurance rows carry intent/subject/
+  keywords + intent provenance (CMS backfilled template-derived; property/auto
+  authored at build); claimed_amount recovered from doc text on 10 v7 gap
+  rows; 3 train-only outpatient `:2` date gaps documented as source-N/A;
+  test-split nullification enforced (zero empty class-relevant keys).
+- **Metadata**: source_dataset / source_revision / source_row_id / lob /
+  peril / license ride every row (cast-safe union).
+- **License note**: corpus CC-BY-4.0; v8 additions Apache-2.0 + MIT.
+  XpertSystems ins001/007/hlt015 (CC-BY-NC-4.0) excluded; INSURBIAS
+  (CC-BY-4.0) deferred to v9.
 
 ## The ground-truth schema (27 keys)
 
