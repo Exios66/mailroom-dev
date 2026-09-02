@@ -126,6 +126,12 @@ python scripts/sync_packages.py snapshot
 The board and GitHub surface are kept machine-readable and mutually
 consistent. See `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE/`,
 `.github/labels.json`, `scripts/board_state.py`, and `governance/TASKS.md`.
+The `board-governance` CI gate also runs `scripts/taxonomy_parity.py`
+(HUB-019 §65A): it fails when the document-class taxonomy surfaces
+(`HUB_CLASSES`, `taxonomy.yaml` live entries, the sorter vocabularies, the
+specialist registry, `docs/v7-taxonomy.md`, the dojo HF-corpus universe, the
+entity pilot universe, the sandbox fixture) ever disagree about the canonical
+five-class set — retired classes are tolerated only as marked remnants.
 
 ## Wiki
 
