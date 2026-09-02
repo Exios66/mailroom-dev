@@ -21,6 +21,30 @@ and is recorded there, not here.
 
 ## [Unreleased]
 
+### Added
+
+- **mailroom-corpus v8 — insurance LOB expansion + full GT conformance**
+  (HUB-028, 2026-09-02): the corpus grows 1,650 → **2,000 rows** (strata
+  48 → 50) with (a) +200 `property` rows from
+  `gratex/GNOTHEIA-synthetic-insurance-dataset` (Apache-2.0 — FNOL bundles
+  stratified by loss event, determination `pending`), (b) +150 `auto` rows
+  from `bdr-ai-org/insurance-motor-claims-decision-v1` (MIT — decision
+  letters stratified by accident type × APPROVE/REVIEW/REJECT with all
+  reject rows, feature-grounded denial reasons, adjuster pseudonyms), and
+  (c) full GT conformance: intent/subject_matter/keywords + intent
+  provenance populated on ALL 950 insurance rows (600 CMS backfilled via
+  deterministic template derivation — was 246/600 subject/keywords, 600/600
+  intent; 200 property + 150 auto authored at build), claimed_amount
+  recovered from doc text on 10 v7 gap rows, metadata union
+  (source_dataset/source_revision/source_row_id/lob/peril/license) on every
+  entry, and **test-split nullification** (96 test insurance rows carry
+  zero empty class-relevant keys). Published via the centralized
+  corpus-eda helpers with sha256 local==hub verification; card v8 +
+  §84 hardening sections; datasets-server conversion green. XpertSystems
+  samples (ins001/007/hlt015) excluded for CC-BY-NC-4.0 license conflict;
+  INSURBIAS (CC-BY-4.0) deferred to v9. Builder: `v8_build.py` +
+  `scripts/build_v8.py` (7 new tests; corpus-eda suite 73 passed).
+
 ## [0.1.0] - 2026-09-02
 
 First hub release: the monorepo as development source of truth for the
