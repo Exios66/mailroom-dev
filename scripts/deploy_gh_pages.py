@@ -194,8 +194,9 @@ def _deploy_to_gh_pages(
 
             print(f"  Pushed to gh-pages ✓")
 
-    # 4. Enable GitHub Pages if not already on
-    _enable_pages(repo_slug)
+    # 4. Enable GitHub Pages (branch must exist first, so skip on dry-run)
+    if not dry_run:
+        _enable_pages(repo_slug)
 
 
 def _enable_pages(repo_slug: str) -> None:
