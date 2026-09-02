@@ -1,7 +1,8 @@
 name: board-governance
 
 # HUB-014: keeps the governance board honest on every change to it or to the
-# tooling that reads it. Blocking: board invariants + label-manifest drift.
+# tooling that reads it. Blocking: board invariants + label-manifest drift +
+# document-class taxonomy parity (HUB-019, plan §65A).
 # Non-blocking: the Projects v2 mirror drift (needs a token with the
 # `project` scope; the default GITHUB_TOKEN may not have it — configure via
 # repository settings if you want the mirror job enforced).
@@ -13,11 +14,31 @@ on:
       - "governance/**"
       - "scripts/**"
       - ".github/**"
+      - "docs/v7-taxonomy.md"
+      - "packages/llm-mailroom/src/pipeline/hf_corpora.py"
+      - "packages/llm-mailroom/src/config/taxonomy.yaml"
+      - "packages/llm-mailroom/src/langchain_agents/sorter_agent.py"
+      - "packages/llm-mailroom/src/graph/build_graph.py"
+      - "packages/llm-dojo-scoring/llm_dojo_scoring/corpus.py"
+      - "packages/llm-dojo-scoring/llm_dojo_scoring/config.py"
+      - "packages/llm-dojo-scoring/llm_dojo_scoring/mailroom.py"
+      - "packages/llm-entity-extraction/agents/sorter_agent.py"
+      - "packages/local-mailroom-sandbox/data/fixtures/hf/docclass_mini.jsonl"
   pull_request:
     paths:
       - "governance/**"
       - "scripts/**"
       - ".github/**"
+      - "docs/v7-taxonomy.md"
+      - "packages/llm-mailroom/src/pipeline/hf_corpora.py"
+      - "packages/llm-mailroom/src/config/taxonomy.yaml"
+      - "packages/llm-mailroom/src/langchain_agents/sorter_agent.py"
+      - "packages/llm-mailroom/src/graph/build_graph.py"
+      - "packages/llm-dojo-scoring/llm_dojo_scoring/corpus.py"
+      - "packages/llm-dojo-scoring/llm_dojo_scoring/config.py"
+      - "packages/llm-dojo-scoring/llm_dojo_scoring/mailroom.py"
+      - "packages/llm-entity-extraction/agents/sorter_agent.py"
+      - "packages/local-mailroom-sandbox/data/fixtures/hf/docclass_mini.jsonl"
 
 permissions:
   contents: read
@@ -39,6 +60,8 @@ jobs:
         run: python scripts/board_state.py check --log-limit 500
       - name: Label manifest drift
         run: python scripts/github_labels.py audit --repo ${{ github.repository }}
+      - name: Taxonomy parity (HUB-019 §65A)
+        run: python scripts/taxonomy_parity.py
 
   project-mirror:
     runs-on: ubuntu-latest

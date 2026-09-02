@@ -42,13 +42,16 @@ def _check_row_contract(rows: list[dict]) -> None:
         # document_type valid (§66: the canonical five; anything else is
         # retired or unknown, never "extended taxonomy")
         assert row["expected"] in FIVE_CLASSES, f"invalid class: {row['expected']}"
-        # subtype present and belongs to exactly one document_type (§7, §63)
+        # subtype present and belongs to exactly one document_type (§7, §63).
+        # Exception: "other" is the documented catch-all fallback (never null)
+        # and may appear under more than one type.
         subclass = str(row.get("expected_subclass") or "")
         assert subclass, f"{row['filename']}: empty expected_subclass"
-        owner = subclass_to_type.setdefault(subclass, row["expected"])
-        assert owner == row["expected"], (
-            f"subclass {subclass!r} spans two types: {owner} + {row['expected']}"
-        )
+        if subclass != "other":
+            owner = subclass_to_type.setdefault(subclass, row["expected"])
+            assert owner == row["expected"], (
+                f"subclass {subclass!r} spans two types: {owner} + {row['expected']}"
+            )
         # split valid + rule-consistent (family split: md5(filename) % 10)
         assert row["split"] in ("train", "test")
         assert row["split"] == assign_split(row["filename"])
