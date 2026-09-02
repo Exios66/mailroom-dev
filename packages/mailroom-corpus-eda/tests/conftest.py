@@ -124,12 +124,9 @@ def snapshot_rows() -> list[dict]:
     return load_snapshot_rows()
 
 
-@pytest.fixture(scope="session")
-def snapshot_metadata() -> dict[str, dict]:
+def snapshot_metadata_map() -> dict[str, dict]:
     """filename -> default-config metadata dict (custodian/date/message_id…),
     for grouping derivations that the GT config cannot carry itself."""
-    if not snapshot_available():
-        pytest.skip("local HF snapshot absent (data/parquet) — fetch via run_all.py P0")
     import pandas as pd
 
     frames = []
@@ -138,3 +135,10 @@ def snapshot_metadata() -> dict[str, dict]:
             frames.append(pd.read_parquet(f, columns=["filename", "metadata"]))
     df = pd.concat(frames, ignore_index=True)
     return dict(zip(df["filename"], df["metadata"]))
+
+
+@pytest.fixture(scope="session")
+def snapshot_metadata() -> dict[str, dict]:
+    if not snapshot_available():
+        pytest.skip("local HF snapshot absent (data/parquet) — fetch via run_all.py P0")
+    return snapshot_metadata_map()

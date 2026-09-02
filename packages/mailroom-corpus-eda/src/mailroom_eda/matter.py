@@ -25,11 +25,18 @@ caller supplies the default-config metadata map.
 """
 from __future__ import annotations
 
+import hashlib
 import re
 from collections import defaultdict
 from typing import Any
 
 from .eval_contract import GROUP_ROLES, RELATIONSHIP_TYPES  # noqa: F401
+
+
+def _stable_hash(text: str, digits: int) -> str:
+    """Process-independent key material (str.hash() is PYTHONHASHSEED-salted
+    — caught by the pre-publish determinism gate, 2026-09-02)."""
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:digits]
 
 #: metadata keys carrying Enron thread structure (verified v7 metadata union).
 THREAD_ROOT_KEY = "message_id"
@@ -218,14 +225,14 @@ def heuristic_subject_threads(
             continue
         if (latest - earliest) > timedelta(days=window_days):
             continue  # same subject reused later is a topic repeat, not a thread
-        matter_id = f"MATTER-SUBJ-{custodian}-{abs(hash(subject)) % 10**12:012d}"
+        matter_id = f"MATTER-SUBJ-{custodian}-{_stable_hash(subject, 12)}"
         for position, row in enumerate(members):
             out.append(
                 {
                     "filename": row["filename"],
                     "matter_id": matter_id,
                     "matter_construction": "heuristic_reconstructed",
-                    "group_id": f"GROUP-SUBJ-{abs(hash(subject)) % 10**10:010d}",
+                    "group_id": f"GROUP-SUBJ-{_stable_hash(subject, 10)}",
                     "group_role": "correspondence",
                     "relationships": (["responds_to"] if position > 0 else []),
                     "thread_position": position,

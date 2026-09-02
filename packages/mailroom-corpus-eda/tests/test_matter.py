@@ -1,6 +1,7 @@
 """§13–§16 P2 matter/grouping tests (HUB-022, plan §14A)."""
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -206,3 +207,37 @@ def test_live_snapshot_subject_threads_reconstructed_and_separate(
         r["thread_evidence"].startswith("subject+custodian") for r in assigned
     )
     assert all(r["group_role"] == "correspondence" for r in assigned)
+
+
+def test_subject_thread_ids_stable_across_processes(snapshot_rows, snapshot_metadata):
+    """Regression (pre-publish determinism gate, 2026-09-02): thread keys
+    must not derive from str.hash() (PYTHONHASHSEED-salted). The ids for the
+    same rows computed in a FRESH interpreter must equal this one's."""
+    import subprocess
+
+    corr = [r for r in snapshot_rows if r.get("expected") == "correspondence"]
+    rows = [{**r, "metadata": snapshot_metadata.get(r["filename"])} for r in corr]
+    here = sorted(
+        (r["matter_id"], r["group_id"]) for r in mt.enrich_rows(rows)
+        if r["matter_construction"]
+    )
+    assert here, "no subject threads in snapshot"
+    tests_dir = str(Path(__file__).resolve().parent)
+    code = (
+        "import sys, json\n"
+        f"sys.path.insert(0, {tests_dir!r})\n"
+        "from conftest import load_snapshot_rows, snapshot_metadata_map\n"
+        "from mailroom_eda import matter as m\n"
+        "rows = [r for r in load_snapshot_rows() if r.get('expected') == 'correspondence']\n"
+        "mds = snapshot_metadata_map()\n"
+        "rows = [{**r, 'metadata': mds.get(r['filename'])} for r in rows]\n"
+        "print(json.dumps(sorted((r['matter_id'], r['group_id']) "
+        "for r in m.enrich_rows(rows) if r['matter_construction'])))\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, timeout=600,
+        cwd=tests_dir,
+    )
+    assert result.returncode == 0, result.stderr[-2000:]
+    there = [tuple(pair) for pair in json.loads(result.stdout.strip().splitlines()[-1])]
+    assert here == there, "thread ids re-keyed across processes (salted hash?)"
