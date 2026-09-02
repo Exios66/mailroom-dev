@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""LANGFUSE/PHOENIX docclass specialist extraction — contracts + insurance arms.
+"""LANGFUSE/PHOENIX docclass specialist extraction — all four canonical arms.
+
+Canonical v7 families (HUB-035): contracts (+ merger_agreement), insurance
+claims, correspondence, corporate records. Merger_agreement has no dedicated
+specialist agent — the contracts arm owns that pair.
 
 Runs ``ContractsSpecialist`` or ``InsuranceClaimsSpecialist`` over the
 docclass-merged v5 local JSONL (``gt_fields`` from HF ground_truth config),
@@ -29,7 +33,12 @@ from statistics import mean
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from agents.specialist_agents import ContractsSpecialist, InsuranceClaimsSpecialist  # noqa: E402
+from agents.specialist_agents import (
+    ContractsSpecialist,
+    CorporateRecordsSpecialist,
+    CorrespondenceSpecialist,
+    InsuranceClaimsSpecialist,
+)  # noqa: E402
 from scripts.eval.run_extraction_eval import (  # noqa: E402
     load_expected_fields,
     print_extraction_summary,
@@ -59,12 +68,36 @@ DEFAULT_LOCAL_DUMP = "data/datasets/docclass_merged_v5.jsonl"
 CONTRACT_DOC_TYPES = frozenset({"contract", "merger_agreement"})
 INSURANCE_DOC_TYPE = "insurance_claim"
 
+CORRESPONDENCE_DOC_TYPE = "correspondence"
+CORPORATE_RECORD_DOC_TYPE = "corporate_record"
+
 INSURANCE_FIELD_KEYS = (
     "claim_number", "policy_number", "insurer", "insured_party",
     "claim_type", "date_of_loss", "date_filed", "claimed_amount",
     "adjuster", "damages_description", "coverage_determination",
     "denial_reasons", "supporting_documents",
 )
+
+CORRESPONDENCE_FIELD_KEYS = (
+    "sender", "recipient", "additional_recipients", "communication_type",
+    "communication_date", "key_points", "demand_amount", "action_items",
+    "urgency", "referenced_communications",
+)
+
+CORPORATE_RECORD_FIELD_KEYS = (
+    "entity_name", "record_type", "effective_date", "key_provisions",
+    "signatories", "jurisdiction", "filing_number",
+)
+
+# HUB-035: every canonical specialist family is runnable against the
+# mailroom-corpus dumps (merger_agreement has no specialist agent by design —
+# the contracts arm owns the contract + merger_agreement pair).
+SPECIALIST_DOC_TYPES = {
+    "contracts_specialist": frozenset({"contract", "merger_agreement"}),
+    "insurance_claims_specialist": frozenset({INSURANCE_DOC_TYPE}),
+    "correspondence_specialist": frozenset({CORRESPONDENCE_DOC_TYPE}),
+    "corporate_records_specialist": frozenset({CORPORATE_RECORD_DOC_TYPE}),
+}
 
 
 class EvalResultShim:
@@ -131,11 +164,23 @@ def enrich_insurance_rows(rows: list[dict]) -> list[dict]:
 
 def select_agent_rows(dataset: list[dict], agent: str) -> list[dict]:
     """Keep rows routed to the requested specialist."""
-    if agent == "contracts_specialist":
-        return [d for d in dataset if d["expected"] in CONTRACT_DOC_TYPES]
-    if agent == "insurance_claims_specialist":
-        return [d for d in dataset if d["expected"] == INSURANCE_DOC_TYPE]
-    raise ValueError(f"Unknown agent {agent!r}")
+    doc_types = SPECIALIST_DOC_TYPES.get(agent)
+    if doc_types is None:
+        raise ValueError(f"Unknown agent {agent!r}")
+    return [d for d in dataset if d["expected"] in doc_types]
+
+
+def enrich_generic_rows(rows: list[dict], field_keys: tuple[str, ...]) -> list[dict]:
+    """Attach ``expected_fields`` from flat scalar GT (mailroom-corpus dumps)."""
+    for row in rows:
+        gf = row.get("gt_fields") or {}
+        expected: dict = {}
+        for key in field_keys:
+            val = gf.get(key)
+            if val not in (None, "", []):
+                expected[key] = val
+        row["expected_fields"] = expected or (row.get("expected_fields") or {})
+    return rows
 
 
 def main() -> int:
@@ -145,7 +190,7 @@ def main() -> int:
 def main_with_args(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--agent", required=True,
-                        choices=["contracts_specialist", "insurance_claims_specialist"],
+                        choices=sorted(SPECIALIST_DOC_TYPES),
                         help="Which specialist to run")
     parser.add_argument("--local-dumps", default=DEFAULT_LOCAL_DUMP,
                         help=f"Local docclass-merged JSONL (default: {DEFAULT_LOCAL_DUMP})")
@@ -220,11 +265,16 @@ def main_with_args(argv: list[str]) -> int:
     if args.agent == "contracts_specialist":
         dataset = enrich_contract_rows(dataset)
         doc_class = "contract"
-        with_truth = [d for d in dataset if d.get("expected_fields")]
-    else:
+    elif args.agent == "insurance_claims_specialist":
         dataset = enrich_insurance_rows(dataset)
         doc_class = INSURANCE_DOC_TYPE
-        with_truth = [d for d in dataset if d.get("expected_fields")]
+    elif args.agent == "correspondence_specialist":
+        dataset = enrich_generic_rows(dataset, CORRESPONDENCE_FIELD_KEYS)
+        doc_class = CORRESPONDENCE_DOC_TYPE
+    else:
+        dataset = enrich_generic_rows(dataset, CORPORATE_RECORD_FIELD_KEYS)
+        doc_class = CORPORATE_RECORD_DOC_TYPE
+    with_truth = [d for d in dataset if d.get("expected_fields")]
 
     if not with_truth:
         parser.error(f"No rows carry ground truth for agent {args.agent!r}.")
@@ -295,8 +345,18 @@ def main_with_args(argv: list[str]) -> int:
                         model=args.model, api_key=openrouter_key,
                         prompt_version=args.prompt_version,
                         callbacks=[specialist_handle.handler] if specialist_handle.handler else None)
-                else:
+                elif args.agent == "insurance_claims_specialist":
                     specialist = InsuranceClaimsSpecialist(
+                        model=args.model, api_key=openrouter_key,
+                        prompt_version=args.prompt_version,
+                        callbacks=[specialist_handle.handler] if specialist_handle.handler else None)
+                elif args.agent == "correspondence_specialist":
+                    specialist = CorrespondenceSpecialist(
+                        model=args.model, api_key=openrouter_key,
+                        prompt_version=args.prompt_version,
+                        callbacks=[specialist_handle.handler] if specialist_handle.handler else None)
+                else:
+                    specialist = CorporateRecordsSpecialist(
                         model=args.model, api_key=openrouter_key,
                         prompt_version=args.prompt_version,
                         callbacks=[specialist_handle.handler] if specialist_handle.handler else None)

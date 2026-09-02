@@ -44,9 +44,9 @@ from mailroom_eda.release_sections import (  # noqa: E402
     IDENTITY_FIELDS,
     MATTER_LISTS,
     MATTER_SCALARS,
-    CARD_ANCHOR,
     CARD_HEADING,
     fetch_live_card,
+    replace_card_section,
 )
 
 V8_GT_REVISION = "bba2f750"  # HUB-028's v8 GT commit (historical, resolvable)
@@ -275,9 +275,10 @@ def main() -> int:
         for row in rows:
             fh.write(safe_jsonl_line(row) + "\n")
 
-    # card: refresh ONLY the §84 section with live numbers
-    card = fetch_live_card()
-    assert card is not None and card.count(CARD_HEADING) == 1, "§84 section missing/not unique"
+    # card: refresh ONLY the §84 section with live numbers (legacy title
+    # present at tip — replace_card_section handles the rename)
+    card = fetch_live_card(REPO_ID)
+    assert card is not None, "live card unavailable"
     methods = ", ".join(
         f"`{k}` {v}" for k, v in sorted(facts["annotation_methods"].items())
     )
@@ -288,8 +289,7 @@ def main() -> int:
         unassigned=facts["rows"] - facts["grouped_rows"],
         methods=methods,
     )
-    (stage_dir / "README.md").write_text(
-        upsert_section(card, CARD_HEADING, body, CARD_ANCHOR), encoding="utf-8")
+    (stage_dir / "README.md").write_text(replace_card_section(card, body), encoding="utf-8")
 
     # manifest: fresh GT shas + live tip shas for the unchanged configs
     from huggingface_hub import get_hf_file_metadata, hf_hub_url
@@ -305,7 +305,11 @@ def main() -> int:
                "parquet/fixtures/test/test-00000-of-00001.parquet",
                "bundles.jsonl", "fixtures.jsonl"):
         md = get_hf_file_metadata(hf_hub_url(REPO_ID, fn, repo_type="dataset"))
-        sha_lines.append((f"{fn} (tip, unchanged)", md.lfs.sha256 if md.lfs else md.blob_id))
+        # LFS objects carry the sha256 as the etag; non-LFS files expose the
+        # git blob id (labeled below so the verification table stays honest)
+        etag = (md.etag or "").strip('"')
+        kind = "sha256" if len(etag) == 64 else "git-blob"
+        sha_lines.append((f"{fn} (tip, unchanged, {kind})", etag))
     (stage_dir / "manifest_hardened.txt").write_text(
         "\n".join([
             "mailroom-corpus hardened-release manifest — v0.2/v0.3/v0.4 on the v8 base (HUB-032)",

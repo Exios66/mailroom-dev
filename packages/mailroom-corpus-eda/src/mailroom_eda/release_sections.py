@@ -25,9 +25,35 @@ MATTER_LISTS = ("relationships", "related_document_ids")
 
 #: The live card section owned by the §84 hardened release (HUB-022/HUB-032).
 #: `upsert_section` replaces it in place; the anchor heading below must exist
-#: exactly once on the live card.
+#: exactly once on the live card. The legacy heading is the pre-reconciliation
+#: §84 section title still present on the Hub (HUB-032 renames it).
 CARD_HEADING = "## Mailroom evaluation hardening (v0.2/v0.3/v0.4, 2026-09-02; reconciled onto the v8 base, HUB-032)"
+CARD_HEADING_LEGACY = "## Mailroom evaluation hardening (v0.2/v0.3/v0.4, 2026-09-02)"
 CARD_ANCHOR = "## Original files (KANBAN-105 addendum, 2026-08-30)"
+
+
+def replace_card_section(card: str, new_body: str) -> str:
+    """Replace the §84 section (legacy or reconciled title) with ``new_body``.
+
+    ``new_body`` must start with ``CARD_HEADING`` and end with a blank line
+    (the `upsert_section` body contract). Raises when the live card does not
+    carry exactly one of the two owned titles.
+    """
+    from .docclass_uploader import upsert_section
+
+    if card.count(CARD_HEADING) == 1:
+        return upsert_section(card, CARD_HEADING, new_body, CARD_ANCHOR)
+    legacy_n = card.count(CARD_HEADING_LEGACY)
+    assert legacy_n == 1, (
+        f"§84 section not found on live card "
+        f"(legacy x{legacy_n}, reconciled x{card.count(CARD_HEADING)})"
+    )
+    start = card.find(CARD_HEADING_LEGACY)
+    nxt = card.find("\n## ", start + 1)
+    end = len(card) if nxt < 0 else nxt + 1
+    card = card[:start] + card[end:]
+    assert card.count(CARD_ANCHOR) == 1, "card anchor not unique after section removal"
+    return card[:card.find(CARD_ANCHOR)] + new_body + card[card.find(CARD_ANCHOR):]
 
 
 def fetch_live_card(repo_id: str) -> str | None:
