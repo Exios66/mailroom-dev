@@ -307,8 +307,14 @@ def confidence_bands() -> dict[str, dict[str, float]]:
 
 #: §14A matter/group backfill methodology — the P2 prerequisite decision
 #: (documented in DOCCLASS_CONTRACT.md; never mixed silently).
+#: Verified 2026-09-02 (HF audit @ pin bb57c5ad): In-Reply-To/References are
+#: structurally ABSENT from the CMU maildir itself (0/350 raw files,
+#: 0/247,523 upstream dedup rows), so true header-thread reconstruction is
+#: impossible from published data; ``heuristic_reconstructed`` covers the
+#: subject+custodian+time-window derivation (subject populated 346/350).
 MATTER_CONSTRUCTION = (
-    "source_native_thread",     # Enron reply chains: real grouping structure
+    "source_native_thread",     # real reply-header chains (unavailable here)
+    "heuristic_reconstructed",  # subject-based reconstruction, flagged, separate count
     "synthetic_constructed",    # manufactured bundles, flagged, never silent
 )
 GROUP_ROLES = (

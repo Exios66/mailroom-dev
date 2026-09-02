@@ -168,19 +168,39 @@ never a silent default:
    Enron correspondence carries real thread/date/sender structure — a reply
    chain is a legitimate `group_role: correspondence` sequence with real
    matter structure. `matter_construction: source_native_thread`.
-2. **`synthetic_constructed`** (only where no natural sibling exists):
+   **Verified structurally unavailable in this corpus family** (HF audit
+   2026-09-02, pin `bb57c5ad`): the CMU maildir itself carries no
+   `In-Reply-To`/`References` headers — 0/350 raw correspondence files, and
+   0/247,523 upstream `enron-correspondence-dedup` rows. No backfill can
+   recover them; the implementation exists (`matter.source_native_threads`)
+   and yields 0 matters, guarded so it can never silently co-exist with
+   other constructions.
+2. **`heuristic_reconstructed`** (the only source-field grouping available):
+   normalized-subject + custodian + 30-day-window conversation
+   reconstruction (degenerate `Re:`/`FW:`-only subjects excluded). Uses real
+   fields but is NOT ground truth — every assignment is flagged, and live
+   coverage is measured: **266/350 meaningful subjects; 19 rows in 7
+   multi-member threads; 331 unassigned** (`test_matter.py` §84B checks).
+   Counted separately everywhere; never merged into a "matters" total.
+3. **`synthetic_constructed`** (only where no natural sibling exists):
    standalone contracts/records get manufactured bundles (e.g. contract +
    plausible amendment/exhibit) declared a matter FOR GROUPING-EVALUATION
    PURPOSES. `matter_construction: synthetic_constructed` — flagged, never
-   presented as discovered structure.
+   presented as discovered structure. Given finding 2, this is the primary
+   path to meaningful multi-document grouping evals for the non-correspondence
+   classes.
 
 The two constructions are never mixed silently: any coverage report that
-counts "matters" reports source-native and synthetically-constructed rows
-as separate columns (a merged count overstates how much real multi-document
-behavior is tested). Vocabulary (closed): `MATTER_CONSTRUCTION`,
-`GROUP_ROLES` (§16), `RELATIONSHIP_TYPES` (§15), `DUPLICATE_TYPES` (§12),
-`FAILURE_STAGES` (§58) — all machine-read constants in
-`mailroom_eda.eval_contract`. This decision unblocks P2
+counts "matters" reports source-native, heuristic-reconstructed, and
+synthetically-constructed rows as separate columns (a merged count
+overstates how much real multi-document behavior is tested — with header
+threads structurally absent and subject threads at 19/350, the honest
+current total of *real* grouping structure is near zero). Vocabulary
+(closed): `MATTER_CONSTRUCTION`, `GROUP_ROLES` (§16), `RELATIONSHIP_TYPES`
+(§15), `DUPLICATE_TYPES` (§12), `FAILURE_STAGES` (§58) — all machine-read
+constants in `mailroom_eda.eval_contract`; derivations in
+`mailroom_eda.matter` (header threads + subject reconstruction + the
+never-mix guard). This decision unblocks P2
 (group_role/relationships/multi-document cases).
 
 | Marker | Content |

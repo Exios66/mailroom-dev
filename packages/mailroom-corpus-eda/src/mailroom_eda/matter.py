@@ -2,14 +2,18 @@
 
 Implements the §14A-decided backfill methodology over the local corpus:
 
-- ``source_native_thread`` — Enron correspondence carries REAL thread
-  structure (``metadata.message_id`` / ``metadata.in_reply_to`` / custodian /
-  folder, verified on the v7 snapshot). Reply chains become genuine matters:
-  ``matter_id`` = the thread root's message id, ``group_id`` = the chain,
-  ``group_role: correspondence``, ``relationship: responds_to``. No
-  fabrication — a row without thread linkage stays UNASSIGNED (empty
-  grouping fields), because §13 forbids inventing structure and §14A forbids
-  mixing constructions silently.
+- ``source_native_thread`` — real reply-header chains (message_id →
+  in_reply_to edges, per custodian). VERIFIED ABSENT in this corpus family:
+  the CMU maildir itself carries no In-Reply-To/References headers (0/350
+  raw files; 0/247,523 upstream dedup rows — HF audit 2026-09-02), so this
+  construction yields ZERO matters today. Kept implemented because it is the
+  only construction that is ground truth, and future feeds may carry it.
+- ``heuristic_reconstructed`` — subject+custodian+time-window conversation
+  reconstruction (normalized subject, degenerate Re:/Fwd:-only subjects
+  excluded). Uses only real source fields but is NOT ground truth: every
+  assignment is labeled ``heuristic_reconstructed`` and coverage reports
+  count it separately from both other constructions (§14A never mixes
+  silently).
 - ``synthetic_constructed`` — scaffold only: the construction vocabulary and
   the bundle-derivation contract (§14 bundle families) are defined here;
   manufacturing actual bundle rows is a sanctioned-publish decision (§84),
@@ -33,6 +37,11 @@ THREAD_REPLY_KEY = "in_reply_to"
 THREAD_CUSTODIAN_KEY = "custodian"
 
 ANGLE_RE = re.compile(r"<([^>]+)>")
+
+#: Re:/Fwd:/Fw:/[...] prefixes stripped (repeatedly) when normalizing subjects.
+SUBJECT_PREFIX_RE = re.compile(r"^\s*(re|fw|fwd|aw)\s*:", re.I)
+BRACKET_PREFIX_RE = re.compile(r"^\s*\[[^\]]*\]")
+DEGENERATE_SUBJECT_RE = re.compile(r"^(re|fwd?|forwarded?|fw)\s*[:.]?\s*$", re.I)
 
 
 def _norm_message_id(value: Any) -> str:
@@ -123,13 +132,127 @@ def source_native_threads(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
-def enrich_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Attach source-native grouping to the thread members (by filename).
+def normalize_subject(subject: str) -> str:
+    """Strip Re:/Fwd: prefixes and brackets; collapse case/whitespace.
 
-    Canonical rows that are not part of a source-native thread stay
-    UNASSIGNED (empty fields) — §14A: no fabricated matters.
+    Returns '' for degenerate subjects (empty or prefix-only like 'Re:') —
+    those carry no grouping signal and are never thread keys.
+    """
+    text = str(subject or "").strip()
+    while True:
+        stripped = SUBJECT_PREFIX_RE.sub("", text, count=1)
+        stripped = BRACKET_PREFIX_RE.sub("", stripped, count=1)
+        if stripped == text:
+            break
+        text = stripped
+    text = re.sub(r"\s+", " ", text).strip().casefold()
+    return "" if DEGENERATE_SUBJECT_RE.match(text) else text
+
+
+def _row_date(row: dict[str, Any]) -> str:
+    md = row.get("_md") or row.get("metadata") or {}
+    return str(md.get("date") or "")
+
+
+def _row_custodian(row: dict[str, Any]) -> str:
+    md = row.get("_md") or row.get("metadata") or {}
+    return str(md.get("custodian") or "")
+
+
+def _row_subject(row: dict[str, Any]) -> str:
+    subject = str(row.get("subject") or "")
+    if not subject:
+        # correspondence doc_text begins with the RFC822-style header block
+        # (compose_doc_text "Subject: ...\n\n<body>"); reuse the canonical
+        # extractor from intent_backfill when available.
+        try:
+            from .intent_backfill import extract_subject
+
+            subject = extract_subject(str(row.get("doc_text") or ""))
+        except Exception:
+            m = re.search(r"^subject:\s*(.*)$", str(row.get("doc_text") or ""), re.I | re.M)
+            subject = m.group(1) if m else ""
+    return subject
+
+
+def heuristic_subject_threads(
+    rows: list[dict[str, Any]],
+    *,
+    window_days: int = 30,
+) -> list[dict[str, Any]]:
+    """Subject-based conversation reconstruction (§14A method 2).
+
+    Groups = (custodian, normalized subject) with ALL members inside a
+    ``window_days`` span of the earliest message; ≥2 members required.
+    Uses only real source fields (subject 346/350, custodian/date 350/350)
+    but is NOT ground truth — every matter is labeled
+    ``matter_construction: heuristic_reconstructed`` and coverage reports
+    count it separately. Empty/degenerate subjects never group.
+    """
+    from datetime import datetime, timedelta
+
+    def parse_date(text: str) -> datetime | None:
+        try:
+            return datetime.fromisoformat(str(text).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+
+    candidates: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        subject = normalize_subject(_row_subject(row))
+        custodian = _row_custodian(row)
+        if not subject or not custodian:
+            continue
+        if parse_date(_row_date(row)) is None:
+            continue
+        candidates[(custodian, subject)].append(row)
+
+    out: list[dict[str, Any]] = []
+    for (custodian, subject), members in candidates.items():
+        if len(members) < 2:
+            continue
+        members.sort(key=lambda r: _row_date(r))
+        earliest = parse_date(_row_date(members[0]))
+        latest = parse_date(_row_date(members[-1]))
+        if earliest is None or latest is None:
+            continue
+        if (latest - earliest) > timedelta(days=window_days):
+            continue  # same subject reused later is a topic repeat, not a thread
+        matter_id = f"MATTER-SUBJ-{custodian}-{abs(hash(subject)) % 10**12:012d}"
+        for position, row in enumerate(members):
+            out.append(
+                {
+                    "filename": row["filename"],
+                    "matter_id": matter_id,
+                    "matter_construction": "heuristic_reconstructed",
+                    "group_id": f"GROUP-SUBJ-{abs(hash(subject)) % 10**10:010d}",
+                    "group_role": "correspondence",
+                    "relationships": (["responds_to"] if position > 0 else []),
+                    "thread_position": position,
+                    "thread_size": len(members),
+                    "thread_evidence": f"subject+custodian+{window_days}d-window",
+                }
+            )
+    return out
+
+
+def enrich_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Attach grouping to correspondence rows (by filename), §14A method order:
+
+    1. ``source_native_thread`` — in_reply_to chains where they exist
+       (structurally absent in this corpus family: 0 matters, verified);
+    2. ``heuristic_reconstructed`` — subject threads for rows the header
+       pass did not group;
+    3. everything else stays UNASSIGNED (empty fields) — §14A: no
+       fabricated matters, constructions never silently mixed.
     """
     groups = source_native_threads(rows)
+    if groups:
+        raise AssertionError(
+            "source_native_thread groups found — in_reply_to verified absent "
+            "in this corpus family; investigate before mixing constructions"
+        )
+    groups = heuristic_subject_threads(rows)
     by_filename = {g["filename"]: g for g in groups}
     out = []
     for row in rows:
@@ -137,7 +260,7 @@ def enrich_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         g = by_filename.get(str(row.get("filename") or ""))
         for key in (
             "matter_id", "matter_construction", "group_id", "group_role",
-            "relationships", "thread_position", "thread_size",
+            "relationships", "thread_position", "thread_size", "thread_evidence",
         ):
             merged[key] = g[key] if g else ([] if key == "relationships" else "")
         out.append(merged)

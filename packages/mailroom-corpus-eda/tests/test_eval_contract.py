@@ -184,7 +184,9 @@ def test_fixture_kind_vocabulary():
     assert set(ec.CALIBRATION_QUARTET) == {
         "correct_high", "correct_low", "wrong_high", "wrong_low",
     }
-    assert set(ec.MATTER_CONSTRUCTION) == {"source_native_thread", "synthetic_constructed"}
+    assert set(ec.MATTER_CONSTRUCTION) == {
+        "source_native_thread", "heuristic_reconstructed", "synthetic_constructed",
+    }
     assert "duplicate_of" in ec.RELATIONSHIP_TYPES
     assert "exact_duplicate" in ec.DUPLICATE_TYPES
     assert "archival" in ec.FAILURE_STAGES and "grouping" in ec.FAILURE_STAGES
