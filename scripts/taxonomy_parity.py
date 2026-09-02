@@ -108,6 +108,11 @@ def module_assigns(source: str):
             if isinstance(left, list) and isinstance(right, list):
                 return left + right
             return None
+        if isinstance(node, ast.List):
+            items = [resolve(item) for item in node.elts]
+            return items if all(i is not None for i in items) else None
+        if isinstance(node, ast.Name):
+            return values.get(node.id)  # previously assigned literal (list concat)
         return literal(node)
 
     for node in tree.body:
