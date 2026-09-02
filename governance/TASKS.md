@@ -97,6 +97,56 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-019** (done 2026-09-02) — **docclass-merged corpus hardening P0 —
+  baseline freeze, dataset contract, identity/provenance schema, taxonomy
+  parity gate** — human directive: implement the docclass-merged plan §85
+  (P0) per §84A sequencing + §84B no-silent-completion. Co-work split (human
+  directive, two non-overlapping lanes) with an explicit takeover (human
+  directive, "other agent fell asleep"): lane 1 = components 1–4, lane 2 =
+  component 5, second agent closed the card for both lanes. (1) **Freeze**
+  `docclass-merged-v0.1-working` at the true tip `bb57c5ad` (baseline audit
+  Finding 1: the recorded `FULL_CORPUS_REVISION` `b3ec9ee7` predated the
+  issue-#5 intent_source fix — pin advanced), audit report + machine-
+  readable manifest at `docs/reports/audits/docclass_merged_baseline.{md,
+  json}` via `scripts/baseline_audit.py` (revision, counts, splits, schema,
+  source inventory, taxonomy/annotation/builder revisions, license/PII
+  posture, known limitations; identity verification 100% over 1,650 rows;
+  2 exact-duplicate groups recorded — classified, not deleted, §12).
+  (2) **`docs/DOCCLASS_CONTRACT.md`** — canonical dataset contract (§80)
+  with the §81 mapping table, §6 merger_agreement→contracts_specialist
+  semantics, §44 pin discipline, §44A publishing path, §91+§4A release
+  gates, §84 release structure; the plan itself text-extracted to
+  `docs/docclass-merged-plan.md` as the shared §-reference. (3)
+  **Identity/provenance/hashes** — `mailroom_eda/identity.py`
+  (`document_id` from source identity, never row index; `source_corpus`
+  /`source_document_id`/`source_filename`/`source_revision`;
+  `content_sha256`/`normalized_text_sha256`) as §84 groundwork, verified
+  100% over the pinned snapshot; published-config wiring is the explicit
+  v0.2 release decision (P0 no-pushes respected). (4) **§63/§64 contract
+  tests** — corpus-eda gains a suite: 15 passed (row contract + Mailroom
+  interface contract, fixture + full-snapshot runs; GT config is textless →
+  doc_text joined from the default config for content hashes; hollow-hash
+  guard; `other` subclass allowed as explicit fallback, never null).
+  (5) **§65A taxonomy-parity gate** — `scripts/taxonomy_parity.py` (stdlib,
+  network-free, AST-parsed from literal sources: strict equality on
+  HUB_CLASSES / taxonomy.yaml live entries / mailroom sorter vocab /
+  specialist registry / v7-taxonomy.md blocks / dojo CORPUS_DOC_TYPES /
+  entity PILOT universe / sandbox fixture; alias-aware structural rule for
+  documented compat surfaces, §60 retired roster tolerated only as
+  remnants; 5 negative tests incl. anchor-edit propagation) wired as a
+  blocking `board-governance.yml` step with taxonomy-surface path triggers;
+  docs currency in AGENTS.md / README / wiki Board-Governance.
+  (6) **Stale-language sweep** — compliance_filing retirement wording
+  reconciled across taxonomy.yaml (status: retired marker), hf_corpora,
+  prompt_doctrine, graph README, sorter patch comment, v7-taxonomy §1/§4;
+  residual spawn: HUB-020 (docclass eval judge prompts still grade against
+  the retired 8-class "EXTENDED primary set" — prompt-versioning work, NEW
+  keys + A/B, not a hand edit). Suites: corpus-eda 15 passed; llm-mailroom
+  surgical 16 passed on the pin-change surfaces (full suite aborted by the
+  human mid-run — noted honestly); parity gate + board `check` green.
+  Evidence: `120f11d6`, `0bf22b6f`, `be1f56ef`, `de20ef17`, `5cff893e`,
+  `ea76a22c`, `8d72f5e1`, `983a9b4b`, `5c744b60`, `02e83633`, `88515225`.
+
 - **HUB-018** (done 2026-09-01) — **Sub-package sync sweep: llm-mailroom +
   mailroom-corpus-eda** — human directive: pull all packages' most recent
   versions, ensure they are synced to the monorepo including EDA reports,
