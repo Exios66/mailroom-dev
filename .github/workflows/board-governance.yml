@@ -55,7 +55,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 500  # commit cross-checks scan recent history
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Board invariants
@@ -72,7 +72,7 @@ jobs:
     continue-on-error: true  # needs the `project` token scope; advisory until enforced
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Projects v2 mirror drift (advisory)
