@@ -19,7 +19,7 @@ any task. Package-scoped work keeps its own board (e.g.
 - **Claim before edit** — one owner per card; claim = lane + Owner name + date.
 - **Update, don't duplicate** — work touching an existing card's scope updates that card; discovered-but-undelivered work spawns its own card before the parent closes.
 - **No silent completion** — `done` requires green suites for touched packages, clean `git status` for the card's scope, Evidence naming the commit(s), and (for synced cards) the GitHub issue closed in the same commit. An agent is NOT done until its card says so.
-- **Commit discipline** — reference cards: `HUB-0NN: <summary>` (or `HUB-0NN claimed/reopened` in the body). **Targeted staging (HUB-028):** `git add <explicit paths>` only — never `git add .` / `-A` / a bare directory; this is a shared checkout, so re-check `git status --porcelain` before every commit and unstage anything you don't own (HUB-024/HUB-027 sweep incidents).
+- **Commit discipline** — reference cards: `HUB-0NN: <summary>` (or `HUB-0NN claimed/reopened` in the body). **Targeted staging (HUB-029):** `git add <explicit paths>` only — never `git add .` / `-A` / a bare directory; this is a shared checkout, so re-check `git status --porcelain` before every commit and unstage anything you don't own (HUB-024/HUB-027 sweep incidents).
 - **Issues vs board** — small/single-session/low-risk cards are board-only; critical or cross-package cards get an issue via the *Board card (HUB-0NN)* template, linked both ways, lane moves mirrored as issue comments, closed in the same commit that archives the card.
 
 ## The tracker (machine-readable board state)

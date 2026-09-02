@@ -84,7 +84,7 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
   other agent, still in flight.
 - **Commit discipline.** Reference cards in commits: `HUB-00N: <summary>` or
   `HUB-00N claimed/reopened` in the message body. **Stage targeted paths only
-  (HUB-028):** `git add <explicit paths>` for exactly your card's files —
+  (HUB-029):** `git add <explicit paths>` for exactly your card's files —
   never `git add .` / `-A` / a bare directory. This is a shared checkout:
   before every commit, `git status --porcelain` and unstage anything you
   don't own (two documented sweeps — HUB-024, HUB-027 — landed other agents'
@@ -104,7 +104,7 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
-- **HUB-028** (done 2026-09-02) — **Team norm: targeted `git add <paths>`
+- **HUB-029** (done 2026-09-02) — **Team norm: targeted `git add <paths>`
   only** — human directive ("a team norm of targeted git add <paths> only"),
   codifying the fix for the two shared-checkout sweep incidents (HUB-024,
   HUB-027) where a parallel agent's broad add landed other agents' in-flight
@@ -115,7 +115,7 @@ Finished cards, append-only, newest last.
   Rule: `git add <explicit paths>` for exactly your card's files — never
   `git add .` / `-A` / a bare directory — and re-check
   `git status --porcelain` before every commit, unstaging anything you
-  don't own. Claimed + landed in one commit (docs-only, single-pass edit;
+  don't own. ID collision note: HUB-028 was claimed concurrently (corpus v8); this card took HUB-029. Claimed + landed in one commit (docs-only, single-pass edit;
   the board file is itself part of the change). Board check 0/0. Evidence:
   this commit.
 - **HUB-027** (done 2026-09-02) — **Root README banner — "Mailroom Processing
