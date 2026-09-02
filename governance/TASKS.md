@@ -95,6 +95,49 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-018** (done 2026-09-01) — **Sub-package sync sweep: llm-mailroom +
+  mailroom-corpus-eda** — human directive: pull all packages' most recent
+  versions, ensure they are synced to the monorepo including EDA reports,
+  visuals, and documentation fixes. 8/10 packages already in sync; two legs
+  reconciled. **llm-mailroom**: upstream tip `d4940f8a` (operational
+  procedure doc + pipeline SVG) pulled with squash base `aace6a49` — the
+  cursor had been snapshot-advanced past content never subtree-merged
+  (`aace6a49` not an ancestor of the recorded `857fb381`), so the pull
+  back-filled the whole range; process note: snapshot-advance without a
+  merge creates a cursor/content gap that the next squash pull re-imports.
+  Post-merge monorepo-truth reconciliation: re-pruned the gitignored heavy
+  assets the merge resurrected (`docs/examples/` 9 sample PDFs + external
+  corpus texts, `docs/reports/` incl. the 59,668-line experiment_log.md —
+  `.gitignore:56-57`, HUB-004 doctrine); restored clobbered monorepo-side
+  wiring (`[tool.uv.sources]` workspace redirect, bump-script release-time
+  note, 6 pruned-asset skip guards, dojo pin-flexibility guard, UTC-stamp +
+  CWD-anchoring fixes); re-tuned notebook lab scenarios to the monorepo
+  taxonomy bands (low 0.90 / high 0.98 / judge band 0.97 — upstream's
+  0.80/0.97 retune targets upstream's looser bands): `CLASSIFY_CONTRACT_MEDIUM`
+  0.92, `CLASSIFY_INSURANCE_HIGH` 0.98, judge-band scenario extraction 0.93,
+  keeping upstream's `court_opinion` override (guardrail-honest —
+  court_opinion is out-of-taxonomy on both sides); refreshed stored outputs
+  for notebooks 02/03/10; fixed the stale `DOC_CLASSES` pin 6→5 left by the
+  compliance-filing retirement commits (pre-existing red). Suite 772 passed
+  / 36 skipped / 0 failed; `uv lock --check` green. **mailroom-corpus-eda**:
+  upstream moved twice mid-session (`c659789f` source dataset cards + docs
+  index; `816fb028` issue #5 intent_source aeslc_join fix on the 162
+  join-assisted rows); subtree squash base resolved to a pre-import ancestor
+  (`d3198a2a`) → 49 pseudo-conflicts, resolved per the HUB-004/012/013 laws:
+  upstream taken byte-verified for the true 13-file delta (README blurb,
+  `docs/README.md` index, 5 `docs/dataset-cards/*.md`,
+  `SUMMARY_REPORT.{json,md}` with figures=30 preserved, dataset_export /
+  docclass_uploader / intent_backfill), monorepo-canonical kept for
+  everything outside the delta (`run_all.py` summary-write guard, AGENTS.md,
+  tables/, 30 matplotlib-3.11 PNG renders, 19 interactive HTMLs).
+  py_compile green; EDA deliverables remain fully tracked (HUB-008
+  exception). **Known residue** (discovered, not delivered): upstream's
+  notebook narrative still cites upstream-band thresholds (0.85 judge gate,
+  0.95 high, 0.88 reviewer labels) — inaccurate under the monorepo taxonomy
+  bands; left as upstream-managed content, to reconcile at the release
+  train (HUB-005 push) rather than hand-edited monorepo-side.
+  `sync status` 10/10 in sync. Evidence: `2d93de6b` (prune + restorations),
+  `ce98b043` (scenario re-tune), `6f2ce890` (corpus-eda subtree merge).
 - **HUB-017** (done 2026-09-01) — **GitHub wiki for mailroom-dev** — human
   directive. Full version-controlled wiki source landed at `docs/wiki/`
   (entity-repo pattern): **Home** (facts table: pins v0.6.0 / dojo
