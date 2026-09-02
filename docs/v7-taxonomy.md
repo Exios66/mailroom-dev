@@ -12,7 +12,7 @@ These are now aligned:
 
 - The live pipeline taxonomy contains five classes.
 - The v7 Hugging Face corpus represents all five classes.
-- `compliance_filing` has been retired from the Mailroom pipeline and is no longer a live document class.
+- `compliance_filing` has been retired from the canonical corpus/evaluation surface and is no longer a live document class (its pipeline-config remnant is marked `status: retired` — see §4).
 - `court` and `dd` are retired and are not v7 classes.
 
 Therefore, v7 should be described as the **five-class corpus using the five-class live Mailroom taxonomy, with class × subclass strata represented for those five classes**.
@@ -91,7 +91,9 @@ The pending GEPA task refers to a "5 doc class & associated subclass set." The i
 
 > **Sorter prompt mutation on the v7 five-class corpus, using the class × subclass strata represented by `docclass-merged` v7.**
 
-The experiment now evaluates the same five top-level classes used by the production pipeline. `compliance_filing` must not appear in current sorter prompts, routing logic, specialist dispatch, or live taxonomy documentation.
+The experiment now evaluates the same five top-level classes used by the production pipeline. `compliance_filing` is not part of the canonical sorter output contract or any corpus/evaluation surface.
+
+**Retirement state (verified 2026-09-02):** the pipeline config retains `compliance_filing` as inert machinery — `packages/llm-mailroom/src/config/taxonomy.yaml` keeps its `doc_classes` entry marked `status: retired`, so the config-driven sorter label set, prompt catalog, and specialist dispatch still resolve it (zero Hub rows; local eval packs only). That remnant is retained deliberately and is not live taxonomy vocabulary; removing it is a separate release decision, and the taxonomy-parity gate treats the marked entry as a known remnant, not drift.
 
 ## 5. Canonical naming rules
 
