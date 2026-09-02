@@ -181,7 +181,9 @@ Finished cards, append-only, newest last.
   runs verified: correspondence 350/350 scored, corporate_records 38/39.
   Runbook GT paragraph updated. Suite: entity FULL 754 passed / 28 skipped /
   0 failed. Original Evidence: the delivery commit (`557b76e6`); follow-up
-  Evidence: this commit.
+  Evidence: this commit — with one correction: the runner-half of the fix
+  landed swept inside the parallel agent's `dbd79308` (broad add, same
+  incident class as HUB-024/027/029 — see the HUB-029 staging norm).
 - **HUB-034** (done 2026-09-02) — **Header diagram: universal auditable-hash-archive
   flow** — human directive ("ALL of the files end up in the auditable hash
   archive, that is the point of the mailroom, not just the failed ones, it
