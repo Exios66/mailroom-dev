@@ -104,6 +104,23 @@ reverse) is a board inconsistency — fix it immediately.
 
 Finished cards, append-only, newest last.
 
+- **HUB-034** (done 2026-09-02) — **Header diagram: universal auditable-hash-archive
+  flow** — human directive ("ALL of the files end up in the auditable hash
+  archive, that is the point of the mailroom, not just the failed ones, it
+  should ALL be traceable"): the HUB-027 banner implied archiving was a
+  failure-only outcome ("Archive — unresolved items"). Diagram restructured
+  (both light + dark variants): the failure-only archive box is REPLACED by
+  an **Auditable Hash Archive** terminus ("IMMUTABLE · HASH-CHAINED — every
+  file & every decision") fed by TWO primary edges — Route → archive
+  ("delivered · sealed") and Human Review Queue → archive ("all
+  dispositions", covering approve/reject/escalate) — while low-confidence /
+  failed-checks keep their dashed review paths and the corrected · resubmit
+  loop stays. Subtitle + aria desc + README alt text state the doctrine
+  verbatim; legend unchanged; geometry re-balanced (queue narrowed to 320,
+  archive x=790 w=360). Verified: xmllint both well-formed, qlmanage renders
+  eyeballed (light re-checked after label move). Canonical dark 13-node SVG
+  untouched (its ARCHIVE stage already says "source + manifest + hash-chained
+  audit" — the doctrine was right there all along). Evidence: this commit.
 - **HUB-022** (done 2026-09-02) — **docclass-merged P1 — Mailroom Evaluation
   Hardening (plan §86, §84A sequencing)** — full evidence in the pre-archive
   card record (git history). Summary: P1 landed `846c6e83` (eval_contract

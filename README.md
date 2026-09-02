@@ -12,7 +12,7 @@ Multi-agent legal-document pipeline · Prompt-experiment loop · Deterministic s
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/mailroom-processing-banner-dark.svg">
-  <img src="docs/assets/mailroom-processing-banner.svg" alt="Mailroom processing pipeline — six stages from intake to routing, with human-in-the-loop review and cross-cutting services" width="880"/>
+  <img src="docs/assets/mailroom-processing-banner.svg" alt="Mailroom processing pipeline — six stages from intake to routing, human-in-the-loop review, and every file committed to the auditable hash archive" width="880"/>
 </picture>
 
 </div>
