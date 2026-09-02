@@ -66,7 +66,6 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
 | HUB-020 | `assigned` | **docclass eval judge prompts still grade against the retired 8-class "EXTENDED primary set"** — discovered during HUB-019 component 6: `packages/llm-entity-extraction/src/prompts_docclass.py` (judge/reviewer/arbiter/boss docclass prompts) and the byte-mirror `packages/The-Mailroom/mailroom_ui/docclass_prompts.py` instruct judges to grade against the extended 8-class list (incl. retired compliance_filing/court_opinion/due_diligence) while the docclass GT is the canonical five (plan §5/§66/§93; docs/v7-taxonomy.md §5 avoid-list). Land in THIS monorepo (human directive: all work in mailroom-dev): add NEW prompt version keys (never mutate versions that have run) with five-class + `unknown` grading language per plan §67, mirror byte-identical into The-Mailroom, leave default selection unchanged until a same-surface A/B validates v1; option-list ↔ schema-enum test parity maintained. Decision open for the human: whether the docclass arm keeps the extended surface as deliberate eval design (KANBAN-033 lineage) or moves to five-class grading. | unclaimed | — | HUB-019 Evidence 2026-09-02 |
 | HUB-022 | `in_progress` | **docclass-merged P1 — Mailroom Evaluation Hardening (plan §86, §84A sequencing)** — human directive: proceed with the plan (committed at `docs/docclass-merged-plan.md`) after P0. P1 per §84A dependency chain (document_id → annotation_provenance → confidence-band/calibration fixtures; failure_stage + review/retry expectations → P3 fixtures): formalize `expected_fields` (preserve, never bypass — §18), formalize `annotation_provenance` (§43: source/method/model/prompt_version/confidence/reviewer/timestamp), add `expected_specialist` (§59) + `expected_stage` (§57–58), add `review_expected`/`review_reason`/`retry_expected`/recovery expectations (§31), unknown/OOD fixture vocabulary (§68) + confidence-band fixture vocabulary (§69–71), build the class×subclass×source×field coverage report (§40–41) at `docs/reports/audits/docclass_coverage_matrix.{md,json}`, extend the §63 contract tests for every new field, document the §14A matter/group backfill methodology decision (prerequisite gate for P2). No HF pushes — groundwork + local verification, published-config wiring rides the v0.2 release decision (§84). All work in mailroom-dev; publishing only through the centralized corpus-eda helpers (§44A). | GLM-5.3-Flash (opencode) 2026-09-02 | — | HUB-019 close-out (handoff directive); plan committed `02e83633`. P0 COMPLETENESS PASS (human directive): §84B pin criterion "referenced in at least one evaluation trace" was UNMET — landed `run_pipeline(dataset=...)` → dataset_name/dataset_revision/taxonomy_version on every HF-pilot trace + surgical test (8 passed); baseline audit ground_truth columns fact corrected 32→31 (the audit had counted its in-memory doc_text join; published config is 4 identity + 27 GT = 31; JSON regenerated, .md already correct). HUB-023 spawned mid-card: dataset rename landed (see HUB-023). Suite: corpus-eda 15, llm-mailroom surgical 40, dojo/agent/The-Mailroom/sandbox green. **P1 LANDED 2026-09-02 (commit `846c6e83`)**: `mailroom_eda/eval_contract.py` (§59 expected_specialist registry-derived from live taxonomy.yaml, §57–58 expected_stage, §31 review/retry expectations with closed vocabularies, §43 annotation_provenance — regimes verified exactly over all 1,650 rows: verified_join 162 / llm_zero_shot 92+deepseek-chat / human_annotated 96 / synthetic 600; §68 fixture-kind vocabulary + §70 calibration quartet + §69 confidence bands read from the LIVE taxonomy.yaml (0.97/0.88 global, per-class overrides — not the plan's illustrative 0.95/0.70); §14A/§15/§16/§58 vocabularies); `scripts/coverage_matrix.py` → §40–41 report landed (the gaps are the point: corporate_record intent 0%, correspondence subject_matter/keywords 27%, insurance adjuster 0%; §40 scenario columns at zero with an explicit no-overstatement note); §19 span schema defined in contract §5A (population rides v0.2); corpus-eda suite 29 passed. **P2 GROUNDWORK LANDED 2026-09-02 (commit `0b6ff1f9`, lucius HF audit + `mailroom_eda/matter.py`)**: §14A decision VERIFIED with data — In-Reply-To/References structurally ABSENT from the CMU maildir itself (0/350 raw files, 0/247,523 upstream dedup rows @ pin bb57c5ad, download-only) so header-thread backfill is impossible; subject populated 346/350 (≈80 degenerate → 266 meaningful, doc_text extraction matches exactly). `MATTER_CONSTRUCTION` gains `heuristic_reconstructed` (three constructions, never mixed silently; never-mix guard asserts header threads stay absent). Live §84B audit: 266/350 subjects, 19 rows in 7 multi-member heuristic threads, 331 unassigned — recorded in contract §9 as the honest grouping baseline; `synthetic_constructed` becomes the primary multi-document eval path. Corpus-eda suite 43 passed. REMAINING for P1/P2 closure: synthetic bundle-family generator scaffolding (§14, sanctioned-publish decision §84), §72A review/arbiter fixture content, calibration fixture content (§70 quartet). |
-| HUB-024 | `in_progress` | **Core-repo changelog + semantic-version release chain** — human directive ("ensure our core repo is keeping a solid changelog and GitHub semantic version release chain … as the core repo of truth we are setting this up to be"). The hub (mailroom-dev) has zero tags, zero GitHub releases, and no root CHANGELOG (only 5 packages carry their own; the old pre-import root CHANGELOG belonged to the standalone mailroom lineage). Land: (a) root `CHANGELOG.md` (Keep a Changelog 1.1.0) with the hub era (HUB-001→) backfilled into the first release; (b) `scripts/release_chain.py` (stdlib, board-tooling pattern): `status` + `check` (structural exit-1: tag↔changelog-section parity, duplicate/non-semver versions, hub version behind the newest tag; hygiene warnings: annotated-tag message convention) + `cut` (moves `[Unreleased]` → stamped section + bumps hub pyproject version; explicit `--apply`/`--tag`, never pushes); (c) CI gate on `v*` tag pushes + a step in `board-governance.yml`; (d) cut **v0.1.0** (matches the hub `pyproject.toml` version): annotated tag + GitHub Release from the changelog section; (e) docs currency: AGENTS.md + README + wiki Releases.md. Package-level releases stay HUB-005's release-train scope (standalone repos remain the release vehicles for deployed surfaces); the hub chain versions the monorepo itself. | GLM-5.3-Flash (opencode) 2026-09-02 | — | human directive 2026-09-02; companion to HUB-005 |
 
 ## Rules that keep the board honest
 
@@ -97,6 +96,43 @@ reverse) is a board inconsistency — fix it immediately.
 ## Archive
 
 Finished cards, append-only, newest last.
+
+- **HUB-024** (done 2026-09-02) — **Core-repo changelog + semantic-version
+  release chain** — human directive ("ensure our core repo is keeping a solid
+  changelog and GitHub semantic version release chain … as the core repo of
+  truth"). Delivered: (a) root `CHANGELOG.md` (Keep a Changelog 1.1.0; hub era
+  HUB-001→ backfilled into `[0.1.0]`; scope note separating the hub chain from
+  the pre-import standalone-mailroom lineage and from package-level releases);
+  (b) `scripts/release_chain.py` (stdlib): `status`/`check`/`cut` — structural
+  errors (exit 1): a version tag without its changelog section, duplicate/
+  non-semver/out-of-order sections, hub pyproject behind the newest tag;
+  warnings: stamped-but-untagged section (prep state), tag-message
+  convention, lightweight tags; `cut` stamps `[Unreleased]` → dated section +
+  bumps the hub pyproject version (dry-run default, `--apply`/`--tag`, never
+  commits or pushes); (c) CI: `release-governance.yml` gate on `v*` tag
+  pushes + workflow_dispatch; `board-governance.yml` gains the release-chain
+  step + `CHANGELOG.md` path trigger; (d) **v0.1.0 cut**: annotated tag
+  `v0.1.0` (`mailroom-hub v0.1.0` message) + GitHub Release from the
+  changelog section — first hub release; (e) docs currency: AGENTS.md
+  (commands + workspace rule), README (tree + commands), scripts/README.md,
+  wiki Releases.md (hub-chain section). Coordination incident (honest
+  record): the main deliverables were swept into a parallel agent's broad
+  `git add` commit `04e1f604` ("Add hub changelog and contract fixtures")
+  from the shared checkout, mixed with that agent's llm-mailroom README
+  work; the card claim rode along in `1bc76344`; dedicated follow-ups for
+  docs currency (`bac48976`) and this archive. **CI billing-lock incident**:
+  Actions compute on the Exios66 account has been locked since ~2026-08-31
+  ("The job was not started because your account is locked due to a billing
+  issue") — the original board-governance 0s "workflow file issue" failure
+  was this lock, and that workflow had been manually disabled in response;
+  re-enabled, then ALL billing-failing workflows paused per human directive
+  (mailroom-dev `board-governance` + `release-governance`, llm-mailroom
+  `Bump llm-dojo-scoring`; Gaze_Calculator-66 `Scheduled` no longer exists
+  in-repo) — re-enable after the human resolves github.com/settings/billing;
+  `release_chain.py check` verified green locally. Chain post-tag: 0 errors /
+  0 warnings; board check green. Suites: none (hub tooling only). Evidence:
+  `04e1f604`, `1bc76344`, `bac48976`, tag `v0.1.0`,
+  https://github.com/Exios66/mailroom-dev/releases/tag/v0.1.0, this commit.
 
 - **HUB-023** (done 2026-09-02) — **Rename the HF dataset
   `docclass-merged` → `mailroom-corpus`** — human directive ("docclass was
