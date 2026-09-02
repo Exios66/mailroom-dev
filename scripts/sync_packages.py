@@ -13,8 +13,17 @@ development; the sync flow keeps the mirrors reconciled with their upstreams:
 Usage:
     python scripts/sync_packages.py status [--package NAME] [--no-fetch] [--json]
     python scripts/sync_packages.py pull   [--package NAME | --all] [--squash]
-    python scripts/sync_packages.py push   [--package NAME | --all]
-    python scripts/sync_packages.py snapshot [--package NAME]
+    python scripts/sync_packages.py push   [--package NAME | --all] [--patch] [--dry-run]
+    python scripts/sync_packages.py snapshot [--package NAME] [--force]
+
+Cursor safety (HUB-021; incidents HUB-012/HUB-018): every cursor write is
+guarded by a CONTENT check — the upstream tip's blob tree must be fully
+contained in the package directory (exact blob-hash match per path). A cursor
+that points past content never imported made the next squash pull re-import a
+whole range (HUB-018) and made subtree pushes non-fast-forward (HUB-012),
+which is why ``push --patch`` exists: it rebuilds the package's tracked files
+on top of the real upstream tip and lands ONE fast-forward commit upstream,
+then re-baselines the cursor. Actual pushes remain explicit operations.
 
 Baseline (per issue #2): the monorepo is aligned with the standalone repos as
 of 2026-08-30 19:06 CST (2026-08-31T00:06:57Z). That cursor lives in
