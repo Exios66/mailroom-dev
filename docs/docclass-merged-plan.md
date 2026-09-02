@@ -1,3 +1,11 @@
+> **Addendum 2026-09-02** (human directive): the Hub dataset referenced
+> throughout this plan as `Lucius-Morningstar/docclass-merged` is now
+> `Lucius-Morningstar/mailroom-corpus` — "docclass" was always a
+> placeholder. The rename preserved git history (pinned revision
+> `bb57c5ad` unchanged; old id redirects). This plan text is the frozen
+> directive record and keeps its original naming; the operative dataset
+> name everywhere else is `mailroom-corpus`.
+
 # DOCCLASS-MERGED → Mailroom Ingress & Evaluation Corpus — Implementation Plan
 
 > Source: `~/Downloads/docclass-merged-mailroom-plan.pdf` (human directive, 2026-09-02), text-extracted verbatim.

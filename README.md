@@ -1,10 +1,24 @@
-# mailroom-dev
+<div align="center">
 
-The monorepo of the LLM-Mailroom project — a single checkout and a single
-virtualenv for the whole constellation, so development never requires
-importing across separate repositories.
+# 🏛️ LLM-Mailroom Constellation
 
-> **Canonical architecture & taxonomy:** See the [canonical Mailroom pipeline](docs/assets/mailroom-pipeline.svg) and the [v7 taxonomy specification](docs/v7-taxonomy.md). These are the root-level sources of truth for the pipeline visualization and v7 terminology.
+**A governed monorepo housing the full LLM-Mailroom ecosystem — one checkout, one virtualenv, ten packages, zero cross-repo import friction.**
+
+Multi-agent legal-document pipeline · Prompt-experiment loop · Deterministic scoring · Pixel-art visualizer · Walking-office-floor mailroom · Corpus EDA
+
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![uv workspace](https://img.shields.io/badge/uv-workspace-6C63FF)](https://docs.astral.sh/uv/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+<img src="docs/assets/mailroom-pipeline.svg" alt="The 13-node LangGraph pipeline visualization" width="880"/>
+
+</div>
+
+---
+
+> **Canonical architecture & taxonomy:** See the [canonical Mailroom pipeline](docs/assets/mailroom-pipeline-svg) and the [v7 taxonomy specification](docs/v7-taxonomy.md). These are the root-level sources of truth for the pipeline visualization and v7 terminology.
+
+## Architecture
 
 ```
                     ┌── corpus feeds (colocated data) ─────────────────────┐
@@ -32,123 +46,139 @@ importing across separate repositories.
                     └──────────────────────────────────────────────────────┘
 ```
 
-### Architecture map — every repository, with links
+## Repository Map
 
-All ten packages live in this monorepo (`packages/`) as git subtrees and
-mirror independent `Exios66/*` repositories that remain standalone and
-operational. GitHub Pages sites exist for six of them.
+All ten packages live in `packages/` as git subtrees and mirror independent `Exios66/*` repositories. GitHub Pages sites exist for six of them.
+
+<div align="center">
 
 | Layer | Repository | GitHub Pages |
-|---|---|---|
-| Hub (central truth, this repo) | [`Exios66/mailroom-dev`](https://github.com/Exios66/mailroom-dev) | — |
-| Corpus feed | [`Exios66/Enron-Evaluation-Environment`](https://github.com/Exios66/Enron-Evaluation-Environment) | [exios66.github.io/Enron-Evaluation-Environment](https://exios66.github.io/Enron-Evaluation-Environment/) |
-| Corpus feed | [`Exios66/claims-data-eda`](https://github.com/Exios66/claims-data-eda) | [exios66.github.io/claims-data-eda](https://exios66.github.io/claims-data-eda/) |
-| Corpus EDA + HF upload helpers | [`Exios66/Mailroom-Corpus-EDA`](https://github.com/Exios66/Mailroom-Corpus-EDA) | [exios66.github.io/Mailroom-Corpus-EDA](https://exios66.github.io/Mailroom-Corpus-EDA/) |
-| Prompt-experiment loop | [`Exios66/llm-entity-extraction`](https://github.com/Exios66/llm-entity-extraction) | [exios66.github.io/llm-entity-extraction](https://exios66.github.io/llm-entity-extraction/) |
-| Shared scoring engine | [`Exios66/llm-dojo-scoring`](https://github.com/Exios66/llm-dojo-scoring) | — |
-| LangGraph pipeline | [`Exios66/llm-mailroom`](https://github.com/Exios66/llm-mailroom) | — |
-| Pixel-art visualizer console | [`Exios66/The-Mailroom`](https://github.com/Exios66/The-Mailroom) | [exios66.github.io/The-Mailroom](https://exios66.github.io/The-Mailroom/) |
-| Walking-office-floor mailroom | [`Exios66/agent-mailroom`](https://github.com/Exios66/agent-mailroom) | — |
-| Local-first LLM sandbox | [`Exios66/local-mailroom-sandbox`](https://github.com/Exios66/local-mailroom-sandbox) | — |
-| Derived knowledge-graph site | [`Exios66/llm-mailroom-graph`](https://github.com/Exios66/llm-mailroom-graph) | [exios66.github.io/llm-mailroom-graph](https://exios66.github.io/llm-mailroom-graph/) |
+|:---|:---|:---|
+| **Hub** (central truth) | [`Exios66/mailroom-dev`](https://github.com/Exios66/mailroom-dev) | — |
+| **Corpus feed** | [`Exios66/Enron-Evaluation-Environment`](https://github.com/Exios66/Enron-Evaluation-Environment) | [exios66.github.io/Enron-Evaluation-Environment](https://exios66.github.io/Enron-Evaluation-Environment/) |
+| **Corpus feed** | [`Exios66/claims-data-eda`](https://github.com/Exios66/claims-data-eda) | [exios66.github.io/claims-data-eda](https://exios66.github.io/claims-data-eda/) |
+| **Corpus EDA + HF** | [`Exios66/Mailroom-Corpus-EDA`](https://github.com/Exios66/Mailroom-Corpus-EDA) | [exios66.github.io/Mailroom-Corpus-EDA](https://exios66.github.io/Mailroom-Corpus-EDA/) |
+| **Prompt experiments** | [`Exios66/llm-entity-extraction`](https://github.com/Exios66/llm-entity-extraction) | [exios66.github.io/llm-entity-extraction](https://exios66.github.io/llm-entity-extraction/) |
+| **Scoring engine** | [`Exios66/llm-dojo-scoring`](https://github.com/Exios66/llm-dojo-scoring) | — |
+| **LangGraph pipeline** | [`Exios66/llm-mailroom`](https://github.com/Exios66/llm-mailroom) | — |
+| **Pixel visualizer** | [`Exios66/The-Mailroom`](https://github.com/Exios66/The-Mailroom) | [exios66.github.io/The-Mailroom](https://exios66.github.io/The-Mailroom/) |
+| **Walking floor** | [`Exios66/agent-mailroom`](https://github.com/Exios66/agent-mailroom) | — |
+| **Local sandbox** | [`Exios66/local-mailroom-sandbox`](https://github.com/Exios66/local-mailroom-sandbox) | — |
+| **Knowledge graph** | [`Exios66/llm-mailroom-graph`](https://github.com/Exios66/llm-mailroom-graph) | [exios66.github.io/llm-mailroom-graph](https://exios66.github.io/llm-mailroom-graph/) |
 
-## Repository structure
+</div>
+
+## Package Details
+
+<div align="center">
+
+| Package | Role | Source |
+|:---|:---|:---|
+| `llm-dojo-scoring` | Deterministic scoring, error-analysis, visualization & interpretation suite | [`Exios66/llm-dojo-scoring`](https://github.com/Exios66/llm-dojo-scoring) |
+| `llm-mailroom` | LangGraph multi-agent legal-document pipeline (FastAPI producer) | [`Exios66/llm-mailroom`](https://github.com/Exios66/llm-mailroom) |
+| `llm-entity-extraction` | Prompt-experiment loop: prompt versions × models over CUAD/LegalBench/MAUD | [`Exios66/llm-entity-extraction`](https://github.com/Exios66/llm-entity-extraction) |
+| `The-Mailroom` | Pixel-art visualizer console + hosted Observatory (Langfuse as source of truth) | [`Exios66/The-Mailroom`](https://github.com/Exios66/The-Mailroom) |
+| `agent-mailroom` | Self-contained mailroom: one state machine per document, specialist agents at desks | [`Exios66/agent-mailroom`](https://github.com/Exios66/agent-mailroom) |
+| `local-mailroom-sandbox` | Local-first experiment sandbox (Ollama, vLLM, llama.cpp) | [`Exios66/local-mailroom-sandbox`](https://github.com/Exios66/local-mailroom-sandbox) |
+| `Enron-Evaluation-Environment` | Enron corpus EDA → pipeline-ready correspondence dataset | [`Exios66/Enron-Evaluation-Environment`](https://github.com/Exios66/Enron-Evaluation-Environment) |
+| `claims-data-eda` | CMS DE-SynPUF EDA → pipeline-ready insurance_claim dataset | [`Exios66/claims-data-eda`](https://github.com/Exios66/claims-data-eda) |
+| `llm-mailroom-graph` | Derived knowledge-graph site of llm-mailroom | [`Exios66/llm-mailroom-graph`](https://github.com/Exios66/llm-mailroom-graph) |
+| `mailroom-corpus-eda` | mailroom-corpus corpus EDA (P0–P6) + centralized HF upload helpers | [`Exios66/Mailroom-Corpus-EDA`](https://github.com/Exios66/Mailroom-Corpus-EDA) |
+
+</div>
+
+> Virtual members (`package = false`) have no build system and are not installed — they exist so their data/code stays colocated in the single checkout.
+
+## Repository Structure
 
 ```
 mailroom-dev/
-├── AGENTS.md
-├── README.md
-├── pyproject.toml
-├── uv.lock
+├── AGENTS.md              # workspace rules & cross-package conventions
+├── README.md              # this file — the canonical entry point
+├── pyproject.toml         # uv workspace definition
+├── uv.lock                # single lockfile for all packages
 ├── .gitignore
-├── governance/
+├── governance/            # task board (TASKS.md) & governance tooling
 ├── docs/
-│   ├── v7-taxonomy.md              # canonical v7 corpus/live-taxonomy terminology
+│   ├── v7-taxonomy.md     # canonical v7 corpus/live-taxonomy terminology
 │   ├── assets/
-│   │   └── mailroom-pipeline.svg   # canonical 13-node pipeline visualization
+│   │   └── mailroom-pipeline.svg
 │   └── wiki/
 ├── scripts/
-└── packages/
+│   ├── board_state.py     # board machine-readable parser + CI gate
+│   ├── sync_packages.py   # subtree ↔ standalone repo sync
+│   ├── taxonomy_parity.py # taxonomy drift detector (CI gate)
+│   └── deploy_gh_pages.py # local GH Pages deploy (no Actions)
+└── packages/              # all ten packages (subtree + virtual)
 ```
-
-The root documentation above is intentionally canonical: package-level
-implementation details remain inside their respective package directories,
-while cross-package architecture and corpus terminology are maintained here.
-
-## Packages
-
-| Path | Package (dist name) | Standalone mirror | Role |
-|---|---|---|---|
-| `packages/llm-dojo-scoring` | `llm-dojo-scoring` | [`Exios66/llm-dojo-scoring`](https://github.com/Exios66/llm-dojo-scoring) | Deterministic scoring, error-analysis, visualization, interpretation suite |
-| `packages/llm-mailroom` | `mailroom` | [`Exios66/llm-mailroom`](https://github.com/Exios66/llm-mailroom) | LangGraph multi-agent legal-document pipeline (FastAPI producer) |
-| `packages/llm-entity-extraction` | `llm-entity-extraction` | [`Exios66/llm-entity-extraction`](https://github.com/Exios66/llm-entity-extraction) | Prompt-experiment loop: prompt versions × models over CUAD/LegalBench/MAUD corpora |
-| `packages/The-Mailroom` | `the-mailroom` | [`Exios66/The-Mailroom`](https://github.com/Exios66/The-Mailroom) | Pixel-art visualizer console + hosted Observatory (Langfuse as source of truth) |
-| `packages/agent-mailroom` | `agent-mailroom` | [`Exios66/agent-mailroom`](https://github.com/Exios66/agent-mailroom) | Self-contained mailroom: one state machine per document, specialist agents at desks |
-| `packages/local-mailroom-sandbox` | `mailroom-sandbox` | [`Exios66/local-mailroom-sandbox`](https://github.com/Exios66/local-mailroom-sandbox) | Local-first experiment sandbox (Ollama, vLLM, llama.cpp) |
-| `packages/Enron-Evaluation-Environment` | (virtual) | [`Exios66/Enron-Evaluation-Environment`](https://github.com/Exios66/Enron-Evaluation-Environment) | Enron corpus EDA → pipeline-ready correspondence dataset |
-| `packages/claims-data-eda` | (virtual) | [`Exios66/claims-data-eda`](https://github.com/Exios66/claims-data-eda) | CMS DE-SynPUF EDA → pipeline-ready insurance_claim dataset |
-| `packages/llm-mailroom-graph` | (virtual) | [`Exios66/llm-mailroom-graph`](https://github.com/Exios66/llm-mailroom-graph) | Derived graphify knowledge-graph site of llm-mailroom |
-| `packages/mailroom-corpus-eda` | (virtual) | [`Exios66/Mailroom-Corpus-EDA`](https://github.com/Exios66/Mailroom-Corpus-EDA) | mailroom-corpus corpus EDA (P0–P6) + centralized HF upload helpers (`hf_interface`, `dataset_export`, `docclass_uploader`, `intent_backfill`) |
-
-Virtual members have no build system (`package = false`) and are not installed;
-they exist so their data/code stays colocated in the single checkout.
 
 ## Development
 
 One workspace, one lockfile, one virtualenv:
 
 ```bash
-uv sync
-uv run pytest ...
+uv sync                  # install workspace + dev group into .venv (editable)
+uv run pytest ...        # run against the shared venv
 ```
 
-Cross-package dependencies resolve to **workspace sources** during development
-(`[tool.uv.sources]` in each member pyproject); published git pins remain in
-dependency lines for release builds.
-
-See `AGENTS.md` for workspace rules and `governance/TASKS.md` for the task board.
-
-## Sub-package sync (issue #2)
-
-Every package mirrors an independent `Exios66/*` repository. The monorepo is
-the development source of truth; `scripts/sync_packages.py` keeps the mirrors
-reconciled.
+Per-package test suites:
 
 ```bash
-python scripts/sync_packages.py status
-python scripts/sync_packages.py pull --all
-python scripts/sync_packages.py push --package llm-mailroom
-python scripts/sync_packages.py push --package llm-mailroom --patch   # non-fast-forward fallback (HUB-012)
-python scripts/sync_packages.py snapshot
+uv run pytest packages/llm-dojo-scoring/tests
+uv run pytest packages/llm-mailroom/src/tests
+uv run pytest packages/llm-entity-extraction/tests
+uv run pytest packages/The-Mailroom/tests
+uv run pytest packages/agent-mailroom/tests
+uv run pytest packages/local-mailroom-sandbox/tests
+uv run pytest packages/mailroom-corpus-eda/tests
 ```
 
-Cursor writes are content-verified (HUB-021): `snapshot` refuses to advance a
-cursor past upstream content that is not actually in the package tree
-(blob-level containment, gitignored prunes exempt) — `--force` overrides
-explicitly; `push --patch` lands the monorepo delta as one fast-forward
-commit on the live upstream tip; `status` reports cursor gaps and the
-monorepo-ahead file count per package (the release-train payload).
+Cross-package dependencies resolve to **workspace sources** during development (`[tool.uv.sources]` in each member pyproject); published git pins remain in dependency lines for release builds.
 
-## GitHub governance tooling (HUB-014)
+## Sub-Package Sync
 
-The board and GitHub surface are kept machine-readable and mutually
-consistent. See `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE/`,
-`.github/labels.json`, `scripts/board_state.py`, and `governance/TASKS.md`.
-The `board-governance` CI gate also runs `scripts/taxonomy_parity.py`
-(HUB-019 §65A): it fails when the document-class taxonomy surfaces
-(`HUB_CLASSES`, `taxonomy.yaml` live entries, the sorter vocabularies, the
-specialist registry, `docs/v7-taxonomy.md`, the dojo HF-corpus universe, the
-entity pilot universe, the sandbox fixture) ever disagree about the canonical
-five-class set — retired classes are tolerated only as marked remnants.
+Every package mirrors an independent `Exios66/*` repository. The monorepo is the development source of truth; `scripts/sync_packages.py` keeps the mirrors reconciled.
+
+```bash
+python scripts/sync_packages.py status                  # live status
+python scripts/sync_packages.py pull --all              # sync from upstream
+python scripts/sync_packages.py push --package llm-mailroom
+python scripts/sync_packages.py push --package llm-mailroom --patch   # non-fast-forward fallback
+python scripts/sync_packages.py snapshot                # cursor verification
+```
+
+## GitHub Governance Tooling
+
+The board and GitHub surface are kept machine-readable and mutually consistent:
+
+```bash
+python scripts/board_state.py status            # live board snapshot (--json for machines)
+python scripts/board_state.py check             # board invariants; exit 1 on structural errors
+python scripts/github_labels.py audit           # label taxonomy drift (CI gate)
+python scripts/taxonomy_parity.py               # doc-class taxonomy drift (CI gate, HUB-019 §65A)
+./docs/wiki/sync-wiki.sh                        # push docs/wiki/ to the GitHub wiki
+```
+
+See `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE/`, `.github/labels.json`, `scripts/board_state.py`, and `governance/TASKS.md` for the full governance contract.
 
 ## Wiki
 
-The [GitHub wiki](https://github.com/Exios66/mailroom-dev/wiki) is mirrored from
-`docs/wiki/`.
+The [GitHub wiki](https://github.com/Exios66/mailroom-dev/wiki) is mirrored from `docs/wiki/`.
 
-## Release flow
+## Release Flow
 
-The monorepo is the development source of truth. Upstream repositories remain
-the release vehicles for deployed surfaces; propagate package changes with
-`scripts/sync_packages.py push` when a release is cut, then bump published pins
-as required.
+The monorepo is the development source of truth. Upstream repositories remain the release vehicles for deployed surfaces; propagate package changes with `scripts/sync_packages.py push` when a release is cut, then bump published pins as required.
+
+---
+
+<div align="center">
+
+**[llm-mailroom](https://github.com/Exios66/llm-mailroom)** ·
+**[llm-entity-extraction](https://github.com/Exios66/llm-entity-extraction)** ·
+**[llm-dojo-scoring](https://github.com/Exios66/llm-dojo-scoring)** ·
+**[The-Mailroom](https://github.com/Exios66/The-Mailroom)** ·
+**[agent-mailroom](https://github.com/Exios66/agent-mailroom)**
+
+<sub>Built by the governed evaluation family under <a href="https://github.com/Exios66">@Exios66</a> · 2026</sub>
+
+</div>
