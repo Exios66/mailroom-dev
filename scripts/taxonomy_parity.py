@@ -127,11 +127,23 @@ def module_assigns(source: str):
 
 
 def function_return_literal(source: str, function: str):
-    """Literal value returned by a top-level function (e.g. a dict literal)."""
+    """Literal returned by a top-level function (e.g. a dict-literal mapping).
+
+    For dict returns whose values are names (``_extract_contracts`` ...),
+    only the keys are needed and parsed; values resolve to None.
+    """
     tree = ast.parse(source)
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == function:
             for stmt in ast.walk(node):
+                if isinstance(stmt, ast.Return) and isinstance(stmt.value, ast.Dict):
+                    keys = []
+                    for key_node in stmt.value.keys:
+                        try:
+                            keys.append(ast.literal_eval(key_node))
+                        except (ValueError, SyntaxError, TypeError):
+                            return None
+                    return dict.fromkeys(keys)
                 if isinstance(stmt, ast.Return):
                     try:
                         return ast.literal_eval(stmt.value)
