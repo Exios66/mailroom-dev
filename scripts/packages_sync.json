@@ -45,8 +45,8 @@
     },
     "llm-mailroom-graph": {
       "branch": "main",
-      "synced_at": "2026-09-03T18:23:55Z",
-      "synced_sha": "0d37f0ffc66487cbac1ad73acce576b1aac2e8d0",
+      "synced_at": "2026-09-03T19:07:12Z",
+      "synced_sha": "926d66a43c97f7cc3984524a809efaa92c8c78b0",
       "url": "https://github.com/Exios66/llm-mailroom-graph.git"
     },
     "local-mailroom-sandbox": {
