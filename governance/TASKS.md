@@ -64,6 +64,7 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
 |---|---|---|---|---|---|
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
 | HUB-039 | `in_progress` | **Gmail free-triage team — production-pilot readiness sweep** — human directive 2026-09-03 ("ensure the new triage free agent team is fully built out and ready for production pilot testing via the singular document uploads thru Gmail"). Scope: end-to-end readiness audit of the single-document Gmail triage lane (code, config, prompt registry, tests, smoke, watcher runtime, credentials posture) + bring-up of everything within agent power + an honest gap list for the human. | opencode (GLM-5.3-Flash) 2026-09-03 | — | claimed at session start; audit underway. **AUDIT PROGRESS (2026-09-03):** code/config/prompt registry all COMPLETE and committed — `gmail_triage` registered in `llm/prompts.py` (production alias + template), taxonomy agent block (`z-ai/glm-5.2:free`, `max_input_chars: 12000`, `max_tokens: 700`), capability pre-check wired on BOTH watcher claim paths, route stamping + echo + reaction-retry in place; gmail suites 62 passed on the current tree; watcher tests 16 passed; mock smoke 10/10 PASS (full triage-chain rehearsal incl. route stamping, triage-lane archive with `triage_*` audit, multi-doc full-pipeline drop, reactions, echoes). **Sender allowlist (human directive):** `MAILROOM_GMAIL_ALLOWED_SENDERS=exios4@gmail.com,jjburleson@wisc.edu,axios337@gmail.com,exios4@protonmail.com` set in `packages/llm-mailroom/.env` (gitignored); live `load_config()` parse asserts the exact 4-address set; case-insensitive match verified (`_sender_address` lowercases both sides); allowlist tests 2 passed; roster documented in `.env.example` (expansion later per human). **Gaps found (readiness verdict: code-ready, runtime pending):** (1) `OPENROUTER_API_KEY` ABSENT from `.env` (only the 3 Gmail keys present) — the free model still needs an OpenRouter account key; without it the triage lane fails soft and single-doc uploads park to `failed/`; HUMAN must add the key. (2) Watcher NOT running (cleanly stopped 2026-09-02 22:42 after DNS `gaierror` flake; stale `watcher.lock` file harmless — `fcntl.flock` released on process death) — restart REQUIRED anyway to load the triage lane + HUB-038 changes (config is `lru_cache`d; long-running process). (3) LANGFUSE keys absent — NON-blocking (managed-prompt falls back to the identical in-repo template; local Phoenix tracing fallback; prompt sync optional post-key). |
+| HUB-005 | `in_progress` | **Release-train readiness — propagation sweep (reopened)** — human directive 2026-09-03 ("ensure all the feeder repositories are in line with the work from the monorepo"): propagate the HUB-038/039 payload — intake agent v2 + no-truncation sliding windows + ingest/intake unification rename (llm-mailroom, The-Mailroom, agent-mailroom incl. the `ingest.py`→`intake.py` renames, llm-dojo-scoring, local-mailroom-sandbox) — upstream to the `Exios66/*` standalone repos via `scripts/sync_packages.py push`. Propagation leg only: no tag/version bumps this sweep (pin bumps stay release-time). | opencode (GLM-5.3-Flash) 2026-09-03 | — | reopened 2026-09-03 from archive (append-only history preserved); payload per `sync_packages.py status`: llm-mailroom 16 files, The-Mailroom 22, agent-mailroom 7 + CURSOR GAP (2 renamed paths), llm-dojo-scoring 1, local-mailroom-sandbox 1 |
 | HUB-020 | `assigned` | **docclass eval judge prompts still grade against the retired 8-class "EXTENDED primary set"** — discovered during HUB-019 component 6: `packages/llm-entity-extraction/src/prompts_docclass.py` (judge/reviewer/arbiter/boss docclass prompts) and the byte-mirror `packages/The-Mailroom/mailroom_ui/docclass_prompts.py` instruct judges to grade against the extended 8-class list (incl. retired compliance_filing/court_opinion/due_diligence) while the docclass GT is the canonical five (plan §5/§66/§93; docs/v7-taxonomy.md §5 avoid-list). Land in THIS monorepo (human directive: all work in mailroom-dev): add NEW prompt version keys (never mutate versions that have run) with five-class + `unknown` grading language per plan §67, mirror byte-identical into The-Mailroom, leave default selection unchanged until a same-surface A/B validates v1; option-list ↔ schema-enum test parity maintained. Decision open for the human: whether the docclass arm keeps the extended surface as deliberate eval design (KANBAN-033 lineage) or moves to five-class grading. | unclaimed | — | HUB-019 Evidence 2026-09-02 |
 | HUB-036 | `assigned` | **v9 corpus candidate: INSURBIAS insurance-claim source** — spawned at HUB-028 close (append-only law: the deferred item gets a card before the parent closes). HUB-028 evaluated INSURBIAS for the v8 LOB expansion and deferred it as GT-sparse; v9 (or later) should re-evaluate it alongside the P4 expansion priorities (`docs/reports/audits/docclass_expansion_priorities.md` — insurance_workflow is HIGH: adjuster 0%, partial denial_reasons/supporting_documents), license permitting. | unclaimed | — | spawned from HUB-028 close-out 2026-09-02; see HUB-028 archive entry |
 
@@ -849,30 +850,3 @@ Finished cards, append-only, newest last.
   `ab4bf9e`, `10c5f8b4`, `fe4b8d47`; all 7 suites green — **2,331 passed /
   72 skipped, 0 failed**.
 
-- **HUB-005** (done 2026-09-03) — **Release-train readiness — propagation
-  sweep: all 10 feeder repositories synced to the monorepo content** — human
-  directive ("ensure that all feeder repositories are properly synced to the
-  content contained in the monorepo"). Scope note: propagation leg only — no
-  tag/version bumps this sweep (pin bumps stay release-time). Landed: 9 of
-  10 feeders via `sync_packages.py push --patch` (HUB-021 path; one
-  fast-forward commit each on the upstream tip, cursor re-baselined per
-  package in `scripts/packages_sync.json`): llm-mailroom-graph (3 files),
-  llm-dojo-scoring (12), claims-data-eda (22), Enron-Evaluation-Environment
-  (23), agent-mailroom (31), The-Mailroom (37), local-mailroom-sandbox (43),
-  llm-entity-extraction (81), mailroom-corpus-eda (99) — 351 files total.
-  llm-mailroom (88 files) was BLOCKED mid-sweep: `patch_push` copies
-  worktree content per package prefix and a parallel session held
-  uncommitted HUB-038 edits in exactly that subtree — recorded
-  needs_attention rather than sweeping unfinished work upstream; the leg
-  completed after HUB-038 committed (tree clean). llm-mailroom pushed via
-  PLAIN `git subtree push` (history-carrying) — required because the
-  pending delta included the HUB-023 fixture RENAME
-  (`notebooks/fixtures/huggingface/docclass-merged.json` →
-  `mailroom-corpus.json`) which patch-push cannot carry (no deletions) and
-  which sat as the package's 1-path cursor gap; the plain push delivered
-  the rename and CLEARED the gap. Final verification: `status` 10/10 in
-  sync, upstream==synced everywhere, ZERO monorepo-ahead residue, ZERO
-  cursor gaps. Shared-checkout discipline held: per-prefix dirt check
-  before every push, targeted `git add` only. Hub tooling only — no
-  package suite impact. Evidence: `65ff6b88` (9-feeder sweep + cursors),
-  `9400f57a` (needs-attention record), this commit (closure).
