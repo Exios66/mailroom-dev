@@ -23,6 +23,61 @@ and is recorded there, not here.
 
 ### Added
 
+- **Gmail intake channel + single-document free-triage lane** (HUB-037,
+  2026-09-03): the agent mailbox (`llmmailroom@gmail.com`) is a second intake
+  route in `packages/llm-mailroom` — stdlib IMAP-SSL poller embedded in the
+  watcher (the lock holder stays the single intake authority), `/upload`
+  sidecar routing, `[M:<id>]` subject matters, `\Seen` + Message-ID dedup,
+  sender allowlist, ✅ check reaction at claim time (both routes, with a
+  terminal-stage retry + `reactions_failed` counter), on-thread completion
+  echoes, intake awareness on every terminal manifest, and the FREE-model
+  single-document triage lane (`agents/gmail_triage.py`, `z-ai/glm-5.2:free` —
+  free models kept deliberately): core pipeline steps without the paid agents
+  (deterministic prep → triage classification → auditable-hash archive → echo)
+  with its own `triage_*` audit section, a deterministic capability pre-check
+  that honestly hands off oversized/vision-only/scanned documents to the full
+  paid pipeline (`intake.triage_handoff`), and all five canonical doc types
+  validated through the lane. Multi-document emails run the full paid
+  pipeline (triage never dispatched).
+- **Intake agent v2 — triage + clean + prepare** (HUB-038, 2026-09-03): the
+  pipeline's first node is now a SINGLE `intake` node — the intake agent IS
+  the ingest specialist (human directive: the ingest/intake split was an
+  unintentional naming mistake; unified constellation-wide). The
+  LLM-assisted pass (one fused call per window) TRIAGES (advisory read —
+  same vocabulary-clamped shape as the free triage team, fed to the sorter as
+  a labeled prior), CLEANS (gated structural repair, re-normalized through
+  the deterministic dojo clerk so `prep_invariants` hold), and PREPARES
+  (validated section map). **No-truncation doctrine (human directive):**
+  documents are NEVER truncated — anything past an input budget is processed
+  in overlapping sliding windows (`sliding_windows`, paragraph-boundary, 15%
+  overlap) so every character is read; the sorter classifies window-by-window
+  and merges deterministically (plurality vote, mean confidence of agreeing
+  windows), the retry path no longer slices text, and partial-window cleaning
+  is never spliced. Cost + efficiency: the LLM pass fires only for
+  messy/over-budget documents on the cheapest paid model (`qwen3.7-flash`);
+  `MAILROOM_LLM_INTAKE=0` disables; failures fail soft. Prompt registry
+  15 → 17 (`mailroom-gmail_triage`, `mailroom-intake`); model registry gains
+  the free `z-ai/glm-5.2:free` tier.
+- **Ingest/intake unification rename sweep** (HUB-038 follow-up,
+  2026-09-03): graph node `ingest` → `intake` (span `intake-document`; the
+  `ingested` audit event stays — compliance vocabulary) across the whole
+  constellation: llm-mailroom (`entry_route`, `intake_node`, tracing
+  registry), The-Mailroom (`Stage.INTAKE` enum, `pipeline_schema.py`
+  mirrors, `trace_interpreter.py`, TUI labels, web/hosted JS stage maps,
+  tests, demo scripts), agent-mailroom (`pipeline/ingest.py` →
+  `intake.py`), local-mailroom-sandbox and llm-dojo-scoring span mirrors,
+  and the pipeline lab notebook.
+- **Gmail free-triage production-pilot readiness** (HUB-039, 2026-09-03):
+  sender-allowlist pilot roster documented in `packages/llm-mailroom`
+  `.env.example` (production pilot roster; empty = accept all).
+- **Propagation sweep — all 10 feeder repositories in line with the
+  monorepo** (HUB-005 reopened, 2026-09-03): HUB-038/039 payload propagated
+  upstream via `sync_packages.py` — llm-mailroom (16 files), The-Mailroom
+  (22), agent-mailroom (7 + the `ingest.py`→`intake.py` renames carried by a
+  real subtree pull + full-history subtree push after the HUB-021 patch path
+  refused the cursor gap), llm-dojo-scoring (1), local-mailroom-sandbox (1);
+  cursors re-baselined per package in `scripts/packages_sync.json`.
+
 - **mailroom-corpus v8 — insurance LOB expansion + full GT conformance**
   (HUB-028, 2026-09-02): the corpus grows 1,650 → **2,000 rows** (strata
   48 → 50) with (a) +200 `property` rows from
@@ -68,6 +123,25 @@ and is recorded there, not here.
   `simulation_run_id` + `sequence_position` (strictly reproducible, §27).
   62 rows / 39 cols; published + sha256-verified (13/13). Stream builder
   `mailroom_eda.bundles.build_streams` with 3 new tests.
+### Changed
+
+- The-Mailroom stage enum + TUI/web/hosted labels: `ingest` → `intake`
+  (visualizer mirrors the unified pipeline topology).
+- `agents/sorter.py` bypasses the vendored HEAD+TAIL truncation — over-budget
+  documents classify in sliding windows with a deterministic merge; the
+  advisory intake prior + retry preamble reach every window.
+
+### Fixed
+
+- Gmail smoke mock hermetics: `run_mock` now forces the mock sender +
+  allowlist — the HUB-039 `.env` pilot roster had started rejecting the mock
+  sender (smoke is hermetic against the real `.env`).
+- Sync-cursor/content handling for renamed package paths: a real subtree
+  pull + full-history subtree push is now the documented path when a
+  monorepo-side rename leaves the upstream tip uncontained (patch push
+  cannot carry deletions).
+
+
 
 ## [0.1.0] - 2026-09-02
 
