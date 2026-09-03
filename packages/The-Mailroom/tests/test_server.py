@@ -172,7 +172,7 @@ def test_judge_gate_run_flows_through_display_api():
             doc_type="insurance_claim",
             verdict=None,
             quality=None,
-            span_names=["ingest-document", "classify-document",
+            span_names=["intake-document", "classify-document",
                         "extract-fields", "judge-verify"],
         ),
     ]

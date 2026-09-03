@@ -53,7 +53,7 @@ GEN_MODELS = {
 }
 
 SPAN_MS = {
-    "ingest-document": 3200,
+    "intake-document": 3200,
     "classify-document": 7200,
     "judge-verify": 6400,
     "arbitrate-verdict": 7700,
@@ -209,7 +209,7 @@ def build_run(spec, start):
         ),
     )
     cursor = t1
-    cursor = add_node(run, cursor, "ingest-document")
+    cursor = add_node(run, cursor, "intake-document")
     cursor = add_node(run, cursor, "classify-document", gen="classify", agent="sorter")
     if spec.get("retry_classify"):
         cursor = add_node(run, cursor, "classify-document", gen="classify", agent="sorter")

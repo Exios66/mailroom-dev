@@ -19,10 +19,10 @@ from .models import Phase, Stage
 # a floor envelope never falls through to INBOX/unknown when the producer
 # records the underscored graph id instead of the display span.
 SPAN_STAGE_MAP: dict[str, Stage] = {
-    "ingest-document": Stage.INGEST,
-    "normalize-intake": Stage.INGEST,
-    "transcribe-pdf": Stage.INGEST,
-    "extract-image-text": Stage.INGEST,
+    "intake-document": Stage.INTAKE,
+    "normalize-intake": Stage.INTAKE,
+    "transcribe-pdf": Stage.INTAKE,
+    "extract-image-text": Stage.INTAKE,
     "classify-document": Stage.CLASSIFY,
     "judge-verify": Stage.JUDGE_VERIFY,
     "arbitrate-verdict": Stage.ARBITER,
@@ -33,7 +33,7 @@ SPAN_STAGE_MAP: dict[str, Stage] = {
     "write-catalog": Stage.CATALOG,
     "archive-document": Stage.ARCHIVE,
     # LangGraph add_node ids (build_graph.py)
-    "ingest": Stage.INGEST,
+    "intake": Stage.INTAKE,
     "classify": Stage.CLASSIFY,
     "retry_classify": Stage.RETRY_CLASSIFY,
     "review_classify": Stage.RETRY_CLASSIFY,
@@ -55,7 +55,7 @@ SPAN_STAGE_MAP: dict[str, Stage] = {
 # result / LegalBench answer; span = remaining units of work.
 NODE_OBSERVATION_TYPES: dict[str, str] = {
     "document-pipeline": "chain",
-    "ingest-document": "span",
+    "intake-document": "span",
     "normalize-intake": "span",
     "extract-image-text": "retriever",
     "transcribe-pdf": "retriever",
@@ -100,7 +100,7 @@ def observation_type_for(name: str, default: str = "span") -> str:
 
 STAGE_PHASE: dict[Stage, Phase] = {
     Stage.INBOX: Phase.INTAKE_SORT,
-    Stage.INGEST: Phase.INTAKE_SORT,
+    Stage.INTAKE: Phase.INTAKE_SORT,
     Stage.CLASSIFY: Phase.INTAKE_SORT,
     Stage.RETRY_CLASSIFY: Phase.INTAKE_SORT,
     Stage.EXTRACT: Phase.EXTRACTION_ADJUDICATION,
@@ -120,7 +120,7 @@ STAGE_PHASE: dict[Stage, Phase] = {
 # Node traversal order used to order spans into a routing path (mirrors the
 # add_node wiring order in llm-mailroom graph/build_graph.py).
 NODE_ORDER: list[Stage] = [
-    Stage.INGEST,
+    Stage.INTAKE,
     Stage.CLASSIFY,
     Stage.RETRY_CLASSIFY,
     Stage.EXTRACT,
@@ -152,8 +152,8 @@ AGENTS: dict[str, dict[str, str]] = {
     # compile_report is procedural in llm-mailroom v0.6.0 (no get_llm).
     "reporter": {"label": "Reporter", "role": "report"},
     "judge": {"label": "Judge", "role": "evaluate"},
-    "pdf_transcriber": {"label": "Transcriber", "role": "ingest"},
-    "image_extractor": {"label": "Image Extractor", "role": "ingest"},
+    "pdf_transcriber": {"label": "Transcriber", "role": "intake"},
+    "image_extractor": {"label": "Image Extractor", "role": "intake"},
 }
 
 # Live taxonomy classes that dispatch to a specialist (llm-mailroom v0.6.0 /

@@ -94,7 +94,7 @@ def compute_ops_status(runs: Optional[list] = None) -> OpsStatus:
     for run in rows:
         data = _as_dict(run)
         stage = _stage_token(data.get("stage"))
-        if data.get("needs_human") or stage in ("review", "processing", "inbox", "ingest", "classify"):
+        if data.get("needs_human") or stage in ("review", "processing", "inbox", "intake", "classify"):
             queue_depth += 1
         stamp = _run_ts(run)
         if stamp is not None and stamp >= hour_ago and stage in (

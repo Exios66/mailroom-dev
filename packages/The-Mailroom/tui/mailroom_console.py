@@ -51,13 +51,13 @@ WINDOW_S = int(os.environ.get("MAILROOM_RECENT_WINDOW", "604800"))
 LAST_ERRORS: deque[str] = deque(maxlen=80)
 
 STAGE_ORDER = [
-    "inbox", "ingest", "classify", "retry_classify", "review_classify",
+    "inbox", "intake", "classify", "retry_classify", "review_classify",
     "extract", "retry_extract", "judge_verify", "arbiter",
     "boss", "review", "report", "catalog", "archive", "archived", "failed",
 ]
 
 STAGE_STYLE = {
-    "inbox": "grey50", "ingest": "grey70", "classify": "cyan",
+    "inbox": "grey50", "intake": "grey70", "classify": "cyan",
     "retry_classify": "cyan", "extract": "yellow", "retry_extract": "yellow",
     "judge_verify": "magenta", "arbiter": "magenta",
     "boss": "red", "review": "bright_yellow", "report": "green",
@@ -66,7 +66,7 @@ STAGE_STYLE = {
 }
 
 STATION_BY_STAGE = {
-    "inbox": "INBOX", "ingest": "Sorter", "classify": "Sorter",
+    "inbox": "INBOX", "intake": "Sorter", "classify": "Sorter",
     "retry_classify": "Sorter", "review_classify": "Sorter",
     "extract": "Specialist", "retry_extract": "Specialist",
     "judge_verify": "Judge", "arbiter": "Arbiter",

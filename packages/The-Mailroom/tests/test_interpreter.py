@@ -34,7 +34,7 @@ def test_v4_camelcase_observations():
     assert by_name["document-pipeline"].observation_type == "CHAIN"
     assert by_name["document-pipeline"].is_root is True
     assert by_name["classify-document"].observation_type == "AGENT"
-    assert by_name["ingest-document"].observation_type == "SPAN"
+    assert by_name["intake-document"].observation_type == "SPAN"
     assert [s.name for s in run.spans][-1] == "archive-document"
     gen = run.generations[0]
     assert gen.model == "deepseek/deepseek-v4-flash"
@@ -68,7 +68,7 @@ def test_archived_run_full():
     assert run.cost_usd == 0.00055
     assert len(run.spans) == 6
     assert {s.name: s.observation_type for s in run.spans} == {
-        "ingest-document": "SPAN",
+        "intake-document": "SPAN",
         "classify-document": "AGENT",
         "extract-fields": "AGENT",
         "compile-report": "AGENT",
@@ -76,7 +76,7 @@ def test_archived_run_full():
         "archive-document": "SPAN",
     }
     assert run.routing_path == [
-        "ingest",
+        "intake",
         "classify",
         "extract",
         "report",
@@ -151,7 +151,7 @@ def test_review_stage():
     trace = make_trace(
         "t-review",
         stage="review",
-        span_names=["ingest-document", "classify-document", "route-for-review"],
+        span_names=["intake-document", "classify-document", "route-for-review"],
         verdict=None,
         quality=None,
     )
@@ -172,7 +172,7 @@ def test_retry_detection():
     trace = make_trace(
         "t-retry",
         span_names=[
-            "ingest-document",
+            "intake-document",
             "classify-document",
             "classify-document",
             "extract-fields",
@@ -190,11 +190,11 @@ def test_in_flight_derives_stage_from_last_span():
     trace = make_trace(
         "t-inflight",
         stage="processing",
-        span_names=["ingest-document", "classify-document"],
+        span_names=["intake-document", "classify-document"],
         verdict=None,
     )
     run = _run(trace)
-    assert run.stage in (Stage.CLASSIFY, Stage.INGEST)
+    assert run.stage in (Stage.CLASSIFY, Stage.INTAKE)
     assert run.phase == Phase.INTAKE_SORT
 
 
@@ -263,7 +263,7 @@ def test_unknown_span_skipped_from_routing_path():
     trace = make_trace(
         "t-unknown-span",
         stage="weird-stage",
-        span_names=["ingest-document", "mystery-node", "classify-document"],
+        span_names=["intake-document", "mystery-node", "classify-document"],
         verdict=None,
     )
     run = _run(trace)
@@ -431,7 +431,7 @@ def test_judge_and_arbiter_spans_route_and_order():
     trace = make_trace(
         "t-judge-arbiter",
         span_names=[
-            "ingest-document",
+            "intake-document",
             "classify-document",
             "extract-fields",
             "judge-verify",
@@ -444,7 +444,7 @@ def test_judge_and_arbiter_spans_route_and_order():
     run = _run(trace)
     assert run.stage == Stage.ARCHIVED
     assert run.routing_path == [
-        "ingest",
+        "intake",
         "classify",
         "extract",
         "judge_verify",
@@ -459,7 +459,7 @@ def test_judge_verify_inflight_derives_from_last_span():
     trace = make_trace(
         "t-judge-inflight",
         stage="processing",
-        span_names=["ingest-document", "classify-document", "extract-fields", "judge-verify"],
+        span_names=["intake-document", "classify-document", "extract-fields", "judge-verify"],
         verdict=None,
     )
     run = _run(trace)
@@ -471,7 +471,7 @@ def test_arbiter_inflight_derives_from_last_span():
     trace = make_trace(
         "t-arbiter-inflight",
         stage="processing",
-        span_names=["ingest-document", "classify-document", "extract-fields",
+        span_names=["intake-document", "classify-document", "extract-fields",
                     "judge-verify", "arbitrate-verdict"],
         verdict=None,
     )
@@ -485,7 +485,7 @@ def test_reviewer_pass_does_not_stack_retry_classify():
     trace = make_trace(
         "t-reviewer-pass",
         span_names=[
-            "ingest-document",
+            "intake-document",
             "classify-document",
             "classify-document",
             "classify-document",
@@ -502,7 +502,7 @@ def test_insurance_claim_doc_class_roundtrip():
     trace = make_trace(
         "t-insurance",
         doc_type="insurance_claim",
-        span_names=["ingest-document", "classify-document", "extract-fields",
+        span_names=["intake-document", "classify-document", "extract-fields",
                     "compile-report", "write-catalog", "archive-document"],
     )
     run = _run(trace)
@@ -521,7 +521,7 @@ def test_schema_mirror_covers_upstream_contract():
                   "image_extractor", "intake"):
         assert agent in ps.AGENTS
     assert "normalize-intake" in ps.SPAN_STAGE_MAP
-    assert ps.SPAN_STAGE_MAP["normalize-intake"] == Stage.INGEST
+    assert ps.SPAN_STAGE_MAP["normalize-intake"] == Stage.INTAKE
     assert "image-extractor" not in ps.AGENTS
     assert "compliance_specialist" in ps.AGENTS
     assert "compliance_filing" in ps.LIVE_DOC_TYPES
@@ -577,7 +577,7 @@ def test_typed_datamodel_observations_keep_routing_and_generations():
         "t-datamodel",
         base_time=base,
         span_names=[
-            "ingest-document",
+            "intake-document",
             "normalize-intake",
             "transcribe-pdf",
             "classify-document",

@@ -26,7 +26,7 @@ const App = (() => {
 
   const STATIONS = [
     { key: "inbox", label: "Inbox", stages: ["inbox"] },
-    { key: "sorter", label: "Sorter", stages: ["ingest", "classify", "retry_classify", "review_classify", "unknown"] },
+    { key: "sorter", label: "Sorter", stages: ["intake", "classify", "retry_classify", "review_classify", "unknown"] },
     { key: "extract", label: "Extract", stages: ["extract", "retry_extract"] },
     { key: "judge", label: "Judge", stages: ["judge_verify", "arbiter"] },
     { key: "boss", label: "Boss", stages: ["boss"] },
@@ -37,10 +37,10 @@ const App = (() => {
   ];
 
   const SPAN_STAGE = {
-    "ingest-document": "ingest",
-    "normalize-intake": "ingest",
-    "transcribe-pdf": "ingest",
-    "extract-image-text": "ingest",
+    "intake-document": "ingest",
+    "normalize-intake": "intake",
+    "transcribe-pdf": "intake",
+    "extract-image-text": "intake",
     "classify-document": "classify",
     "judge-verify": "judge_verify",
     "arbitrate-verdict": "arbiter",
@@ -50,7 +50,7 @@ const App = (() => {
     "compile-report": "report",
     "write-catalog": "catalog",
     "archive-document": "archive",
-    ingest: "ingest",
+    intake: "intake",
     classify: "classify",
     retry_classify: "retry_classify",
     review_classify: "retry_classify",

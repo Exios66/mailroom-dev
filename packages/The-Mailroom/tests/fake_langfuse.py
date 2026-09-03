@@ -60,7 +60,7 @@ def make_trace(
 ) -> dict:
     base_time = base_time or datetime(2026, 1, 1, 12, 0, 0)
     span_names = list(span_names or [
-        "ingest-document",
+        "intake-document",
         "classify-document",
         "extract-fields",
         "compile-report",
@@ -68,8 +68,8 @@ def make_trace(
         "archive-document",
     ])
     if intake_output and "normalize-intake" not in span_names:
-        if "ingest-document" in span_names:
-            span_names.insert(span_names.index("ingest-document") + 1, "normalize-intake")
+        if "intake-document" in span_names:
+            span_names.insert(span_names.index("intake-document") + 1, "normalize-intake")
         else:
             span_names.insert(0, "normalize-intake")
     obs = []
@@ -241,7 +241,7 @@ def make_trace_v4(
     EVALUATOR / RETRIEVER / CHAIN), not a blanket SPAN.
     """
     base_time = datetime(2026, 3, 3, 9, 0, 0)
-    span_names = ["ingest-document", "classify-document", "extract-fields", "archive-document"]
+    span_names = ["intake-document", "classify-document", "extract-fields", "archive-document"]
     if intake_output:
         span_names.insert(1, "normalize-intake")
     obs = [

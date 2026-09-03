@@ -48,9 +48,9 @@ def test_get_run_full_interpretation():
     assert any(g.model == "qwen2.5:7b" for g in run.generations)
     # node observations mapped through SPAN_STAGE_MAP + NODE_OBSERVATION_TYPES
     names = [s.name for s in run.spans]
-    assert "ingest-document" in names and "archive-document" in names
+    assert "intake-document" in names and "archive-document" in names
     by_name = {s.name: s.observation_type for s in run.spans}
-    assert by_name["ingest-document"] == "SPAN"
+    assert by_name["intake-document"] == "SPAN"
     # index 1 of the fixture is the LLM child (same name as classify-document
     # in some traces, but here it is a GENERATION — nodes stay typed).
     assert by_name["extract-fields"] == "AGENT"

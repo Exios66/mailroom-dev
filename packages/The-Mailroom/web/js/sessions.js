@@ -14,7 +14,7 @@ const SessionsView = (() => {
     else if (["judge_verify", "arbiter"].includes(run.stage)) cls = "stage-judge";
     else if (["report", "catalog", "archive"].includes(run.stage)) cls = "stage-report";
     else if (["extract", "retry_extract", "boss"].includes(run.stage)) cls = "stage-extract";
-    else if (["inbox", "ingest", "classify", "retry_classify", "review_classify", "unknown"].includes(run.stage)) cls = "stage-intake";
+    else if (["inbox", "intake", "classify", "retry_classify", "review_classify", "unknown"].includes(run.stage)) cls = "stage-intake";
     return `<span class="chip ${cls}">${Mailroom.esc((run.stage || "unknown").toUpperCase())}</span>`;
   }
 

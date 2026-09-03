@@ -31,7 +31,7 @@ RUN = {
     "verdict": "CORRECT",
     "quality": 0.97,
     "cost_usd": 0.0496,
-    "routing_path": ["ingest", "classify", "extract", "report", "catalog", "archive"],
+    "routing_path": ["intake", "classify", "extract", "report", "catalog", "archive"],
 }
 
 
@@ -119,7 +119,7 @@ def test_metrics_table_renders():
 def test_inspect_panels_build():
     run = dict(
         RUN,
-        spans=[{"name": "ingest-document", "status": "SUCCESS", "latency": 3.2,
+        spans=[{"name": "intake-document", "status": "SUCCESS", "latency": 3.2,
                 "observation_type": "SPAN"},
                {"name": "classify-document", "status": "SUCCESS", "latency": 4.1,
                 "observation_type": "AGENT"},
@@ -133,7 +133,7 @@ def test_inspect_panels_build():
     panels = inspect_panels(run)
     assert len(panels) == 4
     text = "\n".join(render(p) for p in panels)
-    assert "ingest-document" in text
+    assert "intake-document" in text
     assert "AGENT" in text
     assert "EVALUATOR" in text
     assert "OBSERVATIONS" in text
@@ -180,7 +180,7 @@ def test_post_json_is_exported():
 
 
 def test_station_map_covers_stages():
-    for stage in ("ingest", "classify", "retry_classify", "review_classify",
+    for stage in ("intake", "classify", "retry_classify", "review_classify",
                   "extract", "judge_verify", "arbiter", "boss", "review",
                   "report", "catalog", "archive", "archived", "failed"):
         assert stage in STATION_BY_STAGE

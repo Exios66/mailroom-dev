@@ -52,7 +52,7 @@ const Floor = (() => {
       return { x: 24, y: ENV_Y };
     }
     if (st === "classify" || st === "retry_classify" || st === "review_classify"
-        || st === "ingest" || st === "unknown") {
+        || st === "intake" || st === "unknown") {
       return { x: STATIONS[0].x, y: ENV_Y };
     }
     if (st === "extract" || st === "retry_extract") {
@@ -416,7 +416,7 @@ const Floor = (() => {
     // step is paced by its real span latency (capped) instead of a fixed
     // 600/700 ms.
     const spanToStage = {
-      "ingest-document": "ingest",
+      "intake-document": "ingest",
       "classify-document": "classify",
       "judge-verify": "judge_verify",
       "arbitrate-verdict": "arbiter",

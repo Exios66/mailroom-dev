@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 
 class Stage(str, Enum):
     INBOX = "inbox"
-    INGEST = "ingest"
+    INTAKE = "intake"
     CLASSIFY = "classify"
     RETRY_CLASSIFY = "retry_classify"
     EXTRACT = "extract"
@@ -33,7 +33,7 @@ class Stage(str, Enum):
 
 
 class Phase(str, Enum):
-    INTAKE_SORT = "intake_sort"            # ingest + classify
+    INTAKE_SORT = "intake_sort"            # intake + classify
     EXTRACTION_ADJUDICATION = "extraction"  # extract + retries + boss
     REPORTING_ARCHIVE = "reporting"         # report + catalog + archive
     REVIEW = "review"                       # human review siding

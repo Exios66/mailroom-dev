@@ -76,7 +76,7 @@ def make_phoenix_trace(
     base_time = base_time or datetime(2026, 1, 1, 12, 0, 0)
     session_id = session_id or matter_id
     span_names = span_names or [
-        "ingest-document",
+        "intake-document",
         "classify-document",
         "extract-fields",
         "compile-report",

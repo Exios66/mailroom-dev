@@ -8,7 +8,7 @@ def test_fake_client_keeps_caller_owned_empty_list():
 
     traces: list[dict] = []
     client = FakeClient(traces)
-    traces.append(make_trace("t-live", filename="live.pdf", stage="ingest"))
+    traces.append(make_trace("t-live", filename="live.pdf", stage="intake"))
     listed = client.api.trace.list().data
     assert len(listed) == 1
     assert listed[0]["id"] == "t-live"
@@ -16,7 +16,7 @@ def test_fake_client_keeps_caller_owned_empty_list():
 
 def test_pilot_schedule_covers_stations_and_cast():
     stages = {extra.get("stage") for _, action, key, extra in SCHEDULE}
-    assert {"inbox", "ingest", "classify", "extract", "judge_verify", "arbiter",
+    assert {"inbox", "intake", "classify", "extract", "judge_verify", "arbiter",
             "report", "catalog", "archived", "review", "failed"} <= stages
     assert {key for _, _, key, _ in SCHEDULE} == set(CAST)
     traces: list[dict] = []

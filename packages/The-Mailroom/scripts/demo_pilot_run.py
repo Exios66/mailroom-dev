@@ -87,17 +87,17 @@ CAST: dict[str, dict[str, Any]] = {
 # action: spawn | stage
 SCHEDULE: list[tuple[float, str, str, dict[str, Any]]] = [
     (0.0, "spawn", "incoming", {"stage": "inbox"}),
-    (0.0, "spawn", "contract", {"stage": "ingest"}),
+    (0.0, "spawn", "contract", {"stage": "intake"}),
     (2.2, "stage", "contract", {"stage": "classify"}),
-    (3.0, "spawn", "claim", {"stage": "ingest"}),
+    (3.0, "spawn", "claim", {"stage": "intake"}),
     (5.0, "stage", "contract", {"stage": "extract"}),
     (5.2, "stage", "claim", {"stage": "classify"}),
-    (7.0, "spawn", "merger", {"stage": "ingest"}),
+    (7.0, "spawn", "merger", {"stage": "intake"}),
     (8.0, "stage", "contract", {"stage": "judge_verify"}),
     (10.0, "stage", "claim", {"stage": "extract"}),
     (10.2, "stage", "merger", {"stage": "classify"}),
     (12.0, "stage", "contract", {"stage": "report"}),
-    (13.0, "spawn", "letter", {"stage": "ingest"}),
+    (13.0, "spawn", "letter", {"stage": "intake"}),
     (14.0, "stage", "claim", {"stage": "judge_verify"}),
     (14.2, "stage", "merger", {"stage": "extract"}),
     (16.0, "stage", "contract", {"stage": "catalog"}),
@@ -106,7 +106,7 @@ SCHEDULE: list[tuple[float, str, str, dict[str, Any]]] = [
     (18.2, "stage", "merger", {"stage": "review", "stamp": True}),
     (18.4, "stage", "claim", {"stage": "report"}),
     (20.0, "stage", "letter", {"stage": "extract"}),
-    (20.5, "spawn", "articles", {"stage": "ingest"}),
+    (20.5, "spawn", "articles", {"stage": "intake"}),
     (22.0, "stage", "claim", {"stage": "catalog"}),
     (22.2, "stage", "articles", {"stage": "classify"}),
     (24.0, "stage", "claim", {"stage": "archived", "stamp": True}),
@@ -124,7 +124,7 @@ def _now():
     return datetime.now(timezone.utc)
 
 
-def spawn(traces: list[dict], key: str, stage: str = "ingest") -> dict:
+def spawn(traces: list[dict], key: str, stage: str = "intake") -> dict:
     from tests.fake_langfuse import make_trace
 
     spec = CAST[key]
@@ -138,11 +138,11 @@ def spawn(traces: list[dict], key: str, stage: str = "ingest") -> dict:
         stage=stage,
         doc_type=spec["doc_type"],
         class_conf=spec["class_conf"],
-        extract_conf=spec.get("extract_conf") if stage not in ("ingest", "classify") else None,
+        extract_conf=spec.get("extract_conf") if stage not in ("intake", "classify") else None,
         verdict=None,
         quality=None,
         base_time=_now(),
-        span_names=["ingest-document"],
+        span_names=["intake-document"],
     )
     trace["updated_at"] = _now()
     traces.append(trace)
@@ -179,10 +179,10 @@ def set_stage(trace: dict, stage: str, *, stamp: bool = False) -> None:
 
 def apply_event(traces: list[dict], action: str, key: str, extra: dict) -> dict:
     if action == "spawn":
-        return spawn(traces, key, extra.get("stage", "ingest"))
+        return spawn(traces, key, extra.get("stage", "intake"))
     found = next((t for t in traces if t["id"] == f"pilot-{key}"), None)
     if found is None:
-        found = spawn(traces, key, "ingest")
+        found = spawn(traces, key, "intake")
     set_stage(found, extra["stage"], stamp=bool(extra.get("stamp")))
     return found
 

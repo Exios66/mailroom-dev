@@ -38,7 +38,7 @@ _OUTPUT_STAGE_MAP = {
     "archived": Stage.ARCHIVED,
     "failed": Stage.FAILED,
     "review": Stage.HUMAN_REVIEW,
-    "processing": Stage.INGEST,
+    "processing": Stage.INTAKE,
     "classified": Stage.CLASSIFY,
     "extracting": Stage.EXTRACT,
     "reporting": Stage.COMPILE_REPORT,
@@ -343,7 +343,7 @@ def derive_stage(
 
     The pipeline's generic in-flight marker ("processing") carries no node
     detail, so when it appears we refine with real span progress — otherwise
-    a run sitting in the judge gate or arbiter displays as "ingest" until it
+    a run sitting in the judge gate or arbiter displays as "intake" until it
     reaches a terminal stage.
     """
     raw = _clean(output.get("stage"))
@@ -357,10 +357,10 @@ def derive_stage(
     else:
         mapped = _OUTPUT_STAGE_MAP.get(raw.lower(), None)
         if mapped is not None:
-            if mapped is Stage.INGEST and spans:
+            if mapped is Stage.INTAKE and spans:
                 for span in reversed(spans):
                     st = SPAN_STAGE_MAP.get(span.name)
-                    if st is not None and st is not Stage.INGEST:
+                    if st is not None and st is not Stage.INTAKE:
                         return st
             return mapped
         if raw.lower() in _LIVE_STAGE_NAMES:
@@ -411,7 +411,7 @@ def _observation_name(obs: dict[str, Any]) -> Optional[str]:
 
 # Langfuse data-model types used as node observations (not LLM generations).
 # llm-mailroom #29 types classify/extract as AGENT, judge-verify as
-# EVALUATOR, ingest OCR as RETRIEVER, and the document run as CHAIN.
+# EVALUATOR, intake OCR as RETRIEVER, and the document run as CHAIN.
 _NODE_OBSERVATION_TYPES = frozenset({
     "SPAN",
     "EVENT",

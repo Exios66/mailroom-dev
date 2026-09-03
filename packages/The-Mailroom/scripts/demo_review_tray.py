@@ -60,7 +60,7 @@ def build_cast(base_time: datetime | None = None) -> list[dict[str, Any]]:
             verdict="PARTIAL",
             quality=0.44,
             span_names=[
-                "ingest-document", "classify-document", "extract-fields",
+                "intake-document", "classify-document", "extract-fields",
                 "route-for-review",
             ],
             output_extra={
@@ -80,7 +80,7 @@ def build_cast(base_time: datetime | None = None) -> list[dict[str, Any]]:
             verdict="PARTIAL",
             quality=0.48,
             span_names=[
-                "ingest-document", "classify-document", "extract-fields",
+                "intake-document", "classify-document", "extract-fields",
                 "route-for-review",
             ],
             doc_subclass="fnol",

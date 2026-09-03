@@ -105,7 +105,7 @@ def test_live_poll_matches_server_interval_and_pipeline_ops():
     assert 'get("/api/pipeline")' in API
     hosted_app = (ROOT / "hosted" / "js" / "app.js").read_text()
     hosted_client = (ROOT / "hosted" / "js" / "client.js").read_text()
-    assert '"normalize-intake": "ingest"' in hosted_app
+    assert '"normalize-intake": "intake"' in hosted_app
     assert "applyPipelineOps" in hosted_app
     assert "startFallbackPolling" in hosted_app
     assert '{ key: "inbox", label: "Inbox", stages: ["inbox"] }' in hosted_app
