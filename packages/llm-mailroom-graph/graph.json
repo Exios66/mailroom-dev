@@ -3930,14 +3930,14 @@
       "source_location": "L98"
     },
     {
-      "id": "src_graph_build_graph_ingest_node",
-      "label": "ingest_node()",
+      "id": "src_graph_build_graph_intake_node",
+      "label": "intake_node()",
       "_callable": true,
       "_origin": "ast",
       "community": 19,
       "community_name": "Community 19",
       "file_type": "code",
-      "norm_label": "ingest_node()",
+      "norm_label": "intake_node()",
       "source_file": "src/graph/build_graph.py",
       "source_location": "L529"
     },
@@ -25621,7 +25621,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_graph_build_graph_ensure_dirs",
       "relation": "calls",
       "_origin": "ast",
@@ -25633,7 +25633,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_pipeline_bins_get_worker_id",
       "relation": "calls",
       "_origin": "ast",
@@ -25645,7 +25645,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_graph_build_graph_py_path",
       "relation": "calls",
       "_origin": "ast",
@@ -25657,7 +25657,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_pipeline_bins_inbox_dir",
       "relation": "calls",
       "_origin": "ast",
@@ -25669,7 +25669,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_pipeline_bins_claim_file",
       "relation": "calls",
       "_origin": "ast",
@@ -25681,7 +25681,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_graph_build_graph_read_file_text",
       "relation": "calls",
       "_origin": "ast",
@@ -25693,7 +25693,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_agents_intake_apply_intake",
       "relation": "calls",
       "_origin": "ast",
@@ -25705,7 +25705,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_observability_suite_scoring_score_and_log_intake",
       "relation": "calls",
       "_origin": "ast",
@@ -25717,7 +25717,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_graph_build_graph_render_doc_pages",
       "relation": "calls",
       "_origin": "ast",
@@ -25729,7 +25729,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_schemas_manifest_documentmanifest",
       "relation": "calls",
       "_origin": "ast",
@@ -25741,7 +25741,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_graph_build_graph_catalog_upsert",
       "relation": "calls",
       "_origin": "ast",
@@ -25753,7 +25753,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_graph_build_graph_file_sha256",
       "relation": "calls",
       "_origin": "ast",
@@ -25765,7 +25765,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_graph_build_graph_file_size",
       "relation": "calls",
       "_origin": "ast",
@@ -25777,7 +25777,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_graph_build_graph_emit_stage_audit",
       "relation": "calls",
       "_origin": "ast",
@@ -41581,7 +41581,7 @@
       "weight": 1.0
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_graph_build_graph_py_any",
       "relation": "references",
       "_origin": "ast",
@@ -56203,7 +56203,7 @@
     },
     {
       "source": "src_graph_build_graph",
-      "target": "src_graph_build_graph_ingest_node",
+      "target": "src_graph_build_graph_intake_node",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -73596,7 +73596,7 @@
     },
     {
       "source": "src_graph_build_graph_build_graph",
-      "target": "src_graph_build_graph_ingest_node",
+      "target": "src_graph_build_graph_intake_node",
       "relation": "indirect_call",
       "_origin": "ast",
       "confidence": "INFERRED",
@@ -74315,7 +74315,7 @@
       "weight": 0.8
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_graph_state_documentstate",
       "relation": "uses",
       "_origin": "ast",
@@ -74776,7 +74776,7 @@
       "weight": 0.8
     },
     {
-      "source": "src_graph_build_graph_ingest_node",
+      "source": "src_graph_build_graph_intake_node",
       "target": "src_schemas_manifest_pipelinestage",
       "relation": "uses",
       "_origin": "ast",

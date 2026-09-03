@@ -40,7 +40,7 @@ Entry: `mailroom-web` / `python -m server.main` → `http://127.0.0.1:8001/`.
 3. Live path: Langfuse via backend. `?demo=1` only when the source is down
    (opt-in). GH Pages may serve bundled `data/*.json` snapshot mode — that is
    the static edition, not a live canned floor.
-4. Station map must include `inbox`, ingest/classify/retry, extract, judge,
+4. Station map must include `inbox`, intake/classify/retry, extract, judge,
    arbiter, boss, report, catalog/archive, review, archived/failed.
 5. Do not invent a linter/formatter/typechecker.
 

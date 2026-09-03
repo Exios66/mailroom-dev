@@ -15,7 +15,7 @@ description: Mailroom Observatory hosted desk (hosted/ vanilla SPA at /live, mai
 - Vanilla HTML/CSS/JS, no npm. Cache-bust `?v=` on the three script tags + CSS.
 - Debug: `window.__OBSERVATORY_DEBUG__` — fetch/WS/error ring; Export / Pull /
   Push against `/api/debug/*`.
-- Inbox tray is its own station (`stage=inbox`); sorter is ingest/classify.
+- Inbox tray is its own station (`stage=inbox`); sorter is intake/classify.
 
 ## Live vs snapshot
 

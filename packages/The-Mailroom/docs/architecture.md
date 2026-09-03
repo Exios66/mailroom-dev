@@ -75,7 +75,7 @@ A `document-pipeline` trace carries:
   (PDF/image ingest), **SPAN** (intake, catalog, archive, review route),
   **GENERATION** (`pipeline-result`, LegalBench `answer-question`, and
   auto-traced LLM calls). Verb-first names map to stages by
-  `pipeline_schema.SPAN_STAGE_MAP` (`ingest-document`, `classify-document`,
+  `pipeline_schema.SPAN_STAGE_MAP` (`intake-document`, `classify-document`,
   `judge-verify`, `arbitrate-verdict`, `extract-fields`, `route-for-review`,
   `adjudicate-conflict`, `compile-report`, `write-catalog`,
   `archive-document`, …). The root chain is shown in the inspector and

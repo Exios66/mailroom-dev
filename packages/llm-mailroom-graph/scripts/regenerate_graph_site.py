@@ -208,7 +208,7 @@ what_changed = (
     'Tests, notebooks, and <code>.opencode/skills</code> are excluded on purpose.</p>'
     '<p style="margin-top:.7rem">Navigate the <a href="./">architecture map</a> '
     'as <b>layers ' + wc_arrow + ' modules ' + wc_arrow + ' symbols</b>. '
-    'The 13-node conveyor strip at the top jumps to <code>ingest_node</code>, '
+    'The 13-node conveyor strip at the top jumps to <code>intake_node</code>, '
     '<code>classify_node</code>, Lane A/B, Boss, catalog, and archive. '
     'Comments (rationale nodes) are hidden until you uncheck them. '
     'Double-click a symbol to isolate its neighborhood.</p>\n</div>\n</section>'
