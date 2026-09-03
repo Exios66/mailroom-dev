@@ -62,7 +62,6 @@ label audit on every change to `governance/`, `scripts/`, or `.github/`.
 
 | Card | Status | Task | Owner | Issue | Evidence |
 |---|---|---|---|---|---|
-| HUB-005 | `needs_attention` | **Release-train readiness** — at the next package release: bump the consuming pins (release-time only; `packages/llm-mailroom/src/scripts/bump_dojo_scoring.py` for the dojo pin), propagate monorepo work upstream with `python scripts/sync_packages.py push --package <name>`, tag in the standalone repo. One card per release sweep; scope it when claimed. SCOPE (2026-09-03, human directive "ensure that all feeder repositories are properly synced to the content contained in the monorepo"): the propagation leg NOW — push the full monorepo-ahead payload upstream via `push --patch`, no tag/version bumps this sweep (pin bumps stay release-time; llm-mailroom's own release decision untouched). | opencode (GLM-5.3-Flash) 2026-09-03 | — | workspace rules in `AGENTS.md` (pins keep their published git lines). HUB-021 note: the driver now quantifies the per-package monorepo-ahead payload (its `status` output IS this card's work list) and `push --patch` makes the publish leg reliable. **PROPAGATION 9/10 DONE (2026-09-03, sweep commit `65ff6b88`):** llm-mailroom-graph (3), llm-dojo-scoring (12), claims-data-eda (22), Enron-Evaluation-Environment (23), agent-mailroom (31), The-Mailroom (37), local-mailroom-sandbox (43), llm-entity-extraction (81), mailroom-corpus-eda (99) — 351 files landed as one fast-forward commit each on the upstream tip (new tips re-baselined in `scripts/packages_sync.json`, `status` shows upstream==synced with ZERO monorepo-ahead residue for all nine). **needs: llm-mailroom blocked by the in-flight HUB-038 subtree** — patch_push copies WORKTREE content per package prefix, and a parallel session holds uncommitted HUB-038 edits (12 tracked files + 1 untracked test, `agents/intake.py` etc.) in exactly that subtree; pushing would sweep unfinished work upstream. The moment HUB-038 commits and the tree is clean: try plain `git subtree push` FIRST (the pending llm-mailroom delta includes the HUB-023 fixture RENAME `notebooks/fixtures/huggingface/docclass-merged.json` → `mailroom-corpus.json`; patch-push cannot carry deletions and currently REFUSES on that 1-path cursor gap — plain subtree push carries the rename; fallback = `pull --squash` to clear the gap then `push --patch --package llm-mailroom`, which would land BOTH fixture names upstream). Unverified: whether upstream has moved again at push time — re-run `status` first. |
 | HUB-006 | `assigned` | **External agent communication thread integration** — the human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board's "stand-in" note, and record the handover in Evidence. | Exios66 | — | opened 2026-08-30 by the human directive |
 | HUB-020 | `assigned` | **docclass eval judge prompts still grade against the retired 8-class "EXTENDED primary set"** — discovered during HUB-019 component 6: `packages/llm-entity-extraction/src/prompts_docclass.py` (judge/reviewer/arbiter/boss docclass prompts) and the byte-mirror `packages/The-Mailroom/mailroom_ui/docclass_prompts.py` instruct judges to grade against the extended 8-class list (incl. retired compliance_filing/court_opinion/due_diligence) while the docclass GT is the canonical five (plan §5/§66/§93; docs/v7-taxonomy.md §5 avoid-list). Land in THIS monorepo (human directive: all work in mailroom-dev): add NEW prompt version keys (never mutate versions that have run) with five-class + `unknown` grading language per plan §67, mirror byte-identical into The-Mailroom, leave default selection unchanged until a same-surface A/B validates v1; option-list ↔ schema-enum test parity maintained. Decision open for the human: whether the docclass arm keeps the extended surface as deliberate eval design (KANBAN-033 lineage) or moves to five-class grading. | unclaimed | — | HUB-019 Evidence 2026-09-02 |
 | HUB-036 | `assigned` | **v9 corpus candidate: INSURBIAS insurance-claim source** — spawned at HUB-028 close (append-only law: the deferred item gets a card before the parent closes). HUB-028 evaluated INSURBIAS for the v8 LOB expansion and deferred it as GT-sparse; v9 (or later) should re-evaluate it alongside the P4 expansion priorities (`docs/reports/audits/docclass_expansion_priorities.md` — insurance_workflow is HIGH: adjuster 0%, partial denial_reasons/supporting_documents), license permitting. | unclaimed | — | spawned from HUB-028 close-out 2026-09-02; see HUB-028 archive entry |
@@ -847,3 +846,31 @@ Finished cards, append-only, newest last.
   guards, UTC-stamp and CWD anchoring fixes, notebook regeneration). Evidence:
   `ab4bf9e`, `10c5f8b4`, `fe4b8d47`; all 7 suites green — **2,331 passed /
   72 skipped, 0 failed**.
+
+- **HUB-005** (done 2026-09-03) — **Release-train readiness — propagation
+  sweep: all 10 feeder repositories synced to the monorepo content** — human
+  directive ("ensure that all feeder repositories are properly synced to the
+  content contained in the monorepo"). Scope note: propagation leg only — no
+  tag/version bumps this sweep (pin bumps stay release-time). Landed: 9 of
+  10 feeders via `sync_packages.py push --patch` (HUB-021 path; one
+  fast-forward commit each on the upstream tip, cursor re-baselined per
+  package in `scripts/packages_sync.json`): llm-mailroom-graph (3 files),
+  llm-dojo-scoring (12), claims-data-eda (22), Enron-Evaluation-Environment
+  (23), agent-mailroom (31), The-Mailroom (37), local-mailroom-sandbox (43),
+  llm-entity-extraction (81), mailroom-corpus-eda (99) — 351 files total.
+  llm-mailroom (88 files) was BLOCKED mid-sweep: `patch_push` copies
+  worktree content per package prefix and a parallel session held
+  uncommitted HUB-038 edits in exactly that subtree — recorded
+  needs_attention rather than sweeping unfinished work upstream; the leg
+  completed after HUB-038 committed (tree clean). llm-mailroom pushed via
+  PLAIN `git subtree push` (history-carrying) — required because the
+  pending delta included the HUB-023 fixture RENAME
+  (`notebooks/fixtures/huggingface/docclass-merged.json` →
+  `mailroom-corpus.json`) which patch-push cannot carry (no deletions) and
+  which sat as the package's 1-path cursor gap; the plain push delivered
+  the rename and CLEARED the gap. Final verification: `status` 10/10 in
+  sync, upstream==synced everywhere, ZERO monorepo-ahead residue, ZERO
+  cursor gaps. Shared-checkout discipline held: per-prefix dirt check
+  before every push, targeted `git add` only. Hub tooling only — no
+  package suite impact. Evidence: `65ff6b88` (9-feeder sweep + cursors),
+  `9400f57a` (needs-attention record), this commit (closure).
