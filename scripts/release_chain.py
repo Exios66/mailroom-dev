@@ -274,20 +274,29 @@ def _bump_pyproject(version: str) -> None:
 
 def _stamp_changelog(version: str, today: str) -> None:
     lines = CHANGELOG.read_text(encoding="utf-8").splitlines()
-    if lines[0].rstrip().lower() != "## [unreleased]":
-        raise ChainError("expected the first CHANGELOG section header to be ## [Unreleased]")
+    # The "## [Unreleased]" header may sit below a preamble (title + scope
+    # note); locate it and preserve everything above it (a file that starts
+    # with the header keeps an empty preamble).
+    unreleased_idx = None
+    for idx, line in enumerate(lines):
+        if SECTION_RE.match(line) and line.rstrip().lower() == "## [unreleased]":
+            unreleased_idx = idx
+            break
+    if unreleased_idx is None:
+        raise ChainError("expected a ## [Unreleased] section header in the CHANGELOG")
+    preamble = lines[:unreleased_idx]
     # find the end of the Unreleased body (next section header or EOF)
     end = len(lines)
-    for idx in range(1, len(lines)):
+    for idx in range(unreleased_idx + 1, len(lines)):
         if SECTION_RE.match(lines[idx]):
             end = idx
             break
-    body = lines[1:end]
+    body = lines[unreleased_idx + 1:end]
     while body and not body[0].strip():
         body.pop(0)
     while body and not body[-1].strip():
         body.pop()
-    stamped = ["## [Unreleased]", "", f"## [{version}] - {today}", *body, ""]
+    stamped = [*preamble, "## [Unreleased]", "", f"## [{version}] - {today}", *body, ""]
     CHANGELOG.write_text("\n".join(stamped + lines[end:]) + "\n", encoding="utf-8")
 
 

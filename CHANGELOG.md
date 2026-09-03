@@ -21,6 +21,15 @@ and is recorded there, not here.
 
 ## [Unreleased]
 
+### Fixed
+
+- `release_chain.py cut` no longer requires `## [Unreleased]` to be the file's
+  first line — the section header is located anywhere in the CHANGELOG and
+  the preamble (title + scope note) is preserved when stamping a release
+  section (discovered while cutting v0.2.0).
+
+## [0.2.0] - 2026-09-03
+
 ### Added
 
 - **Gmail intake channel + single-document free-triage lane** (HUB-037,
@@ -141,8 +150,6 @@ and is recorded there, not here.
   monorepo-side rename leaves the upstream tip uncontained (patch push
   cannot carry deletions).
 
-
-
 ## [0.1.0] - 2026-09-02
 
 First hub release: the monorepo as development source of truth for the
@@ -213,5 +220,7 @@ agent-mailroom v0.2.0, local-mailroom-sandbox v0.1.0.
 - Upstream drift reconciled across all packages; `sync status` 10/10 in sync
   (HUB-004, HUB-018); stale pins/counts swept (HUB-010/016/018).
 
-[Unreleased]: https://github.com/Exios66/mailroom-dev/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Exios66/mailroom-dev/compare/v0.2.0...HEAD
+[0.1.0]: https://github.com/Exios66/mailroom-dev/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Exios66/mailroom-dev/releases/tag/v0.1.0
+[0.2.0]: https://github.com/Exios66/mailroom-dev/releases/tag/v0.2.0
