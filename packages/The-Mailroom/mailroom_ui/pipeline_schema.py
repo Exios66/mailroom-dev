@@ -332,7 +332,9 @@ DOC_SUBCLASS_BY_CLASS: dict[str, tuple[str, ...]] = {
         "email", "letter", "memo", "notice", "demand", "attorney_demand",
         "press_release", "meeting_request",
     ),
-    "insurance_claim": ("pde", "inpatient", "outpatient", "carrier"),
+    "insurance_claim": (
+        "pde", "inpatient", "outpatient", "carrier", "property", "auto",
+    ),
     "compliance_filing": (
         "10-K", "10-Q", "8-K", "S-1", "DEF 14A", "13D", "13G",
         "Form 4", "20-F", "6-K", "other",

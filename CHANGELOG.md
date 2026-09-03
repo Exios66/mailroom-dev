@@ -21,6 +21,35 @@ and is recorded there, not here.
 
 ## [Unreleased]
 
+### Added
+
+- **Insurance-claim subclass alignment with the v8 synthetic LOB claims**
+  (HUB-041, 2026-09-03): the mailroom-corpus v8 GT (`eafe1ab4`) carries SIX
+  insurance subclasses (carrier/inpatient/outpatient/pde + property 200
+  GNOTHEIA + auto 150 BDR; 50 strata) but several surfaces still taught or
+  accepted only the four CMS tokens. Landed: dojo `corpus.py`
+  `DOC_TYPE_SUBCLASSES`/`CORPUS_SUBCLASS_SURFACES` + `mailroom.py`
+  `HUB_SUBCLASS_INVENTORIES` gain property/auto (v8 counts pinned in tests);
+  entity `sorter_agent.py` `INSURANCE_CLAIM_SUBCLASSES` (flows into the
+  DOCCLASS/PILOT `doc_subclass` enums — property/auto rows are now scoreable);
+  The-Mailroom `pipeline_schema.DOC_SUBCLASS_BY_CLASS`; llm-mailroom
+  `doc_inventories` fallback catalog + `taxonomy.yaml`/sorter insurance
+  descriptions; sandbox fixture gains property/auto rows. **New prompt
+  versions under the mailroom naming convention** (human directive; existing
+  `*_docclass_*` keys are frozen experiment identity):
+  `sorter_mailroom_v0` (extended arm, off v7) and `sorter_mailroom_pilot_v0`
+  (pilot arm, off pilot v3) extend rule 40 with the two LOB tokens — defaults
+  unchanged until a same-surface A/B; The-Mailroom
+  `mailroom_ui/docclass_prompts.py` mirrors the pilot key byte-identical
+  (32 keys). **Subclass-parity layer in `scripts/taxonomy_parity.py`** (all
+  classes): the Hub GT vocabulary (pinned per class from `eafe1ab4`) must be
+  covered by every subclass catalog surface (dojo catalogs + observed-GT
+  table, entity taxonomy `subclasses:` blocks + sorter lists, The-Mailroom
+  schema mirror, llm-mailroom doc_inventories fallback + extract claim_type
+  inventory) with extras tolerated only from documented rosters; CI path
+  triggers extended to the new surface files; verified pre-fix drift is
+  detected (mutation checks).
+
 ### Fixed
 
 - `release_chain.py cut` no longer requires `## [Unreleased]` to be the file's

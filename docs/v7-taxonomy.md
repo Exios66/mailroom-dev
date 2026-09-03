@@ -57,6 +57,23 @@ Examples used by the current sandbox/fixtures include:
 
 The exact subclass vocabulary is corpus-derived and should be treated as a stratum vocabulary, not promoted into the top-level production taxonomy unless explicitly adopted by the pipeline configuration.
 
+**v8 subclass strata (HUB-028, pinned `eafe1ab4`; HUB-041 alignment):** the
+v8 insurance LOB expansion grew the corpus to 2,000 rows / 50 strata and the
+insurance_claim subclass vocabulary from the four CMS file types to six:
+
+```text
+carrier · inpatient · outpatient · pde · property · auto
+```
+
+(`property` = 200 GNOTHEIA FNOL bundles, `auto` = 150 BDR motor decision
+letters; CMS rows keep `claim_type = health`). The pipeline configuration has
+since explicitly adopted this vocabulary on the subclass surfaces — the dojo
+subclass catalogs, the entity taxonomy `subclasses:` blocks + sorter subclass
+lists + the `sorter_mailroom_*` prompt lineages, The-Mailroom's
+`DOC_SUBCLASS_BY_CLASS`, and the mailroom sorter guard — and the
+taxonomy-parity gate (HUB-041 subclass layer) pins every surface to the Hub
+GT vocabulary.
+
 ## 3. Intent is a separate dimension
 
 Correspondence intent is **not a subclass**.
