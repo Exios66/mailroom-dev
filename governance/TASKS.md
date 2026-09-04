@@ -28,6 +28,18 @@ needs_attention tags, `type/*`, `priority/*`, `domain/*`, `kanban` marker);
 the CI gate `.github/workflows/board-governance.yml` runs `check` + the
 label audit on every change to `governance/`, `scripts/`, or `.github/`.
 
+**SESSION NOTE 2026-09-04 — recent commit-message reword (human directive
+"ensure all recent git commits contain fully detailed + explanatory commit
+messages"):** the last 15 commits (8f7141f1..f830b9a1) were rewritten
+message-only (subjects + full bodies now detail every file and change;
+authors, dates, trees described below) and force-pushed to origin/main —
+the new tip is `3526cccf`. Pre-rewrite SHAs remain reachable on the local
+branch `backup/pre-rewrite` (tip `f830b9a1`). If your session's local main
+is based on the old SHAs: `git fetch origin && git reset --hard origin/main`
+(your uncommitted work, if any, sits in `git status` — stash first, then
+pop). Tree contents are byte-identical to the pre-rewrite history — only
+commit messages changed.
+
 ## How to use — four steps
 
 1. **Read first.** Read this board (and open GitHub issues) at session start,
