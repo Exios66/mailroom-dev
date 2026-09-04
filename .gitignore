@@ -67,3 +67,4 @@ Thumbs.db
 *.db
 data/mailroom.db-shm
 data/mailroom.db-wal
+data/watcher_heartbeat.tmp
