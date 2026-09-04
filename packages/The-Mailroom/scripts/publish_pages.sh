@@ -6,16 +6,16 @@
 # branch", branch: gh-pages, folder: /docs) and never touches Actions.
 #
 # Site layout produced (under docs/ on the gh-pages branch):
-#   docs/index.html       SPA shell (relative asset paths)
-#   docs/static/{css,js}  pixel-engine assets
+#   docs/index.html       terminal site root (owlcot-style TTY)
+#   docs/terminal/        terminal site (terminal/) — the TTY
+#   docs/pixel/           pixel-art SPA console
+#   docs/pixel/static/{css,js}  pixel-engine assets
 #   docs/.nojekyll        disable Jekyll processing
 #   docs/data/*.json      snapshot exported from the trace source
 #                         (Langfuse / Phoenix / both) by export_snapshot.py
 #   docs/data/corpus.json slim catalog of Lucius-Morningstar/mailroom-corpus
 #                         (export_corpus_catalog.py) — backs the terminal
 #                         site's corpus ls/search/stats
-#   docs/terminal/        owlcot-style terminal site (terminal/) — the TTY
-#                         into the floor, corpus, and constellation
 #   docs/debug/build-info.json  provenance for agents (git sha, counts)
 #
 # Anything else already on the branch root is left untouched; legacy root-
@@ -94,16 +94,19 @@ if [[ -n "$DIRTY" ]]; then
   echo "note: working tree has uncommitted changes; build-info records HEAD ${HEAD_SHA} anyway"
 fi
 
-echo "== staging site shell =="
+echo "== staging site shell (pixel console -> /pixel/) =="
 rm -rf site
-mkdir -p site/static
-cp -R web/css web/js site/static/
-cp web/index.html site/
+mkdir -p site/pixel/static
+cp -R web/css web/js site/pixel/static/
+cp web/index.html site/pixel/
 touch site/.nojekyll
 
-echo "== staging terminal site (docs/terminal) =="
+echo "== staging terminal site (docs/terminal/) =="
 cp -R terminal site/terminal
 touch site/terminal/.nojekyll
+
+echo "== root index.html -> terminal =="
+cp terminal/index.html site/index.html
 
 if [[ "$SKIP_EXPORT" -ne 1 ]]; then
   echo "== exporting snapshot (source=${SOURCE} since=${SINCE_HOURS}h limit=${LIMIT}) =="
