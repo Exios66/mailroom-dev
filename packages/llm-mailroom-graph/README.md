@@ -2,7 +2,7 @@
 
 # 🔗 llm-mailroom-graph
 
-**Interactive knowledge graph of [llm-mailroom](https://github.com/Exios66/llm-mailroom) — the 13-node LangGraph pipeline visualized as a walkable architecture map.**
+**Interactive knowledge graph of [llm-mailroom](https://github.com/Exios66/llm-mailroom) — the 13-node LangGraph pipeline with Gmail triage and relations clerk auxiliary flows, visualized as a walkable architecture map.**
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Extractor](https://img.shields.io/badge/extractor-graphify%200.9.53-orange)](https://github.com/nicholasgasior/graphify)

@@ -48,16 +48,23 @@ operational. GitHub Pages sites exist for three of them.
 | Local-first LLM sandbox | [Exios66/local-mailroom-sandbox](https://github.com/Exios66/local-mailroom-sandbox) | — |
 | Derived knowledge-graph site | [Exios66/llm-mailroom-graph](https://github.com/Exios66/llm-mailroom-graph) | [exios66.github.io/llm-mailroom-graph](https://exios66.github.io/llm-mailroom-graph/) |
 
-## The 13-node pipeline (llm-mailroom v0.6.0)
+## The 13-node pipeline (llm-mailroom v0.4.0)
 
-`ingest → classify → (retry_classify) → review_classify → extract →
+`intake → classify → (retry_classify) → review_classify → extract →
 (retry_extract) → judge_verify → arbiter → human_review / boss_escalation →
-compile_report → catalog_write → archive`.
+compile_report → catalog_write → archive → relations scan`.
+
+Two auxiliary flows operate outside the 13-node graph: the **Gmail triage
+lane** (free OpenRouter model for single-document email uploads) and the
+**relations clerk** (post-archive deterministic association scanning with
+optional LLM judgment).
 
 The **compile_report** node is the **computational procedural reporter**
 (deterministic matter-record assembly — no LLM call); the reporter *agent*
-is retired. Classification second opinions run through the **sorter
-reviewer** (Lane A), which stays live.
+is retired. The **intake** node is the **ingest specialist** (HUB-038) —
+one fused TRIAGE + CLEAN + PREPARE pass over sliding windows. Classification
+second opinions run through the **sorter reviewer** (Lane A), which stays
+live.
 
 ## Repository layout
 
