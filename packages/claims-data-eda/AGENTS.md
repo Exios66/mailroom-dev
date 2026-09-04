@@ -81,7 +81,11 @@ scripts/
 reports/
 ├── eda/                     ← committed EDA output (report/findings/stats/figures)
 └── pipeline/README.md       ← wiring into llm-mailroom / llm-entity-extraction
+docs/examples/               ← real insurance_claim corpus documents as PDF samples
+                              (manifest + README; regenerate via render_samples.py --input <hub jsonl>)
+scripts/render_samples.py    ← deterministic zero-dep text→PDF sampler feeding docs/examples
 tests/test_pipeline.py       ← 30 unit tests (normalizers, renderer, GT schema, dump shape)
+tests/test_examples.py       ← sample-artifact + PDF-writer tests (no network)
 ```
 
 ## Key Design Decisions

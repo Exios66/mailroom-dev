@@ -157,7 +157,10 @@ hardening tracked as HUB-044.
   pruned from this repo — keep them out; reference the upstream repos.
   EXCEPTION: the mailroom-corpus-eda EDA deliverables (`reports/figures/`,
   `reports/figures_interactive/`, `reports/tables/`, `SUMMARY_REPORT.*`) are
-  tracked in full per human directive (HUB-008) — never prune them.
+  tracked in full per human directive (HUB-008) — never prune them. Second
+  exception: the claims-data-eda real-sample PDFs under `docs/examples/`
+  (8 small text PDFs, human directive 2026-09-04, HUB-046) — tracked in
+  full, regenerate only via `scripts/render_samples.py`.
 - Deploy configs (Dockerfile, nixpacks.toml, railway.json) inside each
   package are still standalone-repo aware; build images from the package
   directory as before.
