@@ -4,7 +4,7 @@ All notable changes to The-Mailroom are documented here, following
 [Keep a Changelog](https://keepachangelog.com) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] - 2026-09-04
 
 ### Added
 
