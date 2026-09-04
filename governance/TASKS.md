@@ -907,6 +907,12 @@ Finished cards, append-only, newest last.
   Nothing is lost — the commits are on local `main` and a scoped push
   (`gh auth refresh -s workflow` or any credential with `workflow` scope)
   lands everything verbatim; until then origin/main is behind local.
+  **RESOLUTION (2026-09-03, later same hour):** the parallel session's scoped
+  push landed `88ece63b`/`7c8f8dd6`/`8f7141f1` (HUB-040 close, FULL suite 881
+  passed) and carried the HUB-041 commits (`54b8f52f`, `3f234ae7`) to
+  `origin/main` as ancestors — the workflow-scope blocker is moot (the
+  workflow-file change is already on origin). Only this correction note rides
+  the final commit.
 
 - **HUB-040** (done 2026-09-03) — **Relations agent — semantic linking + auditable relations ledger + knowledge graphs** — human
   directive ("add a deterministic + potential LLM agent tasked with linking associated topics, associated documents, and
