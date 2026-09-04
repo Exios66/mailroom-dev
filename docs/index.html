@@ -1,119 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>THE MAILROOM</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23141416'/%3E%3Crect x='3' y='3' width='10' height='10' fill='%2395272e' stroke='%23e26863' stroke-width='2'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="static/css/theme.css?v=0.3.11">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#050709">
+<meta name="robots" content="index,follow">
+<meta name="description" content="THE MAILROOM — a terminal. Type ls, cat, cd, corpus, repos, floor to explore the llm-mailroom pipeline, the mailroom-corpus dataset, and the constellation of repos that make it run.">
+<link rel="canonical" href="https://exios66.github.io/The-Mailroom/terminal/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="THE MAILROOM">
+<meta property="og:title" content="THE MAILROOM — mailroom@floor:~">
+<meta property="og:description" content="The llm-mailroom pipeline as an interactive terminal. Type 'help' to begin.">
+<meta property="og:url" content="https://exios66.github.io/The-Mailroom/terminal/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="THE MAILROOM — mailroom@floor:~">
+<meta name="twitter:description" content="The llm-mailroom pipeline as an interactive terminal. Type 'help' to begin.">
+<title>THE MAILROOM — mailroom@floor:~</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23050709'/%3E%3Crect x='7' y='8' width='18' height='16' fill='%23a3e635'/%3E%3Crect x='9' y='10' width='14' height='2' fill='%23050709'/%3E%3Crect x='9' y='14' width='14' height='2' fill='%23050709'/%3E%3Crect x='9' y='18' width='9' height='2' fill='%23050709'/%3E%3C/svg%3E" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/terminal.css?v=0.4.0">
 </head>
 <body>
-<div class="bezel">
-  <div class="screen">
-    <header class="titlebar">
-      <div class="logo">
-        <span class="logo-mark">&#9632;</span>
-        <h1>THE MAILROOM</h1>
-        <span class="logo-sub">llm-mailroom visual engine</span>
-      </div>
-      <div class="title-right">
-        <span id="source-light" class="light light-off"></span>
-        <span id="source-label" class="mono">SOURCE: --</span>
-        <span id="clock" class="mono">--:--:--</span>
-      </div>
-    </header>
+  <!-- CRT overlay -->
+  <div class="crt-overlay" id="crtOverlay" aria-hidden="true">
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+    <div class="flicker"></div>
+  </div>
 
-    <nav class="tabs" id="tabs">
-      <button class="tab active" data-view="floor">FLOOR</button>
-      <button class="tab" data-view="review">REVIEW</button>
-      <button class="tab" data-view="sessions">SESSIONS</button>
-      <button class="tab" data-view="history">HISTORY</button>
-      <button class="tab" data-view="metrics">METRICS</button>
-      <button class="tab" data-view="console">CONSOLE</button>
-    </nav>
+  <!-- Ambient mailroom skyline -->
+  <div id="ambientSkyline" aria-hidden="true">
+    <div class="fog f1"></div>
+    <div class="fog f2"></div>
+    <svg class="skyline back" id="skylineBack" preserveAspectRatio="none" viewBox="0 0 1440 120"></svg>
+    <svg class="skyline front" id="skylineFront" preserveAspectRatio="none" viewBox="0 0 1440 120"></svg>
+    <div id="ambientConveyor"></div>
+  </div>
 
-    <main>
-      <section id="view-floor" class="view">
-        <canvas id="floor" width="1440" height="480"></canvas>
-        <div id="floor-hint" class="hint mono">click an envelope to inspect its run</div>
-      </section>
+  <!-- Status bar -->
+  <header class="status-bar" role="banner">
+    <div class="status-group">
+      <span class="status-item essential"><span class="dot" aria-hidden="true"></span>mailroom@floor</span>
+      <span class="status-item essential">pwd: <b id="statusPath">~</b></span>
+      <span class="status-item essential"><a class="sister-link" id="statusPixel" href="../" title="the pixel console — same runs, more chrome">pixel&nbsp;↗</a></span>
+      <span class="status-item"><a class="sister-link" id="statusObs" href="../live/" title="the hosted Observatory">observatory&nbsp;↗</a></span>
+      <span class="status-item"><a class="sister-link" id="statusHub" href="https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus" target="_blank" rel="noopener noreferrer" title="the mailroom-corpus dataset on the Hub">hub&nbsp;↗</a></span>
+    </div>
+    <div class="status-group">
+      <span class="status-item">theme: <b id="statusTheme">amber</b></span>
+      <span class="status-item">crt: <b id="statusCrt">on</b></span>
+      <span class="status-item">sound: <b id="statusSound">off</b></span>
+      <span class="status-item">corpus: <b id="statusCorpus">…</b></span>
+      <span class="status-item essential" id="statusTime">--:--:--</span>
+    </div>
+  </header>
 
-      <section id="view-review" class="view" hidden>
-        <div class="panel-head mono">REVIEW SIDING — WAITING ON A HUMAN</div>
-        <div id="review-queue" class="list mono"></div>
-      </section>
+  <!-- Terminal body -->
+  <main class="terminal" role="main">
+    <div class="output" id="output" aria-live="polite" aria-label="terminal output" tabindex="-1"></div>
 
-      <section id="view-sessions" class="view" hidden>
-        <div class="panel-head mono">SESSIONS / MATTERS</div>
-        <div id="sessions-list" class="list mono"></div>
-      </section>
-
-      <section id="view-history" class="view" hidden>
-        <div class="panel-head mono">RUN HISTORY — CLICK TO REPLAY ON FLOOR</div>
-        <div id="history-controls" style="display:flex;gap:8px;margin-bottom:10px">
-          <button id="history-refresh" class="px-btn mono">REFRESH</button>
-          <span class="mono" style="color:var(--gray-dim);align-self:center">click REPLAY to animate a past run through the pipeline</span>
+    <div class="prompt-line" id="promptLine">
+      <span class="prompt" id="promptText" aria-hidden="true">mailroom@floor<span class="path">:~</span>$</span>
+      <div class="input-area">
+        <div class="input-display" aria-hidden="true">
+          <span id="typedText"></span><span class="block-cursor" id="blockCursor"></span><span class="ghost-text" id="ghostText"></span>
         </div>
-        <div id="history-list" class="list mono"></div>
-      </section>
-
-      <section id="view-metrics" class="view" hidden>
-        <div class="panel-head mono">METRICS</div>
-        <div id="metrics-grid" class="metrics-grid"></div>
-      </section>
-
-      <section id="view-console" class="view" hidden>
-        <div class="panel-head mono">LIVE CONSOLE</div>
-        <div id="console-tools" style="display:flex;gap:8px;margin-bottom:8px">
-          <button id="debug-toggle" class="px-btn mono">DEBUG OFF</button>
-          <span class="mono" style="color:var(--gray-dim);align-self:center">DEBUG reveals low-level lines · verbose capture to __MAILROOM_DEBUG__ (dump/export)</span>
-        </div>
-        <pre id="console-log" class="console mono"></pre>
-      </section>
-    </main>
-
-    <footer class="statusbar mono">
-      <span id="status-left">MAILROOM STANDING BY</span>
-      <span id="status-right"></span>
-    </footer>
-  </div>
-</div>
-<div id="error-banner" class="error-banner mono" hidden></div>
-
-<div id="inspector" class="overlay" hidden>
-  <div class="overlay-panel">
-    <div class="insp-head">
-      <span id="insp-title" class="mono"></span>
-      <button id="insp-close" class="px-btn mono">X</button>
+        <input
+          type="text"
+          id="cmdInput"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          aria-label="terminal command input"
+          autofocus
+        />
+      </div>
     </div>
-    <div id="insp-body" class="mono"></div>
-  </div>
-</div>
+  </main>
 
-<div id="closed" class="overlay" hidden>
-  <div class="overlay-panel closed-panel">
-    <div class="insp-head">
-      <span class="mono">MAILROOM CLOSED</span>
-      <span class="light light-red"></span>
+  <noscript>
+    <div style="position:fixed;inset:0;background:#050709;color:#d8d4ce;display:flex;align-items:center;justify-content:center;padding:2rem;text-align:center;z-index:999;">
+      <p>This page is an interactive terminal and needs JavaScript.<br>
+      The pixel console lives at <a style="color:#67e8f9" href="../">https://exios66.github.io/The-Mailroom/</a></p>
     </div>
-    <div style="padding:26px 22px">
-      <div class="closed-stamp mono">CLOSED</div>
-      <div class="closed-body mono">no Langfuse connection. The floor is empty until the
-        pipeline's Langfuse project responds — nothing on screen is ever served
-        from local or canned data.</div>
-      <button id="closed-retry" class="px-btn mono">RETRY CONNECTION</button>
-    </div>
-  </div>
-</div>
+  </noscript>
 
-<script src="static/js/api.js?v=0.3.11"></script>
-<script src="static/js/floor.js?v=0.3.11"></script>
-<script src="static/js/inspector.js?v=0.3.11"></script>
-<script src="static/js/sessions.js?v=0.3.11"></script>
-<script src="static/js/history.js?v=0.3.11"></script>
-<script src="static/js/metrics.js?v=0.3.11"></script>
-<script src="static/js/review.js?v=0.3.11"></script>
-<script src="static/js/console.js?v=0.3.11"></script>
-<script src="static/js/main.js?v=0.3.11"></script>
+<script src="js/data.js?v=0.4.0"></script>
+<script src="js/terminal.js?v=0.4.0"></script>
 </body>
 </html>

@@ -90,9 +90,9 @@ ___ ___ ___ ___ ___ ___ ___ ___ ___
     '',
     '| surface | what it is |',
     '|---|---|',
-    '| this terminal | a TTY into the floor, the corpus, and the constellation |',
-    '| pixel console | the CRT conveyor floor (`pixel` to jump) |',
-    '| observatory | the public hosted desk (`observatory` to jump) |',
+    '| this terminal | the root page — a TTY into the floor, corpus, and constellation |',
+    '| pixel console | the CRT conveyor floor (`pixel` to jump to `/pixel/`) |',
+    '| observatory | the hosted /live desk (live server only) |',
     '| mailroom-tui | the same console in your own terminal — `pip install -e . && mailroom-tui` |',
     '',
     '**Langfuse is the sole source of truth.**  Every run, span, and score you',
@@ -175,8 +175,8 @@ SETTINGS
     skyline [on|off]  toggle the ambient mailroom skyline
 
 LINKS
-    pixel             the pixel console (root of this site)
-    observatory       the hosted /live desk
+    pixel             the pixel console (/pixel/ on this site)
+    observatory       the hosted /live desk (live server only)
     hub               the mailroom-corpus dataset on Hugging Face
     tui               how to run mailroom-tui in your own terminal
 
