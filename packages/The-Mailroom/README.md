@@ -10,13 +10,20 @@ multi-agent legal-document pipeline.** The Mailroom renders every pipeline run a
 animated conveyor of document envelopes — sorter, specialist bays, the boss's desk,
 the reporter, the archive — driven entirely by **Langfuse traces**. 
 
-Three live surfaces share one display API (`/api/*` + `/ws`):
+Four surfaces share one display API (`/api/*` + `/ws`):
 
-| Surface | Command | URL |
+| Surface | Command / URL | Notes |
 |---|---|---|
-| Pixel-art console | `mailroom-web` | `http://127.0.0.1:8001/` |
-| Hosted Observatory | `mailroom-hosted` (also `/live` on the same server) | `http://127.0.0.1:8001/live` |
-| TUI | `mailroom-tui` | terminal (`MAILROOM_API_URL`) |
+| Pixel-art console | `mailroom-web` → `http://127.0.0.1:8001/` | the CRT conveyor floor |
+| Hosted Observatory | `mailroom-hosted` (also `/live` on the same server) | public operations desk |
+| TUI | `mailroom-tui` | typed-command REPL (`MAILROOM_API_URL`) |
+| Terminal site | `…/terminal/` on GH Pages | owlcot-style TTY: `ls`/`cat`/`cd`, `corpus ls|show`, `repos` |
+
+The terminal site and the TUI both add a **dataset viewer** (`corpus …`
+commands over `Lucius-Morningstar/mailroom-corpus` — slim windowed
+listing, live per-row `doc_text` + ground truth) and a **constellation
+repo browser** (`repos …` — every mirror package plus the hub copies and
+derived graph sites).
 
 Agent skills (Langfuse / Phoenix / Braintrust / Ollama / Modal / Hugging Face
 plus pixel, Observatory, live floor, schema sync, Pages, TUI, operator desk):
@@ -66,7 +73,7 @@ cp .env.example .env      # add LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY
 mailroom-web              # → http://127.0.0.1:8001  (pixel-art console)
                           #    Observatory is also at /live on the same server
 mailroom-hosted           # → public Observatory on 0.0.0.0 (container-ready)
-mailroom-tui              # AgentLab-style live console (same data, in a terminal)
+mailroom-tui              # typed-command REPL (floor/corpus/repos/inspect)
 pip install -e ".[operator]"  # optional: operator desk (auth / archive / observer)
 pip install -e ".[ui]"        # marker only; React desk still needs Node
 mailroom-observer         # bin watcher (or MAILROOM_OBSERVER=1 on mailroom-web)

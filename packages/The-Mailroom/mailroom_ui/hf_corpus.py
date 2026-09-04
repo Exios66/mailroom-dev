@@ -60,12 +60,20 @@ def fetch_rows(
     revision: str | None = None,
     page_size: int = 100,
     max_rows: int | None = None,
+    offset: int = 0,
+    page_sleep: float = 0.0,
 ) -> list[dict[str, Any]]:
-    """Page the Hub datasets-server ``/rows`` API for one config/split."""
+    """Page the Hub datasets-server ``/rows`` API for one config/split.
+
+    ``offset`` starts paging at a row index within the split (used for
+    single-row / windowed fetches by the TUI corpus browser and the Pages
+    corpus catalog).  ``page_sleep`` paces requests between pages — the
+    unauthenticated Hub budget is small, so long exports should pass
+    something like 1.0.
+    """
     ds = dataset or corpus_id()
     rev = revision if revision is not None else corpus_revision()
     out: list[dict[str, Any]] = []
-    offset = 0
     headers = _auth_headers()
     while True:
         length = page_size
@@ -86,12 +94,20 @@ def fetch_rows(
         url = ROWS_API + "?" + urllib.parse.urlencode(q)
         last: Exception | None = None
         page: dict[str, Any] | None = None
-        for attempt in range(3):
+        # 429 (rate limit) needs a much slower ladder than transient 5xx
+        # blips — the unauthenticated datasets-server budget is small.
+        for attempt in range(4):
             try:
                 req = urllib.request.Request(url, headers=headers)
                 with urllib.request.urlopen(req, timeout=60) as resp:
                     page = json.loads(resp.read().decode())
                 break
+            except urllib.error.HTTPError as exc:
+                last = exc
+                if exc.code == 429:
+                    time.sleep(5.0 * (2 ** attempt))  # 5s, 10s, 20s, 40s
+                else:
+                    time.sleep(2 * (attempt + 1))
             except Exception as exc:  # noqa: BLE001 — transient Hub blips
                 last = exc
                 time.sleep(2 * (attempt + 1))
@@ -104,6 +120,8 @@ def fetch_rows(
         if len(batch) < length:
             break
         offset += len(batch)
+        if page_sleep > 0:
+            time.sleep(page_sleep)
     return out
 
 

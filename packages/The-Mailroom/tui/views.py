@@ -367,18 +367,20 @@ def corpus_table(rows: list[SlimRow], title: str = "MAILROOM-CORPUS") -> Table:
 
 def corpus_stats_table(split_counts: dict[str, int],
                        class_counts: dict[str, int]) -> Table:
-    table = Table(title="CORPUS STATS — Lucius-Morningstar/mailroom-corpus",
-                  box=None, pad_edge=False, expand=True)
-    table.add_column("SPLIT", style="bold")
-    table.add_column("ROWS", justify="right")
+    split_table = Table(title="SPLITS", box=None, pad_edge=False, expand=True)
+    split_table.add_column("SPLIT", style="bold")
+    split_table.add_column("ROWS", justify="right")
     for split, count in split_counts.items():
-        table.add_row(split, str(count))
-    table.add_section()
-    table.add_column("DOC CLASS", style="cyan")
-    table.add_column("ROWS", justify="right")
+        split_table.add_row(split, str(count))
+    class_table = Table(title="DOC CLASSES", box=None, pad_edge=False, expand=True)
+    class_table.add_column("DOC CLASS", style="cyan")
+    class_table.add_column("ROWS", justify="right")
     for cls, count in class_counts.items():
-        table.add_row(cls.replace("_", " "), str(count))
-    return table
+        class_table.add_row(cls.replace("_", " "), str(count))
+    return Group(
+        split_table,
+        class_table,
+    )
 
 
 def corpus_detail_panels(slim: SlimRow, row: Optional[dict],

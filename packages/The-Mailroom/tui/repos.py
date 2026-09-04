@@ -91,20 +91,41 @@ CONSTELLATION: dict[str, dict[str, str]] = {
                  "derived artifact site rebuilt from the source repo.",
         "homepage": "https://exios66.github.io/llm-mailroom-graph/",
     },
-    "Mailroom-Corpus-EDA": {
+    "mailroom-corpus-eda": {
         "role": "corpus",
         "dist": "mailroom-corpus-eda",
+        # Upstream repo keeps the capitalized casing; the monorepo package
+        # (and the sync cursor) use the lowercase name.
+        "repo": "Mailroom-Corpus-EDA",
         "blurb": "Dedicated repository for the full HF LLM-Mailroom corpus "
                  "exploratory data analysis + the centralized Hub upload "
                  "helpers (mailroom-corpus dataset family).",
         "homepage": "",
     },
+    "mailroom-dev": {
+        "role": "hub",
+        "dist": "mailroom-hub",
+        "blurb": "The monorepo of the LLM-Mailroom project (this workspace) — "
+                 "one uv workspace, one lockfile, all feeder repositories "
+                 "mirrored as packages. Canonical hub URL: "
+                 "https://github.com/Exios66/mailroom-dev.",
+        "homepage": "",
+    },
     "mailroom-hub": {
         "role": "hub",
         "dist": "mailroom-hub",
-        "blurb": "The monorepo of the LLM-Mailroom project — one uv workspace, "
-                 "one lockfile, all feeder repositories mirrored as packages.",
-        "homepage": "https://exios66.github.io/mailroom-dev/",
+        "blurb": "Monorepo mirror of Exios66/mailroom-dev under the "
+                 "mailroom-hub release name (CHANGELOG + release chain + "
+                 "vX.Y.Z tags).",
+        "homepage": "",
+    },
+    "LLM-Postal": {
+        "role": "hub",
+        "dist": "mailroom-hub",
+        "blurb": "Monorepo mirror of the LLM-Mailroom constellation — one "
+                 "checkout, one virtualenv, ten packages, zero cross-repo "
+                 "import friction.",
+        "homepage": "",
     },
     "mailroom-dev-graph": {
         "role": "derived",
@@ -112,7 +133,7 @@ CONSTELLATION: dict[str, dict[str, str]] = {
         "blurb": "Interactive graphify knowledge graph of the mailroom-dev "
                  "monorepo — 4,870 code symbols, 16,161 edges, 325 communities "
                  "across 9 packages.",
-        "homepage": "",
+        "homepage": "https://exios66.github.io/mailroom-dev-graph/",
     },
     "llm-entity-extraction-graph": {
         "role": "derived",
@@ -128,7 +149,9 @@ CACHE_TTL = float(os.environ.get("MAILROOM_REPOS_TTL", "3600"))
 
 
 def repo_url(name: str) -> str:
-    return f"https://github.com/{GITHUB_ORG}/{name}"
+    meta = CONSTELLATION.get(name, {})
+    repo = meta.get("repo", name)
+    return f"https://github.com/{GITHUB_ORG}/{repo}"
 
 
 def all_repos() -> list[dict[str, str]]:
@@ -191,7 +214,11 @@ def open_repo(name: str) -> bool:
 
 
 def lookup(name: str) -> Optional[dict[str, str]]:
+    """Match a repo name, tolerating an ``Exios66/`` org prefix."""
+    needle = name.strip().lower()
+    if needle.startswith("exios66/"):
+        needle = needle[len("exios66/"):]
     for repo in all_repos():
-        if repo["name"].lower() == name.lower().replace("/", ""):
+        if repo["name"].lower() == needle:
             return repo
     return None

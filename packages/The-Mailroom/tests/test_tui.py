@@ -1,9 +1,15 @@
 """TUI console tests: banner/table building from payloads (no live server)."""
 
+import json
 from collections import deque
+from pathlib import Path
 
+import pytest
 from rich.console import Console
 
+from tui import commands as cmds
+from tui import repos as repos_mod
+from tui.corpus import CorpusClosed, CorpusClient
 from tui.mailroom_console import (
     LAST_ERRORS,
     STATION_BY_STAGE,
@@ -20,6 +26,9 @@ from tui.mailroom_console import (
     runs_to_banners,
     sessions_table,
 )
+from tui.views import corpus_stats_table, corpus_table, repos_table
+
+ROOT = Path(__file__).resolve().parent.parent
 
 RUN = {
     "trace_id": "demo-x",
@@ -234,3 +243,232 @@ def test_debug_panel_shows_ring():
 
 def test_live_window_matches_web_clients():
     assert WINDOW_S == 604800
+
+
+# ---------------------------------------------------------------------------
+# REPL command registry
+# ---------------------------------------------------------------------------
+
+def make_ctx(monkeypatch, rows=None):
+    ctx = cmds.CommandContext()
+    ctx.api_base = "http://127.0.0.1:8001"
+    ctx.window_s = WINDOW_S
+    if rows is not None:
+        monkeypatch.setattr("tui.corpus.hf_corpus.fetch_rows", lambda **kw: rows)
+    return ctx
+
+
+def test_command_registry_basic():
+    ctx = cmds.CommandContext()
+    assert cmds.run_command(ctx, "uname")[0].plain == \
+        "mailroom-tui — the llm-mailroom visual engine"
+    assert cmds.run_command(ctx, "echo hi there")[0].plain == "hi there"
+    assert cmds.run_command(ctx, "") == []
+    unknown = cmds.run_command(ctx, "definitely-not-a-command")
+    assert "command not found" in unknown[0].plain
+    assert cmds.run_command(ctx, "help")[0].plain.startswith("Available commands")
+    assert "corpus" in cmds.run_command(ctx, "help")[0].plain
+
+
+def test_man_pages_cover_registry():
+    for name in cmds.command_names():
+        assert name in cmds.MAN_PAGES, f"missing man page for {name}"
+
+
+def test_completion_candidates():
+    ctx = cmds.CommandContext()
+    assert "corpus" in cmds.completion_candidates(ctx, "cor")
+    assert {"ls", "show", "search", "stats"} <= set(cmds.completion_candidates(ctx, "corpus "))
+    assert cmds.completion_candidates(ctx, "corpus l")[0] == "ls"
+    names = cmds.completion_candidates(ctx, "open ")
+    assert "llm-mailroom" in names
+    assert "llm-mailroom" in cmds.completion_candidates(ctx, "repos ")
+
+
+def test_filter_command_sets_and_clears():
+    ctx = cmds.CommandContext()
+    cmds.run_command(ctx, "filter stage=archived")
+    assert ctx.filters["stage"] == "archived"
+    cmds.run_command(ctx, "filter clear")
+    assert ctx.filters["stage"] is None
+    bad = cmds.run_command(ctx, "filter bogus=1")
+    assert "unknown filter" in bad[0].plain
+
+
+def test_sentinels():
+    ctx = cmds.CommandContext()
+    assert cmds.run_command(ctx, "quit") == [cmds.QUIT]
+    assert cmds.run_command(ctx, "clear") == [cmds.CLEAR]
+    assert cmds.run_command(ctx, "floor") == [cmds.DESK_FLOOR]
+
+
+# ---------------------------------------------------------------------------
+# Corpus browser (mocked Hub, no network)
+# ---------------------------------------------------------------------------
+
+GT_ROW = {"filename": "a.txt", "expected": "contract",
+          "expected_subclass": "license", "content_sha256": "ab" * 32}
+DEFAULT_ROW = {"filename": "a.txt", "doc_text": "hello corpus", "metadata": {}}
+
+
+def _fake_fetch(split_rows: dict[str, list[dict]]):
+    """fetch_rows fake: split_rows maps split -> default rows; the GT config
+    mirrors the same filenames with GT_ROW fields."""
+    def fake(**kw):
+        split = kw["split"]
+        rows = split_rows.get(split, [])
+        if kw["config"] == "ground_truth":
+            return [dict(GT_ROW, filename=r["filename"]) for r in rows]
+        return [dict(DEFAULT_ROW, filename=r["filename"]) for r in rows]
+    return fake
+
+
+def test_corpus_catalog_uses_gt_for_class_and_sha(monkeypatch):
+    monkeypatch.setattr("tui.corpus.hf_corpus.fetch_rows",
+                        _fake_fetch({"train": [DEFAULT_ROW]}))
+    client = CorpusClient()
+    rows = client.catalog()
+    assert len(rows) == 1
+    assert rows[0].filename == "a.txt"
+    assert rows[0].doc_class == "contract"
+    assert rows[0].doc_subclass == "license"
+    assert rows[0].sha256 == "ab" * 32
+    assert rows[0].chars == len("hello corpus")
+
+
+def test_corpus_find_search_counts(monkeypatch):
+    monkeypatch.setattr(
+        "tui.corpus.hf_corpus.fetch_rows",
+        _fake_fetch({"train": [
+            {"filename": "f1.htm", "doc_text": "", "metadata": {}},
+            {"filename": "f2.htm", "doc_text": "", "metadata": {}},
+        ]}))
+    client = CorpusClient()
+    assert client.find("f2.htm").doc_subclass == "license"
+    assert [r.filename for r in client.search("contract")] == ["f1.htm", "f2.htm"]
+    assert client.split_counts()["train"] == 2
+    assert client.split_counts()["test"] == 0
+    assert client.class_counts()["contract"] == 2
+
+
+def test_corpus_row_fetches_with_offset(monkeypatch):
+    seen = []
+
+    def fake_fetch_rows(**kw):
+        seen.append((kw["config"], kw.get("offset", 0)))
+        return [{"filename": "a.txt", "doc_text": "the document", "metadata": {}}]
+
+    monkeypatch.setattr("tui.corpus.hf_corpus.fetch_rows", fake_fetch_rows)
+    monkeypatch.setattr("tui.corpus.hf_corpus.GT_CONFIG", "ground_truth")
+    monkeypatch.setattr("tui.corpus.hf_corpus.DEFAULT_CONFIG", "default")
+    client = CorpusClient(page_size=100)
+    row = client.row("a.txt")
+    assert row["doc_text"] == "the document"
+    assert seen[0] == ("default", 0)
+    gt = client.gt_row("a.txt")
+    assert gt is not None
+    assert seen[-1] == ("ground_truth", 0)
+
+
+def test_corpus_closed_state(monkeypatch):
+    def boom(**kw):
+        raise RuntimeError("hub down")
+
+    monkeypatch.setattr("tui.corpus.hf_corpus.fetch_rows", boom)
+    client = CorpusClient()
+    with pytest.raises(CorpusClosed):
+        client.catalog()
+
+
+def test_corpus_command_ls_with_mock(monkeypatch):
+    monkeypatch.setattr("tui.corpus.hf_corpus.fetch_rows",
+                        _fake_fetch({"train": [DEFAULT_ROW]}))
+    ctx = make_ctx(monkeypatch)
+    out = cmds.run_command(ctx, "corpus ls")
+    text = render(out[0])
+    assert "contract" in text
+    assert "a.txt" in text
+
+
+# ---------------------------------------------------------------------------
+# Constellation repo manifest (completeness contract)
+# ---------------------------------------------------------------------------
+
+def _sync_packages():
+    sync = json.loads((ROOT.parents[1] / "scripts" / "packages_sync.json").read_text())
+    return {k.lower() for k in sync["packages"].keys()}
+
+
+def test_repos_manifest_covers_every_synced_package():
+    """Every package the monorepo mirrors upstream must appear in the TUI
+    constellation manifest (the 'browse the other repositories' surface)."""
+    names = {r["name"].lower() for r in repos_mod.all_repos()}
+    missing = _sync_packages() - names
+    assert not missing, f"manifest missing synced packages: {sorted(missing)}"
+
+
+def test_repos_manifest_covers_hub_and_derived():
+    names = {r["name"] for r in repos_mod.all_repos()}
+    for expected in ("mailroom-dev", "mailroom-hub", "LLM-Postal",
+                     "mailroom-dev-graph", "llm-entity-extraction-graph",
+                     "llm-mailroom-graph"):
+        assert expected in names
+
+
+def test_repos_urls_consistent():
+    for r in repos_mod.all_repos():
+        repo = repos_mod.CONSTELLATION[r["name"]].get("repo", r["name"])
+        assert r["url"] == f"https://github.com/Exios66/{repo}"
+        assert r["role"] in ("pipeline", "visualizer", "scoring", "eval",
+                             "sandbox", "corpus", "derived", "hub")
+        assert r["blurb"]
+
+
+def test_repos_lookup_and_render():
+    assert repos_mod.lookup("llm-mailroom")["name"] == "llm-mailroom"
+    assert repos_mod.lookup("Exios66/llm-mailroom")["name"] == "llm-mailroom"
+    assert repos_mod.lookup("nope") is None
+    text = render(repos_table(repos_mod.all_repos()[:3]))
+    assert "llm-mailroom" in text
+    assert "CONSTELLATION" in text
+
+
+def test_repos_live_meta_offline_is_none(monkeypatch):
+    monkeypatch.setattr("tui.repos._fetch_gh", lambda name: None)
+    assert repos_mod.live_meta("llm-mailroom") is None
+
+
+# ---------------------------------------------------------------------------
+# New renderers
+# ---------------------------------------------------------------------------
+
+def test_corpus_table_and_stats_render():
+    from tui.corpus import SlimRow
+    rows = [SlimRow(filename="a.htm", split="train", index=0, doc_class="contract",
+                    doc_subclass="license", sha256="ab" * 32, chars=100)]
+    text = render(corpus_table(rows))
+    assert "a.htm" in text and "license" in text and "ab" in text
+    stats = corpus_stats_table({"train": 1, "test": 0}, {"contract": 1})
+    text = render(stats)
+    assert "train" in text and "contract" in text
+
+
+def test_line_editor_history_and_enter():
+    from tui.mailroom_console import LineEditor
+    from rich.console import Console as RC
+    editor = LineEditor(RC(force_terminal=True, width=120))
+    pending = deque()
+    assert editor.handle("h", pending) is False
+    assert editor.handle("i", pending) is False
+    assert editor.handle("\r", pending) is True
+    assert editor.text() == ""
+    assert editor.history == ["hi"]
+    # backspace
+    editor.handle("x", pending)
+    editor.handle("y", pending)
+    editor.handle("\x7f", pending)
+    assert editor.text() == "x"
+    # Ctrl+C cancels the line
+    editor.handle("z", pending)
+    editor.handle("\x03", pending)
+    assert editor.text() == ""

@@ -6,6 +6,55 @@ All notable changes to The-Mailroom are documented here, following
 
 ## [Unreleased]
 
+### Added
+
+- **mailroom-tui is now a typed-command REPL** (M6). A persistent
+  `mailroom@floor:~$` prompt over a rich live frame (status header +
+  scrollback + prompt) with a raw-key line editor (Tab completion, arrows =
+  history, Ctrl+L clear, Ctrl+C cancel), a background floor poller that
+  pushes AgentLab banners into the scrollback, and a `floor` live desk
+  (`q`/`quit` to leave). New commands: `help`/`man`, `clear`, `history`,
+  `date`, `echo`, `uname`, `neofetch`, `whoami`, `filter stage=…`, plus
+  the two new surfaces below. The codebase split into `tui/commands.py`
+  (registry + man pages), `tui/views.py` (renderers), `tui/corpus.py`
+  (Hub corpus client), `tui/repos.py` (constellation manifest);
+  `mailroom_console.py` re-exports every legacy renderer so existing
+  scripts keep working. Scripting flags unchanged (`--once --view`,
+  `--resolve`, `--source`) with `--view corpus|repos` added.
+
+- **Corpus browser (TUI + terminal site).** `corpus ls|show|search|stats`
+  over `Lucius-Morningstar/mailroom-corpus` through the canonical
+  `mailroom_ui/hf_corpus` ladder: slim listing (instant, windowed paging),
+  per-file live `doc_text` + ground-truth fetch, filename/class/subclass
+  search, and split/class stats. The Hub being unreachable is an explicit
+  closed state — never canned data.
+
+- **Constellation repo browser (TUI + terminal site).** `repos ls`,
+  `repos <name>`, `open <name>` over the full manifest — every package the
+  monorepo mirrors upstream (verified against `packages_sync.json` in the
+  contract tests), the three hub copies (`mailroom-dev`, `mailroom-hub`,
+  `LLM-Postal`), and the derived graph sites; live GitHub metadata
+  (description/stars/language) fail-soft + cached.
+
+- **Terminal GH Pages site** (`terminal/`, owlcot-family). A TTY-emulating
+  static page at `/terminal/` on the Pages snapshot: `ls`/`cat`/`cd`/
+  `whoami`/`mail` virtual filesystem (runs/, corpus/, repos/, topics/),
+  `floor`/`inspect`/`review`/`metrics`/`sessions` from the exported
+  snapshot, live Hub corpus commands, repos browsing, themes
+  (amber/green/cyan), CRT scanline toggle, opt-in keypress sound,
+  ghost-text Tab completion, 1.06s CRT-accurate blink cursor, animated
+  man-page help, command history + prefs in localStorage. Staged to
+  `docs/terminal/` by `publish_pages.sh` (pixel console stays the root);
+  `scripts/export_corpus_catalog.py` writes the slim `site/data/corpus.json`
+  (2,000 rows: filename/class/subclass/sha/split + row-index offsets for
+  on-demand doc_text fetches).
+
+- **`mailroom_ui/hf_corpus.py` robustness.** `fetch_rows` gains `offset`
+  (single-row/windowed fetches) and `page_sleep` (pacing); 429 rate limits
+  get a patient backoff ladder (5s→40s). The catalog export verified
+  end-to-end against the live Hub: 2,000 rows (1,792 train / 208 test),
+  classes 950/509/350/152/39, all shas + GT indices present.
+
 ### Changed
 
 - **Railway now uses Infrastructure as Code.** `railway.json` (Config as

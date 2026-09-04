@@ -9,7 +9,7 @@
 
 The-Mailroom renders every run of the `llm-mailroom` multi-agent
 legal-document pipeline from its Langfuse traces (pixel-art console, hosted
-Observatory, and TUI).
+Observatory, TUI REPL, and the GH Pages terminal site).
 **Langfuse is the sole source of truth**: no display value is ever fabricated
 or served from local canned data. The repo is read-only against Langfuse
 (project-scoped API keys, backend proxies everything — the browser never holds
@@ -24,17 +24,34 @@ keys).
 │ mailroom_ui/  langfuse_source.py ← adapter (trace/observations/scores/     │
 │               trace_interpreter.py ← sessions via SDK)                    │
 │               pipeline_schema.py ← topology mirror (taxonomy.yaml)        │
+│               hf_corpus.py ← Hub datasets-server ladder (corpus reads)    │
 │               metrics.py · models.py                                       │
 │ server/  FastAPI → /api/* + /ws → serves web/ (console) and hosted/ (/live)│
 │          + operator_desk mount (/v1/auth|/archive|/ops, /ws/pipeline)     │
 │ web/     pixel-art SPA: Floor (conveyor, 7 stations incl. JUDGE) ·        │
 │          Inspector · Sessions · History · Metrics · Review · Console      │
 │ hosted/  Observatory — public modern accessible desk (live + replay)      │
-│ tui/     rich-based console (mailroom-tui)                                 │
+│ tui/     mailroom-tui — typed-command REPL (floor desk, corpus browser,   │
+│          constellation browser; commands.py/views.py/corpus.py/repos.py)  │
+│ terminal/ owlcot-family terminal site (static; snapshot traces + LIVE Hub │
+│          corpus via datasets-server; staged to gh-pages:/docs/terminal/)  │
 │ operator_desk/  JWT, local archive, Langfuse-backed ops, bin observer     │
 │ ui/      optional React desk (/desk when built; Node never required)      │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Corpus + constellation surfaces** (TUI and terminal site): the
+`mailroom-corpus` Hub dataset is read through the canonical
+`mailroom_ui/hf_corpus.py` ladder — slim windowed listing (2 requests per
+page, instant), one-time slim catalog for search/stats, and per-row live
+`doc_text`/ground-truth fetches (LRU-capped). `tui/repos.py` +
+`terminal/js/data.js` carry the constellation manifest (every package the
+monorepo mirrors upstream — contract-tested against `packages_sync.json` —
+plus the hub copies `mailroom-dev`/`mailroom-hub`/`LLM-Postal` and the
+derived graph sites). The static site bundles a slim catalog
+(`scripts/export_corpus_catalog.py` → `site/data/corpus.json`, 2,000 rows)
+so listing/search/stats work offline; `corpus show` fetches rows live
+(datasets-server CORS is verified for the Pages origin).
 
 ## Data flow
 

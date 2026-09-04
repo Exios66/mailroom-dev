@@ -67,6 +67,20 @@ DESCRIPTION
 EXAMPLES
     help
     help corpus""",
+    "man": """MAN(1)
+
+NAME
+    man - read a command's manual
+
+SYNOPSIS
+    man <command>
+
+DESCRIPTION
+    Prints the manual entry for a command. Alias of 'help <cmd>'.
+
+EXAMPLES
+    man corpus
+    man floor""",
     "floor": """FLOOR(1)
 
 NAME
@@ -299,6 +313,13 @@ NAME
 
 SYNOPSIS
     quit""",
+    "exit": """EXIT(1)
+
+NAME
+    exit, quit - leave the TUI
+
+SYNOPSIS
+    exit""",
 }
 
 
@@ -451,16 +472,28 @@ def cmd_corpus(ctx: CommandContext, args: list[str]) -> list[Any]:
             rest = _clean_args(rest, consumed)
             if rest:
                 return [Text(f"unexpected args: {' '.join(rest)}", style="yellow")]
-            rows = ctx.corpus.catalog()
-            if cls:
-                rows = [r for r in rows if r.doc_class == cls]
-            if split:
-                rows = [r for r in rows if r.split == split]
-            start = page * limit
-            page_rows = rows[start:start + limit]
+            if cls or split:
+                # Class filtering needs the full slim catalog (classes live on
+                # the GT config) — one-time build, cached for the session.
+                rows = ctx.corpus.catalog()
+                if cls:
+                    rows = [r for r in rows if r.doc_class == cls]
+                if split:
+                    rows = [r for r in rows if r.split == split]
+                start = page * limit
+                page_rows = rows[start:start + limit]
+                if not page_rows:
+                    return [Text(f"no corpus rows (page {page}, filtered to {len(rows)})",
+                                 style="yellow")]
+                return [views.corpus_table(page_rows)]
+            # Plain paging is windowed: two requests per page, instant —
+            # never pays for the full-corpus build.
+            page_rows: list[SlimRow] = []
+            for s in (split or ("train", "test")) if split else ("train", "test"):
+                start = page * limit
+                page_rows.extend(ctx.corpus.window(s, start, limit))
             if not page_rows:
-                return [Text(f"no corpus rows (page {page}, filtered to {len(rows)})",
-                             style="yellow")]
+                return [Text(f"no corpus rows on page {page}", style="yellow")]
             return [views.corpus_table(page_rows)]
         if sub == "show":
             if not rest:
@@ -614,37 +647,44 @@ def run_command(ctx: CommandContext, line: str) -> list[Any]:
 def completion_candidates(ctx: CommandContext, line: str) -> list[str]:
     """Candidates for the last word of ``line`` (for Tab completion)."""
     parts = line.split()
+    trailing = line.endswith(" ")
     if not parts:
         return sorted(_COMMANDS)
     name = parts[0]
-    if len(parts) == 1:
+    if len(parts) == 1 and not trailing:
         prefix = parts[0]
         return [c for c in sorted(_COMMANDS) if c.startswith(prefix)]
+    word = "" if trailing else parts[-1]
     if name == "corpus":
         subs = ["ls", "show", "search", "stats"]
+        if len(parts) == 1 or (len(parts) == 2 and trailing):
+            return [s for s in subs if s.startswith(word)]
         if len(parts) == 2:
             return [s for s in subs if s.startswith(parts[1])]
         if parts[1] == "ls":
             flags = ["--class", "--split", "--page", "--limit"]
-            return [f for f in flags if f.startswith(parts[-1])] or (
-                [f"--{c}" for c in ("class", "split")])
+            return [f for f in flags if f.startswith(word)]
         if parts[1] == "show" or parts[1] == "search":
-            return [r.filename for r in ctx.corpus.catalog()[:50]
-                    if r.filename.startswith(parts[-1])]
+            try:
+                rows = ctx.corpus.window("train", 0, 50)
+            except CorpusClosed:
+                return []
+            return [r.filename for r in rows
+                    if r.filename.startswith(word)]
         return []
     if name == "repos" or name == "open":
         return [r["name"] for r in all_repos()
-                if r["name"].startswith(parts[-1])]
+                if r["name"].startswith(word)]
     if name == "inspect":
         return [r.get("trace_id") or "" for r in ctx.runs
-                if (r.get("trace_id") or "").startswith(parts[-1])]
+                if (r.get("trace_id") or "").startswith(word)]
     if name == "help" or name == "man":
-        return [c for c in sorted(_COMMANDS) if c.startswith(parts[-1])]
+        return [c for c in sorted(_COMMANDS) if c.startswith(word)]
     if name == "filter":
         keys = ["stage=", "class=", "env="]
-        if parts[-1].startswith(("stage=", "class=", "env=")):
+        if word.startswith(("stage=", "class=", "env=")):
             return []
-        return [k for k in keys if k.startswith(parts[-1])]
+        return [k for k in keys if k.startswith(word)]
     return []
 
 

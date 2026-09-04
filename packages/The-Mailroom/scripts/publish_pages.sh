@@ -11,6 +11,11 @@
 #   docs/.nojekyll        disable Jekyll processing
 #   docs/data/*.json      snapshot exported from the trace source
 #                         (Langfuse / Phoenix / both) by export_snapshot.py
+#   docs/data/corpus.json slim catalog of Lucius-Morningstar/mailroom-corpus
+#                         (export_corpus_catalog.py) — backs the terminal
+#                         site's corpus ls/search/stats
+#   docs/terminal/        owlcot-style terminal site (terminal/) — the TTY
+#                         into the floor, corpus, and constellation
 #   docs/debug/build-info.json  provenance for agents (git sha, counts)
 #
 # Anything else already on the branch root is left untouched; legacy root-
@@ -96,11 +101,18 @@ cp -R web/css web/js site/static/
 cp web/index.html site/
 touch site/.nojekyll
 
+echo "== staging terminal site (docs/terminal) =="
+cp -R terminal site/terminal
+touch site/terminal/.nojekyll
+
 if [[ "$SKIP_EXPORT" -ne 1 ]]; then
   echo "== exporting snapshot (source=${SOURCE} since=${SINCE_HOURS}h limit=${LIMIT}) =="
   python scripts/export_snapshot.py \
     --source "$SOURCE" --out site/data \
     --since-hours "$SINCE_HOURS" --limit "$LIMIT"
+
+  echo "== exporting corpus catalog (mailroom-corpus slim rows) =="
+  python scripts/export_corpus_catalog.py --out site/data
 else
   echo "== skipping export (--skip-export): reusing existing site/data =="
 fi

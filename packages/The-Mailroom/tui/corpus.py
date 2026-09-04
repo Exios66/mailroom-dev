@@ -61,13 +61,45 @@ def _extract_meta(row: dict[str, Any], split: str, index: int,
 class CorpusClient:
     """Paged access to the mailroom-corpus Hub dataset (both configs)."""
 
-    def __init__(self, page_size: int = 100, max_rows: Optional[int] = None) -> None:
-        self.page_size = page_size
+    def __init__(self, page_size: int = 100, max_rows: Optional[int] = None,
+                 page_sleep: float = 1.0) -> None:
+        # datasets-server rejects length > 100 (HTTP 422) — clamp hard.
+        self.page_size = min(page_size or 100, 100)
+        # 1s inter-page pacing: the Hub budget (even authenticated) throttles
+        # back-to-back /rows calls; the full-catalog build is one-time per
+        # session and windowed listing never pays for it.
+        self.page_sleep = page_sleep
         self.max_rows = max_rows
         self._catalog: Optional[list[SlimRow]] = None
         self._row_lru: dict[str, dict[str, Any]] = {}
         self._gt_lru: dict[str, dict[str, Any]] = {}
         self._lru_cap = 200
+
+    # -- windowed browsing (instant: 1 request per config per page) ----------
+
+    def window(self, split: str, start: int = 0, length: int = 25,
+               include_gt: bool = True) -> list[SlimRow]:
+        """One slim page at row index ``start`` of ``split``. Two requests
+        (default + GT configs); used by ``corpus ls`` so listing never pays
+        for the full-corpus catalog build."""
+        try:
+            page = hf_corpus.fetch_rows(
+                config=hf_corpus.DEFAULT_CONFIG, split=split,
+                page_size=length, max_rows=length, offset=start)
+            if include_gt:
+                gt_page = hf_corpus.fetch_rows(
+                    config=hf_corpus.GT_CONFIG, split=split,
+                    page_size=length, max_rows=length, offset=start)
+                gt_by_file = {str(r.get("filename")): r for r in gt_page}
+            else:
+                gt_by_file = {}
+            return [
+                _extract_meta(r, split, start + i,
+                              gt_by_file.get(str(r.get("filename"))))
+                for i, r in enumerate(page)
+            ]
+        except Exception as exc:  # noqa: BLE001 — any Hub failure = closed
+            raise CorpusClosed(str(exc)) from exc
 
     # -- catalog ----------------------------------------------------------
 
@@ -83,12 +115,14 @@ class CorpusClient:
                     split=split,
                     page_size=self.page_size,
                     max_rows=self.max_rows,
+                    page_sleep=self.page_sleep,
                 )
                 gt_page = hf_corpus.fetch_rows(
                     config=hf_corpus.GT_CONFIG,
                     split=split,
                     page_size=self.page_size,
                     max_rows=self.max_rows,
+                    page_sleep=self.page_sleep,
                 )
                 gt_by_file = {str(r.get("filename")): r for r in gt_page}
                 rows.extend(

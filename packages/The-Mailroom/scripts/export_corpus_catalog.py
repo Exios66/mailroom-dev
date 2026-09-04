@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -45,15 +46,16 @@ def _meta(row: dict, key: str):
 
 
 def build_catalog(max_rows: int | None = None,
-                  page_size: int = 100) -> dict:
+                  page_size: int = 100,
+                  pace_s: float = 1.0) -> dict:
     rows: list[dict] = []
     for split in ("train", "test"):
         default = hf_corpus.fetch_rows(
             config=hf_corpus.DEFAULT_CONFIG, split=split,
-            page_size=page_size, max_rows=max_rows)
+            page_size=page_size, max_rows=max_rows, page_sleep=pace_s)
         gt = hf_corpus.fetch_rows(
             config=hf_corpus.GT_CONFIG, split=split,
-            page_size=page_size, max_rows=max_rows)
+            page_size=page_size, max_rows=max_rows, page_sleep=pace_s)
         gt_by_file = {str(r.get("filename")): r for r in gt}
         for i, r in enumerate(default):
             filename = str(r.get("filename") or f"row-{i}")

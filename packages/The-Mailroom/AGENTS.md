@@ -111,7 +111,28 @@ python scripts/publish_space.py --check  # Hugging Face Docker Space payload
   Extra `[operator]`; default `[dev]` uses stdlib password/JWT fallbacks.
   Optional React desk lives in `ui/` (extra `[ui]` is a marker; Node is
   separate). `/desk` mounts only when `ui/dist` or `MAILROOM_UI_DIST` exists.
-- `tui/` — planned rich-console (AgentLab-style `*** Beginning station: ... ***` banners, per-doc summary tables). Not yet built (M4).
+- `terminal/` — owlcot-family terminal site (vanilla HTML/CSS/JS, no build
+  step): a TTY-emulating static page — prompt at the bottom, output above,
+  ghost-text Tab completion, 1.06s blink cursor, opt-in keypress sound,
+  CRT overlay toggle, animated man pages, virtual filesystem
+  (runs/ · corpus/ · repos/ · topics/), snapshot-driven trace commands
+  (`floor`/`inspect`/`review`/`metrics`/`sessions`), LIVE Hub corpus
+  commands (`corpus ls|show|search|stats` via datasets-server, CORS-verified
+  for the Pages origin), and the constellation repo browser. Staged to
+  `gh-pages:/docs/terminal/` by `publish_pages.sh`; the pixel console stays
+  the site root, the terminal links back via `pixel`/`observatory`/`hub`.
+- `tui/` — `mailroom-tui`, a typed-command REPL over the same display API
+  (`MAILROOM_API_URL` → this visualizer; `--resolve` / `--source` via
+  `/api/review/*`): `mailroom@floor:~$` prompt, live floor desk, corpus
+  browser (`tui/corpus.py` over `mailroom_ui/hf_corpus.py`), constellation
+  repo browser (`tui/repos.py`), command registry + man pages
+  (`tui/commands.py`), pure renderers (`tui/views.py`). `mailroom_console.py`
+  re-exports the legacy render functions so old imports/tests stay valid.
+- `scripts/export_corpus_catalog.py` — slim catalog of the mailroom-corpus
+  dataset (filename/class/subclass/sha/split + row-index offsets for
+  on-demand doc_text fetches) → `site/data/corpus.json`; run by
+  `publish_pages.sh` alongside the snapshot export. Verified end-to-end
+  against the live Hub: 2,000 rows (1,792 train / 208 test).
 - `scripts/seed_demo.py` — planned (M5): generates demo traces **into Langfuse** (env `demo`), never served directly.
 
 ## Langfuse is ALWAYS the source of visualization
@@ -190,6 +211,16 @@ python scripts/publish_space.py --check  # Hugging Face Docker Space payload
   Langfuse (env `demo`) with `--check` / `--check-api` / `--check-logs`
   verification modes; sprite layout verified programmatically. Remaining:
   acceptance sweep of new doc classes/live traces, sprite expansions.
+- **M6 — terminal REPL TUI + terminal GH Pages site (HUB-054)**: DONE —
+  `mailroom-tui` rebuilt as a typed-command REPL (`tui/commands.py`,
+  `tui/views.py`, `tui/corpus.py`, `tui/repos.py`); corpus browser over
+  `Lucius-Morningstar/mailroom-corpus` (slim windowed listing + live
+  per-row doc_text/GT); constellation repo browser (13 repos, manifest
+  contract-tested against `packages_sync.json`); new `terminal/` owlcot-
+  family site staged to `gh-pages:/docs/terminal/` with the slim corpus
+  catalog (`scripts/export_corpus_catalog.py`); `hf_corpus.fetch_rows`
+  gains `offset`/`page_sleep`/429 backoff. Tests: test_tui.py (37) +
+  test_terminal_site.py (22) green; full suite green.
 - **v0.2.0 — upstream sync (2026-08-23)**: mirror updated to the current
   llm-mailroom graph — `judge_verify`/`arbiter` stages + spans, 15-agent
   roster, 7 doc classes, `judge_band_high`; floor gained the JUDGE station
