@@ -523,10 +523,10 @@ def test_schema_mirror_covers_upstream_contract():
     assert "normalize-intake" in ps.SPAN_STAGE_MAP
     assert ps.SPAN_STAGE_MAP["normalize-intake"] == Stage.INTAKE
     assert "image-extractor" not in ps.AGENTS
-    assert "compliance_specialist" in ps.AGENTS
-    assert "compliance_filing" in ps.LIVE_DOC_TYPES
+    assert "compliance_filing" in ps.RETIRED_DOC_TYPES
+    assert "compliance_filing" not in ps.LIVE_DOC_TYPES
     assert "merger_agreement" in ps.LIVE_DOC_TYPES
-    assert "compliance_filing" in ps.DOC_CLASSES
+    assert "compliance_filing" not in ps.DOC_CLASSES
     assert "court_opinion" not in ps.DOC_CLASSES
     assert "due_diligence" not in ps.DOC_CLASSES
     assert ps.EXTRACT_CLASS_ALIASES == {}
@@ -534,14 +534,12 @@ def test_schema_mirror_covers_upstream_contract():
     assert ps.resolve_extract_class("contract") == "contract"
     assert ps.resolve_extract_class("unknown") is None
     assert ps.resolve_extract_class("court_opinion") is None
+    assert ps.resolve_extract_class("compliance_filing") is None
     assert ps.DOC_CLASSES["insurance_claim"] == "Insurance Claim"
-    assert ps.DOC_CLASSES["compliance_filing"] == "Compliance Filing"
     assert ps.DOC_CLASSES["merger_agreement"] == "Merger Agreement"
     assert ps.SPECIALIST_BY_DOC_CLASS["insurance_claim"] == "insurance_claims_specialist"
-    assert ps.SPECIALIST_BY_DOC_CLASS["compliance_filing"] == "compliance_specialist"
     assert ps.SPECIALIST_BY_DOC_CLASS["merger_agreement"] == "contracts_specialist"
     assert "license" in ps.DOC_SUBCLASS_BY_CLASS["contract"]
-    assert "10-K" in ps.DOC_SUBCLASS_BY_CLASS["compliance_filing"]
     assert "cuad_clauses" in ps.EXTRACTION_FIELD_KEYS_BY_CLASS["contract"]
     assert "key_obligations" not in ps.EXTRACTION_FIELD_KEYS_BY_CLASS["contract"]
     assert "claim_checklist" in ps.EXTRACTION_FIELD_KEYS_BY_CLASS["insurance_claim"]

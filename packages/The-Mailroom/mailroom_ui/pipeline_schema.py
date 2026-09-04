@@ -145,7 +145,6 @@ AGENTS: dict[str, dict[str, str]] = {
     "contracts_specialist": {"label": "Contracts", "role": "extract"},
     "corporate_records_specialist": {"label": "Corporate", "role": "extract"},
     "correspondence_specialist": {"label": "Correspondence", "role": "extract"},
-    "compliance_specialist": {"label": "Compliance", "role": "extract"},
     "insurance_claims_specialist": {"label": "Insurance Claims", "role": "extract"},
     "arbiter": {"label": "Arbiter", "role": "adjudicate"},
     "boss": {"label": "Boss", "role": "adjudicate"},
@@ -164,10 +163,9 @@ LIVE_DOC_TYPES: tuple[str, ...] = (
     "merger_agreement",
     "corporate_record",
     "correspondence",
-    "compliance_filing",
     "insurance_claim",
 )
-RETIRED_DOC_TYPES: tuple[str, ...] = ("court_opinion", "due_diligence")
+RETIRED_DOC_TYPES: tuple[str, ...] = ("court_opinion", "due_diligence", "compliance_filing")
 UNKNOWN_DOC_TYPE = "unknown"
 # Sorter / HF labels that extract through a live taxonomy specialist without
 # adding a new doc_class row. Empty as of llm-mailroom v0.6.0 — MAUD is live.
@@ -177,7 +175,6 @@ DOC_CLASSES: dict[str, str] = {
     "contract": "Contract / Agreement",
     "corporate_record": "Corporate Record",
     "correspondence": "Correspondence",
-    "compliance_filing": "Compliance Filing",
     "insurance_claim": "Insurance Claim",
     "merger_agreement": "Merger Agreement",
     "unknown": "Unknown",
@@ -227,10 +224,6 @@ EXTRACTION_FIELD_KEYS_BY_CLASS: dict[str, frozenset[str]] = {
         "sender", "recipient", "additional_recipients", "communication_type",
         "communication_date", "demand_amount", "action_items",
         "urgency", "intent", "subject_matter", "keywords", "confidence",
-    }),
-    "compliance_filing": frozenset({
-        "filing_type", "regulatory_body", "filing_date", "due_date",
-        "entity_name", "key_requirements", "status", "reference_number",
     }),
     "insurance_claim": frozenset({
         "claim_number", "policy_number", "insurer", "insured_party",
@@ -304,7 +297,6 @@ SPECIALIST_BY_DOC_CLASS: dict[str, str] = {
     "merger_agreement": "contracts_specialist",
     "corporate_record": "corporate_records_specialist",
     "correspondence": "correspondence_specialist",
-    "compliance_filing": "compliance_specialist",
     "insurance_claim": "insurance_claims_specialist",
 }
 
@@ -334,10 +326,6 @@ DOC_SUBCLASS_BY_CLASS: dict[str, tuple[str, ...]] = {
     ),
     "insurance_claim": (
         "pde", "inpatient", "outpatient", "carrier", "property", "auto",
-    ),
-    "compliance_filing": (
-        "10-K", "10-Q", "8-K", "S-1", "DEF 14A", "13D", "13G",
-        "Form 4", "20-F", "6-K", "other",
     ),
 }
 
