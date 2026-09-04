@@ -64,3 +64,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+*.db
+data/mailroom.db-shm
+data/mailroom.db-wal
