@@ -896,7 +896,17 @@ Finished cards, append-only, newest last.
   rebuilt + docclass dry-run shows all six insurance subclass GT values
   scoreable (zero LLM spend). Spawned **HUB-042** (frozen docclass prompt
   surfaces + docclass-pilot examples strata). Evidence: `54b8f52f` + this
-  commit.
+  commit. **PUSH BLOCKER NOTE (2026-09-03, human-directed skip):** local
+  `main` is ahead of `origin/main` by 4 commits — `54b8f52f` + `3f234ae7`
+  (HUB-041) plus the parallel session's `9f30fd5e` + `1968d212` (HUB-040
+  phases 4–6). Both transports refused: the OAuth credential lacks the
+  `workflow` scope (GitHub refuses pushes that create/update
+  `.github/workflows/board-governance.yml`, touched by `54b8f52f`) and the
+  machine's SSH key is not registered with GitHub; the `gh` token also lacks
+  `workflow` scope and the human opted to skip the device-flow authorization.
+  Nothing is lost — the commits are on local `main` and a scoped push
+  (`gh auth refresh -s workflow` or any credential with `workflow` scope)
+  lands everything verbatim; until then origin/main is behind local.
 
 - **HUB-040** (done 2026-09-03) — **Relations agent — semantic linking + auditable relations ledger + knowledge graphs** — human
   directive ("add a deterministic + potential LLM agent tasked with linking associated topics, associated documents, and
