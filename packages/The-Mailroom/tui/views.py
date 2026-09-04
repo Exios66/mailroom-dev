@@ -325,7 +325,7 @@ def debug_panel(error_lines: Optional[list[str]] = None) -> Panel:
                  border_style="red")
 
 
-def status_header(connected: bool, count: int, api_base: str,
+def status_header(connected: bool, count: int, api_base: str = "",
                   pipeline: Optional[dict] = None) -> Panel:
     state = "MAILROOM LIVE — watching Langfuse" if connected else \
         "MAILROOM CLOSED — no Langfuse connection"

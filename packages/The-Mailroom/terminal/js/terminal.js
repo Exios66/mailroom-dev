@@ -1033,7 +1033,7 @@ COMMANDS.skyline = (args) => {
   print('skyline: ' + (state.skyline ? '<span class="success">on</span>' : '<span class="dim">off</span>'));
 };
 COMMANDS.pixel = () => { window.open('../', '_blank', 'noopener'); print('opening the <span class="amber">pixel console</span>…'); };
-COMMANDS.observatory = () => { window.open('../live/', '_blank', 'noopener'); print('opening the <span class="cyan">observatory</span>…'); };
+COMMANDS.observatory = () => { window.open('../', '_blank', 'noopener'); print('opening the <span class="cyan">observatory</span>…'); };
 COMMANDS.hub = () => { window.open('https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus', '_blank', 'noopener'); print('opening the <span class="phosphor">mailroom-corpus</span> dataset on the Hub…'); };
 COMMANDS.tui = () => {
   print('<div class="post"><h2>mailroom-tui — the same console in your own terminal</h2>'

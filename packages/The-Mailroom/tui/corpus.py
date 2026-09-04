@@ -12,7 +12,7 @@ in a small LRU.  The Hub being unreachable is an explicit closed state
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from mailroom_ui import hf_corpus
