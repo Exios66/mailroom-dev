@@ -127,6 +127,17 @@ Every package mirrors an independent `Exios66/*` repo. `scripts/sync_packages.py
 (status / pull / push / snapshot, cursor in `scripts/packages_sync.json`)
 reconciles the mirrors; the monorepo is the development source of truth.
 
+**Release-train sweep (the HUB-005 propagation):** the all-packages one-liner
+is `python scripts/sync_packages.py push --all --patch` — one command fetches
+every upstream tip, lands the monorepo delta as a single fast-forward commit
+per package, and re-baselines the cursors; follow with
+`sync_packages.py status` (expect 10/10 in sync, 0 monorepo-ahead) and
+commit the cursor file. **Race caveat (2026-09-04 incident):** `patch_push`
+copies the package subtree from the WORKTREE while the clean-tree guard runs
+only once at script start — never run a sweep while any `packages/*` file is
+uncommitted in a parallel session (a mid-run save gets swept upstream);
+hardening tracked as HUB-044.
+
 ## Workspace rules
 
 - Member dependency lines keep their published git pins (release builds via
