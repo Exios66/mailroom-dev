@@ -6522,7 +6522,7 @@ wheels = [
 
 [[package]]
 name = "the-mailroom"
-version = "0.3.0"
+version = "0.4.0"
 source = { editable = "packages/The-Mailroom" }
 dependencies = [
     { name = "fastapi" },
