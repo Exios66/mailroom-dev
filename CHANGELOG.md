@@ -46,6 +46,17 @@ and is recorded there, not here.
   only and unescapes `\|` — board rows embedding literal pipes inside code
   spans (e.g. HUB-054's `corpus ls|show|search|stats`) previously mangled
   the Owner cell and hid the issue link (HUB-055).
+- **Stray `v0.4.0` hub tag retargeted (removal, HUB-056):** the annotated
+  `v0.4.0` tag (pointing at The-Mailroom's package-release commit
+  `fc55be3`) was cut on the hub by mistake during the HUB-054 session — the
+  hub `pyproject.toml` was (and is) `0.2.0`, and no `## [0.4.0]` CHANGELOG
+  section ever existed. It broke the release chain
+  (`release_chain.py check`: tag with no section + version-skew errors) and
+  the `board-governance` CI gate. Per human directive the tag was retargeted
+  out of the chain (deleted locally + remotely); the hub release chain now
+  resolves to the correct `v0.2.0`. Upstream package releases (llm-mailroom
+  `v0.6.0`, The-Mailroom `v0.4.0`) were never implicated — they live in
+  their own repos.
 
 - **Insurance-claim subclass alignment with the v8 synthetic LOB claims**
   (HUB-041, 2026-09-03): the mailroom-corpus v8 GT (`eafe1ab4`) carries SIX
