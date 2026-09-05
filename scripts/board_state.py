@@ -192,7 +192,8 @@ def parse_board(board_path: Path | None = None) -> BoardState:
             continue
 
         if section == "open" and line.lstrip().startswith("|") and CARD_RE.search(line):
-            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            cells = [cell.strip().replace(r"\|", "|")
+                     for cell in re.split(r"(?<!\\)\|", line.strip().strip("|"))]
             if len(cells) < 6 or not CARD_RE.fullmatch(cells[0] or ""):
                 continue
             status_raw = cells[1]
