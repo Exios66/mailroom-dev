@@ -1,0 +1,2955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mailroom Kanban Dispatch Board — Agent-to-Agent Task Orchestration</title>
+    <meta name="description" content="Interactive Kanban task dispatch board for multi-agent orchestration — drag, drop, assign, and track HUB cards across lanes.">
+    <style>
+        :root {
+            --bg: #0b0e14;
+            --bg-secondary: #11151f;
+            --bg-tertiary: #161b28;
+            --bg-card: #1a2030;
+            --bg-card-hover: #1f2638;
+            --border: #2a3142;
+            --border-light: #3a4256;
+            --text: #e4e7ed;
+            --text-muted: #8a94a7;
+            --text-dim: #5c6478;
+            --accent: #6c8cff;
+            --accent-glow: rgba(108, 140, 255, 0.25);
+            --green: #4ade80;
+            --green-dim: rgba(74, 222, 128, 0.15);
+            --yellow: #facc15;
+            --yellow-dim: rgba(250, 204, 21, 0.15);
+            --orange: #fb923c;
+            --orange-dim: rgba(251, 146, 60, 0.15);
+            --red: #f87171;
+            --red-dim: rgba(248, 113, 113, 0.15);
+            --purple: #a78bfa;
+            --purple-dim: rgba(167, 139, 250, 0.15);
+            --cyan: #22d3ee;
+            --cyan-dim: rgba(34, 211, 238, 0.15);
+            --pink: #f472b6;
+            --pink-dim: rgba(244, 114, 182, 0.15);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+            --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-lg: 16px;
+            --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-mono: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+            --font-sans: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --lane-header-bg: rgba(26, 32, 48, 0.85);
+            --scrollbar-bg: #1a2030;
+            --scrollbar-thumb: #3a4256;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 15px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-image:
+                radial-gradient(ellipse at 20% 0%, rgba(108, 140, 255, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 100%, rgba(167, 139, 250, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(34, 211, 238, 0.02) 0%, transparent 70%);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--scrollbar-bg);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a5468;
+        }
+
+        /* ─── Top Bar ─── */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-weight: 700;
+            font-size: 1.05rem;
+            letter-spacing: -0.01em;
+            color: var(--text);
+            text-decoration: none;
+            user-select: none;
+        }
+        .brand .logo {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            display: grid;
+            place-items: center;
+            font-size: 1rem;
+            box-shadow: 0 0 20px var(--accent-glow);
+            transition: transform var(--transition);
+        }
+        .brand:hover .logo {
+            transform: scale(1.05) rotate(-3deg);
+        }
+        .brand .subtitle {
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            display: block;
+            letter-spacing: 0.02em;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .sync-badge {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            letter-spacing: 0.04em;
+            padding: 0.28rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+            white-space: nowrap;
+            user-select: none;
+        }
+        .sync-badge.live {
+            color: var(--green);
+            border-color: rgba(74, 222, 128, 0.4);
+            background: var(--green-dim);
+        }
+        .sync-badge.offline {
+            color: var(--orange);
+            border-color: rgba(251, 146, 60, 0.4);
+            background: var(--orange-dim);
+        }
+        .sync-badge.syncing {
+            color: var(--cyan);
+            border-color: rgba(34, 211, 238, 0.4);
+            background: var(--cyan-dim);
+        }
+
+        .search-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .search-box input {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.45rem 0.75rem 0.45rem 2.1rem;
+            font-size: 0.82rem;
+            color: var(--text);
+            width: 220px;
+            transition: all var(--transition);
+            font-family: var(--font-sans);
+            outline: none;
+        }
+        .search-box input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            width: 280px;
+        }
+        .search-box input::placeholder {
+            color: var(--text-dim);
+        }
+        .search-box .search-icon {
+            position: absolute;
+            left: 0.7rem;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            pointer-events: none;
+        }
+        .search-box .clear-btn {
+            position: absolute;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0.15rem;
+            display: none;
+        }
+        .search-box .clear-btn.visible {
+            display: block;
+        }
+        .search-box .clear-btn:hover {
+            color: var(--text);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            color: var(--text);
+            transition: all var(--transition);
+            font-family: var(--font-sans);
+            white-space: nowrap;
+            user-select: none;
+            text-decoration: none;
+        }
+        .btn:hover {
+            border-color: var(--border-light);
+            background: var(--bg-card);
+            transform: translateY(-1px);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 16px var(--accent-glow);
+        }
+        .btn-primary:hover {
+            background: #7d9aff;
+            border-color: #7d9aff;
+            box-shadow: 0 0 24px var(--accent-glow);
+        }
+        .btn-icon {
+            padding: 0.45rem;
+            width: 34px;
+            height: 34px;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+        .btn-sm {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.72rem;
+            border-radius: 6px;
+        }
+
+        /* ─── Stats Bar ─── */
+        .stats-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            padding: 0.5rem 1.25rem;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .stat-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        .stat-chip .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .stat-chip .count {
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        /* ─── Filter Bar ─── */
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            padding: 0.55rem 1.25rem;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.72rem;
+        }
+        .filter-label {
+            color: var(--text-dim);
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            font-size: 0.66rem;
+            margin-right: 0.15rem;
+            white-space: nowrap;
+        }
+        .filter-divider {
+            width: 1px;
+            height: 16px;
+            background: var(--border-light);
+            margin: 0 0.35rem;
+            flex-shrink: 0;
+        }
+        .filter-chip {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            padding: 0.28rem 0.65rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-family: var(--font-sans);
+            white-space: nowrap;
+        }
+        .filter-chip:hover {
+            border-color: var(--border-light);
+            color: var(--text);
+        }
+        .filter-chip.active {
+            background: var(--accent-glow);
+            border-color: var(--accent);
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .filter-chip[data-filter-priority="critical"].active { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+        .filter-chip[data-filter-priority="high"].active { background: var(--orange-dim); border-color: var(--orange); color: var(--orange); }
+        .filter-chip[data-filter-priority="medium"].active { background: var(--yellow-dim); border-color: var(--yellow); color: var(--yellow); }
+        .filter-chip[data-filter-priority="low"].active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+        .filter-chip[data-filter-agent="human"].active { background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan); }
+        .filter-chip[data-filter-agent="opencode"].active { background: var(--purple-dim); border-color: var(--purple); color: var(--purple); }
+        .filter-chip[data-filter-agent="lucius"].active { background: var(--pink-dim); border-color: var(--pink); color: var(--pink); }
+        .filter-chip[data-filter-agent="cursor"].active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+        .filter-chip[data-filter-agent="unclaimed"].active { background: var(--bg-card); border-color: var(--text-dim); color: var(--text); }
+        #filterResultCount {
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            margin-left: 0.2rem;
+            white-space: nowrap;
+        }
+
+        /* ─── Board Container ─── */
+        .board-container {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            min-height: calc(100vh - 140px);
+            overflow-x: auto;
+            align-items: flex-start;
+        }
+
+        /* ─── Lane ─── */
+        .lane {
+            flex: 1 0 280px;
+            min-width: 280px;
+            max-width: 340px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 160px);
+            transition: border-color var(--transition), box-shadow var(--transition);
+            position: relative;
+        }
+        .lane:hover {
+            border-color: var(--border-light);
+        }
+        .lane.drag-over {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow), 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+        .lane.drag-over .lane-header {
+            background: var(--accent-glow);
+        }
+
+        .lane-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem 0.85rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--lane-header-bg);
+            border-radius: var(--radius) var(--radius) 0 0;
+            user-select: none;
+            cursor: default;
+            transition: background var(--transition);
+        }
+        .lane-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .lane-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .lane-dot.assigned {
+            background: var(--cyan);
+            box-shadow: 0 0 8px var(--cyan);
+        }
+        .lane-dot.in-progress {
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+        .lane-dot.needs-attention {
+            background: var(--orange);
+            box-shadow: 0 0 8px var(--orange);
+        }
+        .lane-dot.done {
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+        }
+        .lane-title {
+            font-weight: 600;
+            font-size: 0.82rem;
+            letter-spacing: 0.02em;
+            color: var(--text);
+        }
+        .lane-count {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 0.15rem 0.45rem;
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            min-width: 24px;
+            text-align: center;
+        }
+        .lane-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+        .lane-action-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 0.75rem;
+            padding: 0.2rem;
+            border-radius: 4px;
+            transition: color var(--transition);
+        }
+        .lane-action-btn:hover {
+            color: var(--text);
+        }
+
+        .lane-cards {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.6rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+            min-height: 80px;
+            scrollbar-width: thin;
+        }
+
+        /* ─── Card ─── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.65rem 0.7rem;
+            cursor: grab;
+            transition: all var(--transition);
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-light);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+        }
+        .card:active {
+            cursor: grabbing;
+        }
+        .card.dragging {
+            opacity: 0.5;
+            transform: scale(0.97);
+            cursor: grabbing;
+            box-shadow: var(--shadow-lg);
+        }
+        .card.ghost {
+            opacity: 0.35;
+            border: 2px dashed var(--accent);
+            background: transparent;
+            box-shadow: none;
+        }
+        .card.priority-critical {
+            border-left: 3px solid var(--red);
+        }
+        .card.priority-high {
+            border-left: 3px solid var(--orange);
+        }
+        .card.priority-medium {
+            border-left: 3px solid var(--yellow);
+        }
+        .card.priority-low {
+            border-left: 3px solid var(--green);
+        }
+
+        .card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.4rem;
+            margin-bottom: 0.35rem;
+        }
+        .card-id {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 0.03em;
+            background: var(--accent-glow);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .card-priority-badge {
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .card-priority-badge.critical {
+            background: var(--red-dim);
+            color: var(--red);
+        }
+        .card-priority-badge.high {
+            background: var(--orange-dim);
+            color: var(--orange);
+        }
+        .card-priority-badge.medium {
+            background: var(--yellow-dim);
+            color: var(--yellow);
+        }
+        .card-priority-badge.low {
+            background: var(--green-dim);
+            color: var(--green);
+        }
+
+        .card-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            line-height: 1.3;
+            color: var(--text);
+            margin-bottom: 0.3rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-desc {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+            margin-bottom: 0.45rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .card-agents {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+        .agent-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.62rem;
+            font-weight: 500;
+            padding: 0.2rem 0.45rem;
+            border-radius: 20px;
+            letter-spacing: 0.02em;
+            border: 1px solid transparent;
+            white-space: nowrap;
+            cursor: default;
+            transition: all var(--transition);
+        }
+        .agent-chip:hover {
+            transform: scale(1.05);
+        }
+        .agent-chip .agent-avatar {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-grid;
+            place-items: center;
+            font-size: 0.55rem;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .agent-chip.human {
+            background: var(--cyan-dim);
+            color: var(--cyan);
+            border-color: rgba(34, 211, 238, 0.3);
+        }
+        .agent-chip.human .agent-avatar {
+            background: var(--cyan);
+        }
+        .agent-chip.opencode {
+            background: var(--purple-dim);
+            color: var(--purple);
+            border-color: rgba(167, 139, 250, 0.3);
+        }
+        .agent-chip.opencode .agent-avatar {
+            background: var(--purple);
+        }
+        .agent-chip.lucius {
+            background: var(--pink-dim);
+            color: var(--pink);
+            border-color: rgba(244, 114, 182, 0.3);
+        }
+        .agent-chip.lucius .agent-avatar {
+            background: var(--pink);
+        }
+        .agent-chip.cursor {
+            background: var(--green-dim);
+            color: var(--green);
+            border-color: rgba(74, 222, 128, 0.3);
+        }
+        .agent-chip.cursor .agent-avatar {
+            background: var(--green);
+        }
+        .agent-chip.unclaimed {
+            background: var(--bg-tertiary);
+            color: var(--text-dim);
+            border-color: var(--border);
+        }
+        .agent-chip.unclaimed .agent-avatar {
+            background: var(--text-dim);
+        }
+
+        .card-date {
+            font-size: 0.62rem;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            white-space: nowrap;
+        }
+        .card-age {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            white-space: nowrap;
+        }
+        .card-age.stale {
+            color: var(--orange);
+        }
+        .card-evidence {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            margin-top: 0.3rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: 0.01em;
+        }
+        .card-evidence strong {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .card-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            opacity: 0;
+            transition: opacity var(--transition);
+            margin-left: auto;
+        }
+        .card:hover .card-actions {
+            opacity: 1;
+        }
+        @media (max-width: 768px), (hover: none) {
+            .card-actions {
+                opacity: 1;
+            }
+        }
+        .card-action-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.3rem;
+            border-radius: 4px;
+            transition: all var(--transition);
+        }
+        .card-action-btn:hover {
+            color: var(--text);
+            background: var(--bg-tertiary);
+        }
+        .card-action-btn.move-btn {
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        /* ─── Lane Footer ─── */
+        .lane-footer {
+            padding: 0.5rem 0.85rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            border-radius: 0 0 var(--radius) var(--radius);
+        }
+        .add-card-btn {
+            background: none;
+            border: 1px dashed var(--border-light);
+            color: var(--text-dim);
+            font-size: 0.72rem;
+            padding: 0.35rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-family: var(--font-sans);
+            width: 100%;
+            text-align: center;
+        }
+        .add-card-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        /* ─── Archive Section ─── */
+        .archive-section {
+            margin: 0 1.25rem 1.25rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--bg-secondary);
+            overflow: hidden;
+        }
+        .archive-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.6rem 0.85rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background var(--transition);
+            border-bottom: 1px solid transparent;
+        }
+        .archive-header:hover {
+            background: var(--bg-tertiary);
+        }
+        .archive-header.open {
+            border-bottom-color: var(--border);
+        }
+        .archive-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .archive-toggle-icon {
+            font-size: 0.7rem;
+            transition: transform var(--transition);
+            color: var(--text-dim);
+        }
+        .archive-header.open .archive-toggle-icon {
+            transform: rotate(90deg);
+        }
+        .archive-title {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .archive-count {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 0.15rem 0.45rem;
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+        }
+        .archive-body {
+            display: none;
+            padding: 0.6rem;
+            gap: 0.55rem;
+            flex-wrap: wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .archive-body.open {
+            display: flex;
+        }
+        .archive-card {
+            flex: 1 0 200px;
+            max-width: 260px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.55rem 0.65rem;
+            cursor: pointer;
+            transition: all var(--transition);
+            opacity: 0.75;
+            position: relative;
+        }
+        .archive-card:hover {
+            opacity: 1;
+            border-color: var(--border-light);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        .archive-card .card-id {
+            font-size: 0.6rem;
+        }
+        .archive-card .card-title {
+            font-size: 0.72rem;
+            -webkit-line-clamp: 1;
+        }
+        .archive-card .card-date {
+            font-size: 0.55rem;
+        }
+        .archive-badge {
+            position: absolute;
+            top: 0.4rem;
+            right: 0.4rem;
+            font-size: 0.55rem;
+            color: var(--green);
+        }
+
+        /* ─── Modal ─── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            animation: fadeIn 0.2s ease;
+        }
+        .modal-overlay.open {
+            display: flex;
+        }
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 560px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.25s ease;
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            z-index: 1;
+        }
+        .modal-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.3rem;
+            border-radius: 6px;
+            transition: all var(--transition);
+            line-height: 1;
+        }
+        .modal-close:hover {
+            color: var(--text);
+            background: var(--bg-tertiary);
+        }
+        .modal-body {
+            padding: 1.25rem;
+        }
+        .form-group {
+            margin-bottom: 0.9rem;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.3rem;
+        }
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.5rem 0.7rem;
+            font-size: 0.82rem;
+            color: var(--text);
+            font-family: var(--font-sans);
+            transition: all var(--transition);
+            outline: none;
+        }
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .form-textarea {
+            resize: vertical;
+            min-height: 70px;
+            font-size: 0.78rem;
+            line-height: 1.5;
+        }
+        .form-select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a94a7' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.7rem center;
+            padding-right: 2rem;
+        }
+        .form-row {
+            display: flex;
+            gap: 0.75rem;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        .archived-hint {
+            display: none;
+            font-size: 0.68rem;
+            color: var(--orange);
+            background: var(--orange-dim);
+            border: 1px solid rgba(251, 146, 60, 0.35);
+            border-radius: 6px;
+            padding: 0.45rem 0.6rem;
+            margin-top: 0.4rem;
+            line-height: 1.4;
+        }
+        .modal-footer {
+            padding: 0.85rem 1.25rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            position: sticky;
+            bottom: 0;
+            background: var(--bg-secondary);
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        }
+
+        /* ─── Toast ─── */
+        .toast-container {
+            position: fixed;
+            bottom: 1.25rem;
+            right: 1.25rem;
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            pointer-events: none;
+        }
+        .toast {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            font-size: 0.78rem;
+            color: var(--text);
+            box-shadow: var(--shadow);
+            animation: slideInRight 0.3s ease;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            max-width: 320px;
+        }
+        .toast.success {
+            border-color: var(--green);
+            box-shadow: 0 0 16px rgba(74, 222, 128, 0.15);
+        }
+        .toast.error {
+            border-color: var(--red);
+            box-shadow: 0 0 16px rgba(248, 113, 113, 0.15);
+        }
+        .toast.info {
+            border-color: var(--accent);
+            box-shadow: 0 0 16px var(--accent-glow);
+        }
+        .toast-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        /* ─── Animations ─── */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes cardFlash {
+            0% { box-shadow: 0 0 0 3px var(--accent-glow); }
+            100% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
+        }
+        .card.flash {
+            animation: cardFlash 0.6s ease;
+        }
+
+        /* ─── Empty State ─── */
+        .empty-state {
+            text-align: center;
+            padding: 1.5rem 0.75rem;
+            color: var(--text-dim);
+            font-size: 0.72rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .empty-state .empty-icon {
+            font-size: 1.5rem;
+            opacity: 0.5;
+        }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 768px) {
+            .board-container {
+                flex-direction: column;
+                padding: 0.75rem;
+            }
+            .lane {
+                max-width: 100%;
+                flex: 1 0 auto;
+                max-height: none;
+            }
+            .lane-cards {
+                max-height: 400px;
+            }
+            .top-bar {
+                padding: 0.5rem 0.75rem;
+            }
+            .search-box input {
+                width: 140px;
+            }
+            .search-box input:focus {
+                width: 180px;
+            }
+            .modal {
+                width: 95%;
+                max-height: 90vh;
+            }
+            .form-row {
+                flex-direction: column;
+            }
+        }
+        @media (max-width: 480px) {
+            html {
+                font-size: 13px;
+            }
+            .board-container {
+                padding: 0.5rem;
+                gap: 0.6rem;
+            }
+            .lane {
+                min-width: 100%;
+            }
+            .top-bar {
+                gap: 0.4rem;
+            }
+            .brand .subtitle {
+                display: none;
+            }
+            .btn span.btn-text {
+                display: none;
+            }
+        }
+
+        /* ─── Print ─── */
+        @media print {
+            .top-bar,
+            .stats-bar,
+            .filter-bar,
+            .toast-container,
+            .modal-overlay,
+            .lane-footer,
+            .card-actions {
+                display: none !important;
+            }
+            body {
+                background: #fff;
+                color: #000;
+            }
+            .lane {
+                border: 1px solid #ccc;
+                break-inside: avoid;
+            }
+            .card {
+                border: 1px solid #ddd;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ═══ TOP BAR ═══ -->
+    <header class="top-bar" role="banner">
+        <a class="brand" href="#" aria-label="Mailroom Kanban Dispatch Board">
+            <span class="logo">📋</span>
+            <span>
+                Mailroom Dispatch Board
+                <span class="subtitle">Agent-to-Agent Task Orchestration</span>
+            </span>
+        </a>
+        <span class="sync-badge" id="syncBadge">● loading…</span>
+        <div class="top-actions">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Search cards, agents, evidence…" aria-label="Search cards">
+                <button class="clear-btn" id="clearSearch" aria-label="Clear search">✕</button>
+            </div>
+            <button class="btn btn-icon" id="btnStats" title="Toggle statistics" aria-label="Toggle statistics">📊</button>
+            <button class="btn btn-icon" id="btnExport" title="Export board data" aria-label="Export board data">📥</button>
+            <button class="btn btn-icon" id="btnImport" title="Import board data" aria-label="Import board data">📤</button>
+            <button class="btn btn-primary" id="btnNewCard" aria-label="Create new card">+ <span class="btn-text">New Card</span></button>
+        </div>
+    </header>
+
+    <!-- ═══ STATS BAR ═══ -->
+    <div class="stats-bar" id="statsBar" role="region" aria-label="Board statistics">
+        <span class="stat-chip"><span class="dot" style="background:var(--cyan)"></span> Assigned: <span class="count" id="statAssigned">0</span></span>
+        <span class="stat-chip"><span class="dot" style="background:var(--accent)"></span> In Progress: <span class="count" id="statInProgress">0</span></span>
+        <span class="stat-chip"><span class="dot" style="background:var(--orange)"></span> Needs Attention: <span class="count" id="statNeedsAttention">0</span></span>
+        <span class="stat-chip"><span class="dot" style="background:var(--green)"></span> Done: <span class="count" id="statDone">0</span></span>
+        <span class="stat-chip">📦 Total: <span class="count" id="statTotal">0</span></span>
+        <span class="stat-chip">📁 Archived: <span class="count" id="statArchived">0</span></span>
+        <span class="stat-chip">🔥 Critical: <span class="count" id="statCritical">0</span></span>
+        <span class="stat-chip">👤 Agents: <span class="count" id="statAgents">5</span></span>
+    </div>
+
+    <!-- ═══ FILTER BAR ═══ -->
+    <div class="filter-bar" id="filterBar" role="region" aria-label="Card filters">
+        <span class="filter-label">Priority</span>
+        <button class="filter-chip" data-filter-priority="critical" type="button">🔥 Critical</button>
+        <button class="filter-chip" data-filter-priority="high" type="button">High</button>
+        <button class="filter-chip" data-filter-priority="medium" type="button">Medium</button>
+        <button class="filter-chip" data-filter-priority="low" type="button">Low</button>
+        <span class="filter-divider"></span>
+        <span class="filter-label">Agent</span>
+        <button class="filter-chip" data-filter-agent="human" type="button">human</button>
+        <button class="filter-chip" data-filter-agent="opencode" type="button">opencode</button>
+        <button class="filter-chip" data-filter-agent="lucius" type="button">Lucius</button>
+        <button class="filter-chip" data-filter-agent="cursor" type="button">cursor</button>
+        <button class="filter-chip" data-filter-agent="unclaimed" type="button">unclaimed</button>
+        <button class="btn btn-sm" id="btnClearFilters" type="button">✕ Clear</button>
+        <span id="filterResultCount"></span>
+    </div>
+
+    <!-- ═══ BOARD ═══ -->
+    <main class="board-container" id="boardContainer" role="main" aria-label="Kanban board">
+        <!-- Lanes are rendered by JavaScript -->
+    </main>
+
+    <!-- ═══ ARCHIVE ═══ -->
+    <section class="archive-section" id="archiveSection" aria-label="Archived completed cards">
+        <div class="archive-header" id="archiveHeader" role="button" tabindex="0" aria-expanded="false">
+            <div class="archive-header-left">
+                <span class="archive-toggle-icon">▶</span>
+                <span class="archive-title">Completed Archive</span>
+                <span class="archive-count" id="archiveCount">0</span>
+            </div>
+            <span style="font-size:0.68rem;color:var(--text-dim)">Click to toggle</span>
+        </div>
+        <div class="archive-body" id="archiveBody"></div>
+    </section>
+
+    <!-- ═══ MODAL ═══ -->
+    <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-label="Card editor">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title" id="modalTitle">✏️ Edit Card</span>
+                <button class="modal-close" id="modalClose" aria-label="Close modal">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <div class="form-group">
+                    <label class="form-label" for="formId">Card ID</label>
+                    <input class="form-input" type="text" id="formId" placeholder="HUB-000" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="formTitle">Title</label>
+                    <input class="form-input" type="text" id="formTitle" placeholder="Task title…">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="formDesc">Description</label>
+                    <textarea class="form-textarea" id="formDesc" placeholder="Task description…"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="formLane">Lane</label>
+                        <select class="form-select" id="formLane">
+                            <option value="assigned">Assigned</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="needs-attention">Needs Attention</option>
+                            <option value="done">Done</option>
+                        </select>
+                        <div class="archived-hint" id="archivedHint">📦 This card is archived, so it won't appear on the board. Use "Restore to Board" below to bring it back.</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="formPriority">Priority</label>
+                        <select class="form-select" id="formPriority">
+                            <option value="critical">Critical</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="formAgents">Agents (comma-separated)</label>
+                    <input class="form-input" type="text" id="formAgents" placeholder="human, opencode, Lucius, cursor">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="formEvidence">Evidence Trace</label>
+                    <textarea class="form-textarea" id="formEvidence" style="min-height:80px;font-size:0.74rem" placeholder="e.g., commit SHA, file path, log ref…"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="formDate">Date</label>
+                    <input class="form-input" type="date" id="formDate">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="modalRestore" style="display:none;color:var(--green);border-color:var(--green)">🔄 Restore to Board</button>
+                <button class="btn" id="modalDelete" style="color:var(--red);border-color:var(--red)">🗑 Delete</button>
+                <button class="btn" id="modalCancel">Cancel</button>
+                <button class="btn btn-primary" id="modalSave">💾 Save Card</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ TOAST CONTAINER ═══ -->
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+    <!-- ═══ HIDDEN FILE INPUT FOR IMPORT ═══ -->
+    <input type="file" id="importFileInput" accept=".json" style="display:none" aria-hidden="true">
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ─── CONSTANTS ───
+            const LANES = [
+                { id: 'assigned', title: 'Assigned', dotClass: 'assigned' },
+                { id: 'in-progress', title: 'In Progress', dotClass: 'in-progress' },
+                { id: 'needs-attention', title: 'Needs Attention', dotClass: 'needs-attention' },
+                { id: 'done', title: 'Done', dotClass: 'done' },
+            ];
+            const AGENT_COLORS = {
+                'human': 'human',
+                'opencode': 'opencode',
+                'lucius': 'lucius',
+                'cursor': 'cursor',
+                'unclaimed': 'unclaimed',
+            };
+            const PRIORITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
+
+            // ─── REAL DATA FROM TASKS.md ───
+            function getRealData() {
+                return [
+                    // ═══ OPEN CARDS (active lanes) ═══
+                    {
+                        id: 'HUB-006',
+                        title: 'External agent communication thread integration',
+                        desc: 'The human is standing up a communication channel for agents outside this repo. When live: link it here as the discussion channel, re-point this board\'s "stand-in" note, and record the handover in Evidence.',
+                        lane: 'assigned',
+                        priority: 'medium',
+                        agents: ['human'],
+                        evidence: 'opened 2026-08-30 by the human directive',
+                        date: '2026-08-30',
+                        archived: false,
+                        createdAt: '2026-08-30'
+                    },
+                    {
+                        id: 'HUB-039',
+                        title: 'Gmail free-triage team — production-pilot readiness sweep',
+                        desc: 'Human directive 2026-09-03 ("ensure the new triage free agent team is fully built out and ready for production pilot testing via the singular document uploads thru Gmail"). Scope: end-to-end readiness audit of the single-document Gmail triage lane (code, config, prompt registry, tests, smoke, watcher runtime, credentials posture) + bring-up of everything within agent power + an honest gap list for the human.',
+                        lane: 'in-progress',
+                        priority: 'high',
+                        agents: ['opencode', 'human'],
+                        evidence: 'claimed at session start; audit underway. AUDIT PROGRESS (2026-09-03): ... see full TASKS.md',
+                        date: '2026-09-03',
+                        archived: false,
+                        createdAt: '2026-09-03'
+                    },
+                    {
+                        id: 'HUB-054',
+                        title: 'Terminal-stylized TUI (typed-command REPL) + terminal GH Pages site for The-Mailroom — dataset viewer + constellation repo browser',
+                        desc: 'Human directive 2026-09-04 ("implement a terminal stylized TUI for the THE MAILROOM package ... improving the TUI and hosted github pages site, that provides viewing access to the dataset, as well as a host of navigation, CLI commands, ability to browse the other repositories involved in the LLM Mailroom", owlcot-style reference). Scope in packages/The-Mailroom: (1) TUI rebuilt as a full typed-command REPL... (2) Terminal GH Pages site... (3) Data plumbing... (4) Tests... Release: The-Mailroom MINOR 0.3.0 → 0.4.0.',
+                        lane: 'in-progress',
+                        priority: 'high',
+                        agents: ['opencode'],
+                        evidence: 'claimed at directive time; research complete... implementation underway. DELIVERED (evidence 65507b4f)...',
+                        date: '2026-09-04',
+                        archived: false,
+                        createdAt: '2026-09-04'
+                    },
+                    {
+                        id: 'HUB-020',
+                        title: 'docclass eval judge prompts still grade against the retired 8-class "EXTENDED primary set"',
+                        desc: 'Discovered during HUB-019 component 6: packages/llm-entity-extraction/src/prompts_docclass.py (judge/reviewer/arbiter/boss docclass prompts) and the byte-mirror packages/The-Mailroom/mailroom_ui/docclass_prompts.py instruct judges to grade against the extended 8-class list (incl. retired compliance_filing/court_opinion/due_diligence) while the docclass GT is the canonical five (plan §5/§66/§93; docs/v7-taxonomy.md §5 avoid-list). Land in THIS monorepo (human directive: all work in mailroom-dev): add NEW prompt version keys (never mutate versions that have run) with five-class + unknown grading language per plan §67, mirror byte-identical into The-Mailroom, leave default selection unchanged until a same-surface A/B validates v1; option-list ↔ schema-enum test parity maintained. Decision open for the human: whether the docclass arm keeps the extended surface as deliberate eval design (KANBAN-033 lineage) or moves to five-class grading.',
+                        lane: 'assigned',
+                        priority: 'medium',
+                        agents: ['unclaimed'],
+                        evidence: 'HUB-019 Evidence 2026-09-02; HUB-041 coordination note 2026-09-03',
+                        date: '2026-09-02',
+                        archived: false,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-036',
+                        title: 'v9 corpus candidate: INSURBIAS insurance-claim source',
+                        desc: 'Spawned at HUB-028 close (append-only law: the deferred item gets a card before the parent closes). HUB-028 evaluated INSURBIAS for the v8 LOB expansion and deferred it as GT-sparse; v9 (or later) should re-evaluate it alongside the P4 expansion priorities (docs/reports/audits/docclass_expansion_priorities.md — insurance_workflow is HIGH: adjuster 0%, partial denial_reasons/supporting_documents), license permitting.',
+                        lane: 'assigned',
+                        priority: 'low',
+                        agents: ['unclaimed'],
+                        evidence: 'spawned from HUB-028 close-out 2026-09-02',
+                        date: '2026-09-02',
+                        archived: false,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-044',
+                        title: 'sync_packages.py worktree-race hardening',
+                        desc: 'Discovered in the HUB-005 third sweep — patch_push copies the package subtree from the WORKTREE over git ls-files while the clean-tree guard (assert_clean_tree) runs only ONCE at script start: a file saved by a parallel session mid-run is silently swept into the upstream propagation commit (2026-09-04 incident: an uncommitted gmail_intake.py echo-HTML edit went upstream as llm-mailroom e496f1d2 and had to be reverted at 29249758). Fix options (either or both): (a) copy committed blobs (git archive HEAD -- packages/<pkg> / pkg_tree read) instead of worktree files so uncommitted work can never propagate; (b) re-assert cleanliness immediately before each package\'s worktree copy (per-package guard, fail that package not the whole run). Docs currency: record the sanctioned all-packages sweep one-liner (push --all --patch) + the never-run-with-in-flight-package-edits caveat in the root AGENTS.md sync section (done alongside this card\'s spawn).',
+                        lane: 'assigned',
+                        priority: 'high',
+                        agents: ['unclaimed'],
+                        evidence: 'spawned from the HUB-005 third-sweep correction 2026-09-04',
+                        date: '2026-09-04',
+                        archived: false,
+                        createdAt: '2026-09-04'
+                    },
+                    {
+                        id: 'HUB-043',
+                        title: 'Watcher filename-only dedup silently drops re-sent Gmail documents (live pilot bug)',
+                        desc: 'Human report 2026-09-04 ("i just sent a new email, no new watcher response"): the email queued fine (gmail_attachment_queued, route=triage, sender axios337@gmail.com) but Watcher._process skips the inbox file EVERY SECOND with file_skipped_already_processed — _is_already_processed matches ANY terminal manifest by original_filename alone, so a legitimate NEW email (new Message-ID) carrying an already-processed filename is refused forever. Fix: intake-provenance-aware dedup — a file\'s /upload sidecar (message_id/upload_id) must MATCH the terminal manifest\'s intake provenance to count as processed; mismatched provenance = a NEW document that MUST process.',
+                        lane: 'in-progress',
+                        priority: 'critical',
+                        agents: ['opencode'],
+                        evidence: 'claimed at report time; fix + test + watcher restart to follow. RESTART DONE 2026-09-04 (debug pass): watcher restarted on the current code — including the provenance-aware dedup (8f50cc26)...',
+                        date: '2026-09-03',
+                        archived: false,
+                        createdAt: '2026-09-03'
+                    },
+                    {
+                        id: 'HUB-042',
+                        title: 'Frozen docclass prompt surfaces still teach the pre-v8 4-token insurance subclass set + docclass-pilot examples lack the v8 LOB strata',
+                        desc: 'Spawned at HUB-041 close (append-only law: discovered-but-undelivered gets a card before the parent closes). HUB-041 fixed the CODE catalogs + added sorter_mailroom_v0/sorter_mailroom_pilot_v0, but these FROZEN prompt surfaces (never mutated after a run) still enumerate only carrier/pde/outpatient/inpatient: the vision twin (sorter_docclass_vision_v0/v1 rule 40 short form), the _PILOT_CONTEXT injected into the pilot judge/arbiter/boss prompts (HUB-020\'s neighborhood — its class-set rewrite should absorb the subclass lines), and the reviewer_docclass_pilot_v0 subclass section. Also Lucius-Morningstar/docclass-pilot (48 strata, v5-era --examples surface for run_hf_pilot.py) carries no property/auto example rows. Follow-up: next docclass iteration (GEPA loop) derives NEW mailroom-named keys covering these surfaces + an A/B of the HUB-041 sorter keys vs v7/pilot-v3 defaults on the v8 corpus (same-surface, seed-matched); examples dataset refresh is a corpus-eda/Hub decision.',
+                        lane: 'assigned',
+                        priority: 'medium',
+                        agents: ['unclaimed'],
+                        evidence: 'spawned from HUB-041 close-out 2026-09-03',
+                        date: '2026-09-03',
+                        archived: false,
+                        createdAt: '2026-09-03'
+                    },
+                    // ═══ ARCHIVED CARDS (from TASKS.md Archive, newest last) ═══
+                    {
+                        id: 'HUB-053',
+                        title: 'Repo-wide mailroom-corpus HF dataset loader + corpus-sourced Gmail pilot notebook',
+                        desc: 'Done 2026-09-04. See TASKS.md archive for full evidence.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode', 'lucius'],
+                        evidence: '3c969ce0, 65507b4f, etc.',
+                        date: '2026-09-04',
+                        archived: true,
+                        createdAt: '2026-09-04'
+                    },
+                    {
+                        id: 'HUB-052',
+                        title: 'Relations clerk mode toggle — simple CLI + API live/pilot switching',
+                        desc: 'Done 2026-09-04. Evidence: 78239433.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: '78239433',
+                        date: '2026-09-04',
+                        archived: true,
+                        createdAt: '2026-09-04'
+                    },
+                    {
+                        id: 'HUB-051',
+                        title: 'Relations clerk (HUB-040) production-readiness completion — the research/review clerk was archived code-complete but a NO-OP on the live system',
+                        desc: 'Done 2026-09-04. Evidence: dcaf9ae7.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode'],
+                        evidence: 'dcaf9ae7',
+                        date: '2026-09-04',
+                        archived: true,
+                        createdAt: '2026-09-04'
+                    },
+                    {
+                        id: 'HUB-050',
+                        title: 'Watcher status notifications — 🔴 down alerts + 🟢 relaunch confirmations to the human\'s email',
+                        desc: 'Done 2026-09-04. Evidence: a2ded8f1, b2d0059b.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: 'a2ded8f1, b2d0059b',
+                        date: '2026-09-04',
+                        archived: true,
+                        createdAt: '2026-09-04'
+                    },
+                    {
+                        id: 'HUB-049',
+                        title: 'Gmail triage lane: unknown-class extraction fallback + confidence gate + transient-LLM review parking',
+                        desc: 'Done 2026-09-04. Evidence: 679cdea3, 95cfe1e9.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: '679cdea3, 95cfe1e9',
+                        date: '2026-09-04',
+                        archived: true,
+                        createdAt: '2026-09-04'
+                    },
+                    {
+                        id: 'HUB-048',
+                        title: 'Gmail triage agent: key/concise entity extraction for ALL document types via the EXISTING EXTRACTION_SCHEMAS',
+                        desc: 'Done 2026-09-04. Evidence: 76f6c531, c5560dfc.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: '76f6c531, c5560dfc',
+                        date: '2026-09-04',
+                        archived: true,
+                        createdAt: '2026-09-04'
+                    },
+                    {
+                        id: 'HUB-047',
+                        title: 'Enron-Evaluation-Environment: cleanly formatted Markdown samples of the Enron email correspondence',
+                        desc: 'Done 2026-09-04. Evidence: f031e40e, d4fab946, 7ce24188.',
+                        lane: 'done',
+                        priority: 'low',
+                        agents: ['opencode', 'lucius'],
+                        evidence: 'f031e40e, d4fab946, 7ce24188',
+                        date: '2026-09-04',
+                        archived: true,
+                        createdAt: '2026-09-04'
+                    },
+                    {
+                        id: 'HUB-046',
+                        title: 'claims-data-eda: real insurance-claim dataset samples as PDFs',
+                        desc: 'Done 2026-09-04. Evidence: eb3c8da4, 1d893e76.',
+                        lane: 'done',
+                        priority: 'low',
+                        agents: ['opencode'],
+                        evidence: 'eb3c8da4, 1d893e76',
+                        date: '2026-09-04',
+                        archived: true,
+                        createdAt: '2026-09-04'
+                    },
+                    {
+                        id: 'HUB-045',
+                        title: 'claims-data-eda: real-sample PDF examples (duplicate of archived HUB-046)',
+                        desc: 'Done 2026-09-04. Removed from open cards; see HUB-046.',
+                        lane: 'done',
+                        priority: 'low',
+                        agents: ['opencode'],
+                        evidence: '3526cccf',
+                        date: '2026-09-04',
+                        archived: true,
+                        createdAt: '2026-09-04'
+                    },
+                    {
+                        id: 'HUB-041',
+                        title: 'Insurance-claim subclass alignment with the v8 synthetic LOB claims',
+                        desc: 'Done 2026-09-03. Evidence: 54b8f52f.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode'],
+                        evidence: '54b8f52f',
+                        date: '2026-09-03',
+                        archived: true,
+                        createdAt: '2026-09-03'
+                    },
+                    {
+                        id: 'HUB-040',
+                        title: 'Relations agent — semantic linking + auditable relations ledger + knowledge graphs',
+                        desc: 'Done 2026-09-03. Evidence: 7a76d1d8, 8b58ed74, etc.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode', 'lucius'],
+                        evidence: '7a76d1d8, 8b58ed74, aa81643f, 1968d212, 9f30fd5e, 88ece63b, 7c8f8dd6',
+                        date: '2026-09-03',
+                        archived: true,
+                        createdAt: '2026-09-03'
+                    },
+                    {
+                        id: 'HUB-038',
+                        title: 'Intake agent v2 — triage + clean + prepare for the full pipeline',
+                        desc: 'Done 2026-09-03. Evidence: 9ef4e4fd.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode'],
+                        evidence: '9ef4e4fd',
+                        date: '2026-09-03',
+                        archived: true,
+                        createdAt: '2026-09-03'
+                    },
+                    {
+                        id: 'HUB-037',
+                        title: 'Gmail intake channel + free triage lane — llmmailroom@gmail.com as a second intake route',
+                        desc: 'Done 2026-09-03. Evidence: 1b6d2ed6, 511ef9b1, 7c1a1078, f93b8213.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode'],
+                        evidence: '1b6d2ed6, 511ef9b1, 7c1a1078, f93b8213',
+                        date: '2026-09-03',
+                        archived: true,
+                        createdAt: '2026-09-03'
+                    },
+                    {
+                        id: 'HUB-005',
+                        title: 'Release-train readiness (second sweep) — propagate all 10 feeder repos + cut Hub release v0.2.0',
+                        desc: 'Propagated the HUB-038/039 payload upstream via sync_packages.py across 5 packages, cursors re-baselined. Cut Hub release v0.2.0 (CHANGELOG + semantic tag + GitHub Release). Follow-up ingest/intake consolidation swept the whole constellation (agent + module rename). Third sweep (post-HUB-040/041/043) propagated the relations agent + subclass vocab + dedup fix. Corrected a worktree-race incident — an uncommitted parallel-session edit was swept upstream and reverted; the driver hardening spawned as HUB-044. Final state: 10/10 packages in sync, 0 cursor gaps.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode', 'human'],
+                        evidence: 'release v0.2.0 tag + cursor re-baselines; revert 29249758; see TASKS.md archive for the full commit chain',
+                        date: '2026-09-04',
+                        archived: true,
+                        createdAt: '2026-09-03'
+                    },
+                    {
+                        id: 'HUB-035',
+                        title: 'Entity package: eval infrastructure for sorter + specialists on the v7 + v8 corpus',
+                        desc: 'Done 2026-09-02. Evidence: 557b76e6.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode', 'lucius'],
+                        evidence: '557b76e6',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-034',
+                        title: 'Header diagram: universal auditable-hash-archive flow',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'low',
+                        agents: ['lucius'],
+                        evidence: 'commit (diagram)',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-033',
+                        title: 'GitHub badge audit — all README badges render across paths',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'low',
+                        agents: ['lucius'],
+                        evidence: 'commit (badge audit)',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-032',
+                        title: 'Post-collision GT reconciliation — hardening onto the v8 base',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode', 'lucius'],
+                        evidence: 'bba2f750, eafe1ab4',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-031',
+                        title: 'resolved without a card (ID-collision closure)',
+                        desc: 'No work; see HUB-033 collision note.',
+                        lane: 'done',
+                        priority: 'low',
+                        agents: ['opencode'],
+                        evidence: 'c9f9b876',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-030',
+                        title: 'Dependabot config for the monorepo',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'low',
+                        agents: ['opencode'],
+                        evidence: 'commit (dependabot)',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-029',
+                        title: 'Team norm: targeted git add <paths> only',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode', 'human'],
+                        evidence: 'commit (norm)',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-028',
+                        title: 'mailroom-corpus v8 — synthetic insurance-claim LOB expansion + full GT conformance',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode', 'lucius'],
+                        evidence: '7f8983ac, eafe1ab4',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-027',
+                        title: 'Root README banner — "Mailroom Processing Pipeline" adapted for GitHub',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'low',
+                        agents: ['lucius'],
+                        evidence: 'commit (banner)',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-026',
+                        title: 'Offline sandbox: remote-serving integration completeness (Modal / vLLM / conda / SSH tunnels / CHTC) + CHTC annotation pass',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: '60fe58b5',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-025',
+                        title: 'Enron EDA visualization distortions (#9)',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'low',
+                        agents: ['lucius'],
+                        evidence: 'commit (fix)',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-024',
+                        title: 'Core-repo changelog + semantic-version release chain',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode', 'human'],
+                        evidence: '04e1f604, 1bc76344, bac48976',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-023',
+                        title: 'Rename the HF dataset docclass-merged → mailroom-corpus',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['lucius', 'opencode'],
+                        evidence: '3ad5d47d, 77a26d69, d064ff9b, 30b1f76c',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-022',
+                        title: 'docclass-merged P1 — Mailroom Evaluation Hardening (plan §86, §84A sequencing)',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode', 'lucius'],
+                        evidence: '846c6e83, 0b6ff1f9, f080322b, 0cb4c9e6, bbab0e63, 61c16645',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-021',
+                        title: 'Sync driver: reliable upstream propagation',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode'],
+                        evidence: '80ee2308',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-019',
+                        title: 'docclass-merged corpus hardening P0 — baseline freeze, dataset contract, identity/provenance schema, taxonomy parity gate',
+                        desc: 'Done 2026-09-02.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode', 'lucius'],
+                        evidence: '120f11d6, 0bf22b6f, be1f56ef, de20ef17, 5cff893e, ea76a22c, 8d72f5e1, 983a9b4b, 5c744b60, 02e83633, 88515225',
+                        date: '2026-09-02',
+                        archived: true,
+                        createdAt: '2026-09-02'
+                    },
+                    {
+                        id: 'HUB-018',
+                        title: 'Sub-package sync sweep: llm-mailroom + mailroom-corpus-eda',
+                        desc: 'Done 2026-09-01.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: '2d93de6b, ce98b043, 6f2ce890',
+                        date: '2026-09-01',
+                        archived: true,
+                        createdAt: '2026-09-01'
+                    },
+                    {
+                        id: 'HUB-017',
+                        title: 'GitHub wiki for mailroom-dev',
+                        desc: 'Done 2026-09-01.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: 'commit (wiki)',
+                        date: '2026-09-01',
+                        archived: true,
+                        createdAt: '2026-09-01'
+                    },
+                    {
+                        id: 'HUB-016',
+                        title: 'Docs-currency sweep',
+                        desc: 'Done 2026-09-01.',
+                        lane: 'done',
+                        priority: 'low',
+                        agents: ['opencode'],
+                        evidence: 'commit (docs)',
+                        date: '2026-09-01',
+                        archived: true,
+                        createdAt: '2026-09-01'
+                    },
+                    {
+                        id: 'HUB-015',
+                        title: 'Offline sandbox: current-pipeline alignment + reduced agent profile + docclass-merged targets',
+                        desc: 'Done 2026-09-01.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: 'commit (sandbox)',
+                        date: '2026-09-01',
+                        archived: true,
+                        createdAt: '2026-09-01'
+                    },
+                    {
+                        id: 'HUB-014',
+                        title: 'GitHub governance tooling — templates, labels, board state tracker',
+                        desc: 'Done 2026-09-01.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode'],
+                        evidence: 'commit (governance)',
+                        date: '2026-09-01',
+                        archived: true,
+                        createdAt: '2026-09-01'
+                    },
+                    {
+                        id: 'HUB-013',
+                        title: 'Corpus-EDA v7 reconciliation',
+                        desc: 'Done 2026-08-31.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: '831c9b34',
+                        date: '2026-08-31',
+                        archived: true,
+                        createdAt: '2026-08-31'
+                    },
+                    {
+                        id: 'HUB-012',
+                        title: 'corpus-eda P3 summary counter stale (27 vs 30 figures)',
+                        desc: 'Done 2026-09-01.',
+                        lane: 'done',
+                        priority: 'low',
+                        agents: ['opencode'],
+                        evidence: '6c343bab',
+                        date: '2026-09-01',
+                        archived: true,
+                        createdAt: '2026-09-01'
+                    },
+                    {
+                        id: 'HUB-011',
+                        title: 'Prompt-engineer opencode agent adapted for the monorepo',
+                        desc: 'Done 2026-08-31.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: 'commit (agent config)',
+                        date: '2026-08-31',
+                        archived: true,
+                        createdAt: '2026-08-31'
+                    },
+                    {
+                        id: 'HUB-010',
+                        title: 'Full documentation sweep',
+                        desc: 'Done 2026-08-31.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: 'bb854809',
+                        date: '2026-08-31',
+                        archived: true,
+                        createdAt: '2026-08-31'
+                    },
+                    {
+                        id: 'HUB-009',
+                        title: 'run_all.py subset runs clobber SUMMARY_REPORT.*',
+                        desc: 'Done 2026-08-31.',
+                        lane: 'done',
+                        priority: 'low',
+                        agents: ['opencode'],
+                        evidence: '9c0a5321',
+                        date: '2026-08-31',
+                        archived: true,
+                        createdAt: '2026-08-31'
+                    },
+                    {
+                        id: 'HUB-008',
+                        title: 'Corpus EDA full-fidelity completion',
+                        desc: 'Done 2026-08-31.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: 'c16cdd18',
+                        date: '2026-08-31',
+                        archived: true,
+                        createdAt: '2026-08-31'
+                    },
+                    {
+                        id: 'HUB-007',
+                        title: 'Import mailroom-corpus-eda as 10th workspace member',
+                        desc: 'Done 2026-08-31.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: '39409359, 0a5b498a, 90b25747, 989f95bb',
+                        date: '2026-08-31',
+                        archived: true,
+                        createdAt: '2026-08-31'
+                    },
+                    {
+                        id: 'HUB-004',
+                        title: 'Upstream-drift reconciliation — sync all 10 packages against their standalone upstream repos',
+                        desc: 'All legs complete: llm-mailroom pulled with the heavy-asset prune re-applied; llm-mailroom-graph refreshed; The-Mailroom tip reconciled; llm-entity-extraction pulled 6 additive KANBAN-105 docclass-merged v6 builder commits with zero overlap against monorepo-side wiring. Monorepo confirmed as central source of truth — 10/10 packages in sync via sync_packages.py status.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: 'a760f698 (entity squash) + prune/archive commit',
+                        date: '2026-09-01',
+                        archived: true,
+                        createdAt: '2026-09-01'
+                    },
+                    {
+                        id: 'HUB-003',
+                        title: 'Root documentation + governance foundation',
+                        desc: 'Done 2026-08-30.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: 'fe4b8d47',
+                        date: '2026-08-30',
+                        archived: true,
+                        createdAt: '2026-08-30'
+                    },
+                    {
+                        id: 'HUB-002',
+                        title: 'Sub-package sync driver',
+                        desc: 'Done 2026-08-30.',
+                        lane: 'done',
+                        priority: 'medium',
+                        agents: ['opencode'],
+                        evidence: 'fe4b8d47',
+                        date: '2026-08-30',
+                        archived: true,
+                        createdAt: '2026-08-30'
+                    },
+                    {
+                        id: 'HUB-001',
+                        title: 'Monorepo import + workspace wiring',
+                        desc: 'Done 2026-08-30.',
+                        lane: 'done',
+                        priority: 'high',
+                        agents: ['opencode'],
+                        evidence: 'ab4bf9e, 10c5f8b4, fe4b8d47',
+                        date: '2026-08-30',
+                        archived: true,
+                        createdAt: '2026-08-30'
+                    }
+                ];
+            }
+
+            // ─── STATE ───
+            let state = {
+                cards: [],
+                searchQuery: '',
+                priorityFilter: null,
+                agentFilter: null,
+                archiveOpen: false,
+                statsOpen: true,
+                editingCardId: null,
+                dragSourceId: null,
+                dragTargetLane: null,
+            };
+
+            // ─── DOM REFERENCES ───
+            const $ = (sel) => document.querySelector(sel);
+            const $$ = (sel) => document.querySelectorAll(sel);
+
+            const boardContainer = $('#boardContainer');
+            const searchInput = $('#searchInput');
+            const clearSearchBtn = $('#clearSearch');
+            const filterBar = $('#filterBar');
+            const btnClearFilters = $('#btnClearFilters');
+            const filterResultCount = $('#filterResultCount');
+            const archiveHeader = $('#archiveHeader');
+            const archiveBody = $('#archiveBody');
+            const archiveCount = $('#archiveCount');
+            const modalOverlay = $('#modalOverlay');
+            const modalTitle = $('#modalTitle');
+            const modalClose = $('#modalClose');
+            const modalDelete = $('#modalDelete');
+            const modalRestore = $('#modalRestore');
+            const modalCancel = $('#modalCancel');
+            const modalSave = $('#modalSave');
+            const archivedHint = $('#archivedHint');
+            const btnNewCard = $('#btnNewCard');
+            const btnExport = $('#btnExport');
+            const btnImport = $('#btnImport');
+            const btnStats = $('#btnStats');
+            const importFileInput = $('#importFileInput');
+            const toastContainer = $('#toastContainer');
+            const statsBar = $('#statsBar');
+
+            // Form fields
+            const formId = $('#formId');
+            const formTitle = $('#formTitle');
+            const formDesc = $('#formDesc');
+            const formLane = $('#formLane');
+            const formPriority = $('#formPriority');
+            const formAgents = $('#formAgents');
+            const formEvidence = $('#formEvidence');
+            const formDate = $('#formDate');
+
+            // ─── INIT ───
+            function init() {
+                loadPrefs();
+                renderBoard();
+                renderArchive();
+                updateStats();
+                updateFilterUI();
+                bindEvents();
+                updateTabTitle();
+                refreshBoard();
+            }
+
+            // ─── LIVE SOURCE: /api/board (GitHub issues) ───
+            // The served board is issue-backed: cards always come from the
+            // serverless proxy; localStorage only holds UI prefs + operator id.
+            function apiFetch(method, path, payload) {
+                const opts = { method, headers: { 'Content-Type': 'application/json' } };
+                const agent = localStorage.getItem('mailroom-board-agent');
+                if (agent) opts.headers['X-Mailroom-Actor'] = agent;
+                if (payload) opts.body = JSON.stringify(payload);
+                return fetch(path, opts).then(async (res) => {
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+                    return data;
+                });
+            }
+
+            function setSyncBadge(state, text) {
+                const el = $('#syncBadge');
+                if (!el) return;
+                el.textContent = text;
+                el.className = 'sync-badge ' + (state || '');
+            }
+
+            async function refreshBoard() {
+                setSyncBadge('syncing', '⟳ syncing…');
+                try {
+                    const data = await apiFetch('GET', '/api/board');
+                    state.cards = data.cards || [];
+                    setSyncBadge('live', `● LIVE · ${state.cards.length} cards`);
+                } catch (err) {
+                    console.warn('board unreachable, showing offline fallback:', err);
+                    if (!state.cards.length) state.cards = getRealData();
+                    setSyncBadge('offline', '● OFFLINE · snapshot');
+                }
+                savePrefs();
+                renderBoard();
+                renderArchive();
+                updateStats();
+                updateFilterUI();
+                updateTabTitle();
+            }
+
+            async function writeThrough(cardId, patch) {
+                const prev = state.cards.find((c) => c.id === cardId);
+                try {
+                    const fresh = await apiFetch('PATCH', '/api/board/' + encodeURIComponent(cardId), patch);
+                    if (fresh && fresh.id) {
+                        const idx = state.cards.findIndex((c) => c.id === cardId);
+                        if (idx >= 0) state.cards[idx] = Object.assign({}, state.cards[idx], fresh);
+                        else state.cards.push(fresh);
+                    }
+                    savePrefs();
+                    renderBoard();
+                    renderArchive();
+                    updateStats();
+                    updateTabTitle();
+                    showToast(`✅ ${cardId} saved to GitHub`, 'success');
+                    return fresh;
+                } catch (err) {
+                    if (prev) {
+                        const idx = state.cards.findIndex((c) => c.id === prev.id);
+                        if (idx >= 0) state.cards[idx] = prev;
+                    }
+                    renderBoard();
+                    showToast(`❌ ${cardId} save failed: ${err.message}`, 'error');
+                    throw err;
+                }
+            }
+
+            // ─── STATE MANAGEMENT ───
+            function loadPrefs() {
+                try {
+                    const pref = localStorage.getItem('mailroom-board-prefs-v4');
+                    if (pref) {
+                        const parsed = JSON.parse(pref);
+                        state.archiveOpen = parsed.archiveOpen || false;
+                        state.statsOpen = parsed.statsOpen !== false;
+                    }
+                } catch (e) {
+                    console.warn('failed to load prefs:', e);
+                }
+            }
+
+            function savePrefs() {
+                try {
+                    localStorage.setItem('mailroom-board-prefs-v4', JSON.stringify({
+                        archiveOpen: state.archiveOpen,
+                        statsOpen: state.statsOpen,
+                        savedAt: new Date().toISOString(),
+                    }));
+                } catch (e) {
+                    console.warn('failed to save prefs:', e);
+                }
+            }
+
+            function ensureAgent() {
+                let agent = localStorage.getItem('mailroom-board-agent');
+                if (!agent) {
+                    agent = window.prompt('Operator identity (used to attribute board edits):', 'opencode');
+                    if (!agent) agent = 'opencode';
+                    localStorage.setItem('mailroom-board-agent', agent.trim());
+                }
+                return agent;
+            }
+
+            function cardPassesFilters(card) {
+                if (state.priorityFilter && card.priority !== state.priorityFilter) return false;
+                if (state.agentFilter) {
+                    const agents = (card.agents || []).map((a) => (a || '').toLowerCase());
+                    if (!agents.includes(state.agentFilter)) return false;
+                }
+                return true;
+            }
+
+            function getCardsByLane(laneId) {
+                const query = state.searchQuery.toLowerCase().trim();
+                return state.cards.filter((card) => {
+                    if (card.lane !== laneId) return false;
+                    if (card.archived) return false;
+                    if (!cardPassesFilters(card)) return false;
+                    if (!query) return true;
+                    return cardMatchesQuery(card, query);
+                }).sort((a, b) => {
+                    if (PRIORITY_ORDER[a.priority] !== PRIORITY_ORDER[b.priority]) {
+                        return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+                    }
+                    return (a.date || '').localeCompare(b.date || '');
+                });
+            }
+
+            function getArchivedCards() {
+                const query = state.searchQuery.toLowerCase().trim();
+                return state.cards.filter((card) => {
+                    if (!card.archived) return false;
+                    if (!cardPassesFilters(card)) return false;
+                    if (!query) return true;
+                    return cardMatchesQuery(card, query);
+                }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+            }
+
+            function cardMatchesQuery(card, query) {
+                const searchable = [
+                    card.id || '',
+                    card.title || '',
+                    card.desc || '',
+                    card.evidence || '',
+                    (card.agents || []).join(' '),
+                    card.priority || '',
+                    card.lane || '',
+                ].join(' ').toLowerCase();
+                return searchable.includes(query);
+            }
+
+            function getCardById(id) {
+                return state.cards.find((c) => c.id === id);
+            }
+
+            function getNextCardId() {
+                const maxNum = state.cards.reduce((max, card) => {
+                    const match = (card.id || '').match(/HUB-(\d+)/i);
+                    if (match) {
+                        const num = parseInt(match[1], 10);
+                        if (num > max) max = num;
+                    }
+                    return max;
+                }, 0);
+                return `HUB-${String(maxNum + 1).padStart(3, '0')}`;
+            }
+
+            // ─── AGE HELPERS ───
+            function daysAgo(dateStr) {
+                if (!dateStr) return null;
+                const then = new Date(dateStr + 'T00:00:00');
+                if (isNaN(then.getTime())) return null;
+                const now = new Date();
+                const startOfNow = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+                const startOfThen = new Date(then.getFullYear(), then.getMonth(), then.getDate()).getTime();
+                return Math.round((startOfNow - startOfThen) / 86400000);
+            }
+
+            function ageLabel(dateStr) {
+                const d = daysAgo(dateStr);
+                if (d === null) return '';
+                if (d <= 0) return 'today';
+                if (d === 1) return '1d ago';
+                return `${d}d ago`;
+            }
+
+            // ─── RENDERING ───
+            function renderBoard() {
+                boardContainer.innerHTML = '';
+                LANES.forEach((lane) => {
+                    const laneEl = createLaneElement(lane);
+                    boardContainer.appendChild(laneEl);
+                });
+                updateFilterResultCount();
+            }
+
+            function updateFilterResultCount() {
+                if (!filterResultCount) return;
+                const activeTotal = state.cards.filter((c) => !c.archived).length;
+                const visibleTotal = LANES.reduce((sum, l) => sum + getCardsByLane(l.id).length, 0);
+                const filtersActive = !!(state.searchQuery || state.priorityFilter || state.agentFilter);
+                filterResultCount.textContent = filtersActive ? `Showing ${visibleTotal} of ${activeTotal}` : '';
+            }
+
+            function updateFilterUI() {
+                $$('.filter-chip[data-filter-priority]').forEach((btn) => {
+                    btn.classList.toggle('active', btn.dataset.filterPriority === state.priorityFilter);
+                });
+                $$('.filter-chip[data-filter-agent]').forEach((btn) => {
+                    btn.classList.toggle('active', btn.dataset.filterAgent === state.agentFilter);
+                });
+            }
+
+            function createLaneElement(lane) {
+                const laneEl = document.createElement('div');
+                laneEl.className = 'lane';
+                laneEl.dataset.laneId = lane.id;
+                laneEl.setAttribute('role', 'region');
+                laneEl.setAttribute('aria-label', `${lane.title} lane`);
+
+                const cards = getCardsByLane(lane.id);
+                const filtersActive = !!(state.searchQuery || state.priorityFilter || state.agentFilter);
+
+                laneEl.innerHTML = `
+                    <div class="lane-header">
+                        <div class="lane-header-left">
+                            <span class="lane-dot ${lane.dotClass}"></span>
+                            <span class="lane-title">${lane.title}</span>
+                            <span class="lane-count" data-lane-count="${lane.id}">${cards.length}</span>
+                        </div>
+                    </div>
+                    <div class="lane-cards" data-lane-cards="${lane.id}">
+                        ${cards.length === 0 ? `
+                            <div class="empty-state">
+                                <span class="empty-icon">📭</span>
+                                <span>No cards${filtersActive ? ' matching filters' : ''}</span>
+                            </div>
+                        ` : ''}
+                        ${cards.map((card) => createCardElement(card).outerHTML).join('')}
+                    </div>
+                    <div class="lane-footer">
+                        <button class="add-card-btn" data-add-card="${lane.id}">+ Add card to ${lane.title}</button>
+                    </div>
+                `;
+
+                // Attach event listeners after DOM insertion
+                laneEl.querySelectorAll('[data-add-card]').forEach((btn) => {
+                    btn.addEventListener('click', () => openNewCardModal(lane.id));
+                });
+
+                laneEl.querySelectorAll('.card').forEach((cardEl) => {
+                    attachCardEvents(cardEl);
+                });
+
+                // Drag and drop for lane
+                const cardsContainer = laneEl.querySelector('.lane-cards');
+                cardsContainer.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    laneEl.classList.add('drag-over');
+                    state.dragTargetLane = lane.id;
+                });
+                cardsContainer.addEventListener('dragleave', (e) => {
+                    if (!cardsContainer.contains(e.relatedTarget)) {
+                        laneEl.classList.remove('drag-over');
+                        if (state.dragTargetLane === lane.id) state.dragTargetLane = null;
+                    }
+                });
+                cardsContainer.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    laneEl.classList.remove('drag-over');
+                    if (state.dragSourceId && state.dragTargetLane === lane.id) {
+                        moveCard(state.dragSourceId, lane.id);
+                    }
+                    state.dragSourceId = null;
+                    state.dragTargetLane = null;
+                });
+
+                return laneEl;
+            }
+
+            function createCardElement(card) {
+                const el = document.createElement('div');
+                el.className = `card priority-${card.priority || 'medium'}`;
+                el.dataset.cardId = card.id;
+                el.draggable = true;
+                el.setAttribute('role', 'button');
+                el.setAttribute('tabindex', '0');
+                el.setAttribute('aria-label', `${card.id}: ${card.title}`);
+
+                const agentsHtml = (card.agents || []).map((agent) => {
+                    const agentClass = AGENT_COLORS[agent.toLowerCase()] || 'unclaimed';
+                    const avatarLetter = (agent || '?').charAt(0).toUpperCase();
+                    return `<span class="agent-chip ${agentClass}">
+                        <span class="agent-avatar">${avatarLetter}</span>${agent}
+                    </span>`;
+                }).join('');
+
+                const priorityLabel = (card.priority || 'medium').toUpperCase();
+
+                const laneIdx = LANES.findIndex((l) => l.id === card.lane);
+                const canMovePrev = laneIdx > 0;
+                const canMoveNext = laneIdx >= 0 && laneIdx < LANES.length - 1;
+                const prevTitle = canMovePrev ? LANES[laneIdx - 1].title : '';
+                const nextTitle = canMoveNext ? LANES[laneIdx + 1].title : '';
+
+                const ageDays = daysAgo(card.date);
+                const staleClass = (ageDays !== null && ageDays > 7 && card.lane !== 'done') ? ' stale' : '';
+                const ageHtml = ageLabel(card.date) ? `<span class="card-age${staleClass}">${ageLabel(card.date)}</span>` : '';
+
+                el.innerHTML = `
+                    <div class="card-top">
+                        <span class="card-id" data-copy-id title="Tap to copy ID">${card.id || 'N/A'}</span>
+                        <span class="card-priority-badge ${card.priority || 'medium'}">${priorityLabel}</span>
+                    </div>
+                    <div class="card-title">${escapeHtml(card.title || 'Untitled')}</div>
+                    ${card.desc ? `<div class="card-desc">${escapeHtml(card.desc)}</div>` : ''}
+                    <div class="card-meta">
+                        <div class="card-agents">${agentsHtml || '<span class="agent-chip unclaimed"><span class="agent-avatar">?</span>unclaimed</span>'}</div>
+                        <span style="display:flex;align-items:center;gap:0.35rem">
+                            <span class="card-date">${card.date || '—'}</span>
+                            ${ageHtml}
+                        </span>
+                    </div>
+                    ${card.evidence ? `<div class="card-evidence"><strong>📎</strong> ${escapeHtml(card.evidence)}</div>` : ''}
+                    <div class="card-actions">
+                        ${canMovePrev ? `<button class="card-action-btn move-btn" data-card-action="move-prev" title="Move to ${prevTitle}">◀</button>` : ''}
+                        ${canMoveNext ? `<button class="card-action-btn move-btn" data-card-action="move-next" title="Move to ${nextTitle}">▶</button>` : ''}
+                        <button class="card-action-btn" data-card-action="edit" title="Edit card">✏️</button>
+                        <button class="card-action-btn" data-card-action="archive" title="Archive card">📦</button>
+                    </div>
+                `;
+
+                return el;
+            }
+
+            function attachCardEvents(cardEl) {
+                cardEl.addEventListener('dragstart', (e) => {
+                    state.dragSourceId = cardEl.dataset.cardId;
+                    cardEl.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', cardEl.dataset.cardId);
+                    try {
+                        e.dataTransfer.setDragImage(cardEl, 20, 20);
+                    } catch (err) { /* noop */ }
+                });
+                cardEl.addEventListener('dragend', () => {
+                    cardEl.classList.remove('dragging');
+                    document.querySelectorAll('.lane.drag-over').forEach((el) => el.classList.remove('drag-over'));
+                    state.dragSourceId = null;
+                    state.dragTargetLane = null;
+                });
+                cardEl.addEventListener('click', (e) => {
+                    if (e.target.closest('[data-card-action]')) return;
+                    if (e.target.closest('[data-copy-id]')) return;
+                    const card = getCardById(cardEl.dataset.cardId);
+                    if (card) openEditModal(card);
+                });
+                cardEl.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        const card = getCardById(cardEl.dataset.cardId);
+                        if (card) openEditModal(card);
+                    }
+                });
+
+                const idEl = cardEl.querySelector('[data-copy-id]');
+                if (idEl) {
+                    idEl.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const cardId = cardEl.dataset.cardId;
+                        copyToClipboard(cardId);
+                    });
+                }
+
+                cardEl.querySelectorAll('[data-card-action]').forEach((btn) => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const action = btn.dataset.cardAction;
+                        const cardId = cardEl.dataset.cardId;
+                        if (action === 'edit') {
+                            const card = getCardById(cardId);
+                            if (card) openEditModal(card);
+                        } else if (action === 'archive') {
+                            archiveCard(cardId);
+                        } else if (action === 'move-prev' || action === 'move-next') {
+                            const card = getCardById(cardId);
+                            if (!card) return;
+                            const idx = LANES.findIndex((l) => l.id === card.lane);
+                            const newIdx = action === 'move-prev' ? idx - 1 : idx + 1;
+                            if (newIdx >= 0 && newIdx < LANES.length) {
+                                moveCard(cardId, LANES[newIdx].id);
+                            }
+                        }
+                    });
+                });
+            }
+
+            function copyToClipboard(text) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        showToast(`📋 ${text} copied`, 'info');
+                    }).catch(() => {
+                        showToast(`📋 ${text}`, 'info');
+                    });
+                } else {
+                    showToast(`📋 ${text}`, 'info');
+                }
+            }
+
+            function renderArchive() {
+                const archivedCards = getArchivedCards();
+                archiveCount.textContent = archivedCards.length;
+                archiveBody.innerHTML = '';
+
+                if (archivedCards.length === 0) {
+                    archiveBody.innerHTML = `
+                        <div class="empty-state" style="width:100%;padding:1rem">
+                            <span class="empty-icon">📦</span>
+                            <span>No archived cards</span>
+                        </div>
+                    `;
+                } else {
+                    archivedCards.forEach((card) => {
+                        const el = document.createElement('div');
+                        el.className = 'archive-card';
+                        el.dataset.cardId = card.id;
+                        el.innerHTML = `
+                            <span class="archive-badge">✓</span>
+                            <div class="card-top">
+                                <span class="card-id">${card.id}</span>
+                            </div>
+                            <div class="card-title">${escapeHtml(card.title || 'Untitled')}</div>
+                            <div class="card-meta">
+                                <span class="card-date">${card.date || '—'}</span>
+                            </div>
+                        `;
+                        el.addEventListener('click', () => {
+                            const c = getCardById(card.id);
+                            if (c) openEditModal(c);
+                        });
+                        archiveBody.appendChild(el);
+                    });
+                }
+
+                if (state.archiveOpen) {
+                    archiveBody.classList.add('open');
+                    archiveHeader.classList.add('open');
+                    archiveHeader.setAttribute('aria-expanded', 'true');
+                } else {
+                    archiveBody.classList.remove('open');
+                    archiveHeader.classList.remove('open');
+                    archiveHeader.setAttribute('aria-expanded', 'false');
+                }
+            }
+
+            function updateStats() {
+                const activeCards = state.cards.filter((c) => !c.archived);
+                const archived = state.cards.filter((c) => c.archived);
+                const critical = activeCards.filter((c) => c.priority === 'critical').length;
+
+                const counts = { assigned: 0, 'in-progress': 0, 'needs-attention': 0, done: 0 };
+                activeCards.forEach((c) => {
+                    if (counts[c.lane] !== undefined) counts[c.lane]++;
+                });
+
+                $('#statAssigned').textContent = counts.assigned;
+                $('#statInProgress').textContent = counts['in-progress'];
+                $('#statNeedsAttention').textContent = counts['needs-attention'];
+                $('#statDone').textContent = counts.done;
+                $('#statTotal').textContent = activeCards.length;
+                $('#statArchived').textContent = archived.length;
+                $('#statCritical').textContent = critical;
+
+                LANES.forEach((lane) => {
+                    const badge = document.querySelector(`[data-lane-count="${lane.id}"]`);
+                    if (badge) badge.textContent = counts[lane.id] || 0;
+                });
+            }
+
+            function updateTabTitle() {
+                const activeCount = state.cards.filter((c) => !c.archived).length;
+                document.title = `📋 ${activeCount} Cards — Mailroom Dispatch Board`;
+            }
+
+            // ─── ACTIONS ───
+            function moveCard(cardId, newLane) {
+                const card = getCardById(cardId);
+                if (!card) return;
+                const oldLane = card.lane;
+                if (oldLane === newLane) return;
+
+                card.lane = newLane;
+                renderBoard();
+                renderArchive();
+                updateStats();
+                updateTabTitle();
+                ensureAgent();
+                const patch = { lane: newLane, priority: card.priority };
+                writeThrough(cardId, patch).then(() => {
+                    showToast(`✅ ${card.id} moved to ${LANES.find(l => l.id === newLane)?.title}`, 'success');
+                });
+            }
+
+            function archiveCard(cardId) {
+                const card = getCardById(cardId);
+                if (!card) return;
+                card.archived = true;
+                card.lane = 'done';
+                renderBoard();
+                renderArchive();
+                updateStats();
+                updateTabTitle();
+                ensureAgent();
+                writeThrough(cardId, { archived: true, lane: 'done' });
+            }
+
+            function unarchiveCard(cardId) {
+                const card = getCardById(cardId);
+                if (!card) return;
+                card.archived = false;
+                card.lane = 'assigned';
+                renderBoard();
+                renderArchive();
+                updateStats();
+                updateTabTitle();
+                ensureAgent();
+                writeThrough(cardId, { archived: false, lane: 'assigned' });
+            }
+
+            function deleteCard(cardId) {
+                const card = getCardById(cardId);
+                if (!card) return;
+                // Issues cannot be deleted via the API — closing = archive.
+                if (!card.archived) {
+                    archiveCard(cardId);
+                    showToast(`📦 ${card.id} closed (issues are archived, never deleted)`, 'info');
+                    closeModal();
+                    return;
+                }
+                showToast(`❌ ${card.id} is archived — reopen via Restore`, 'error');
+            }
+
+            function saveCard(cardData) {
+                const existing = getCardById(cardData.id);
+                ensureAgent();
+                if (existing) {
+                    Object.assign(existing, cardData);
+                    renderBoard();
+                    renderArchive();
+                    updateStats();
+                    updateTabTitle();
+                    closeModal();
+                    writeThrough(cardData.id, {
+                        title: cardData.title,
+                        desc: cardData.desc,
+                        lane: cardData.lane,
+                        priority: cardData.priority,
+                        agents: cardData.agents,
+                        evidence: cardData.evidence,
+                    });
+                } else {
+                    // New card -> create a GitHub issue; server assigns HUB-0NN.
+                    const tmp = tmpNewCardId || cardData.id;
+                    state.cards.push({ ...cardData, id: tmp, archived: false });
+                    renderBoard();
+                    renderArchive();
+                    updateStats();
+                    updateTabTitle();
+                    closeModal();
+                    apiFetch('POST', '/api/board', {
+                        title: cardData.title,
+                        desc: cardData.desc,
+                        lane: cardData.lane,
+                        priority: cardData.priority,
+                        agents: cardData.agents,
+                    }).then((fresh) => {
+                        if (fresh && fresh.id) {
+                            const idx = state.cards.findIndex((c) => c.id === tmp);
+                            if (idx >= 0) {
+                                state.cards[idx] = Object.assign({}, state.cards[idx], fresh);
+                            }
+                        }
+                        savePrefs();
+                        renderBoard();
+                        renderArchive();
+                        updateStats();
+                        updateTabTitle();
+                        showToast(`✨ ${fresh ? fresh.id : cardData.id} created on GitHub`, 'success');
+                    }).catch((err) => {
+                        console.error('create failed', err);
+                        showToast(`❌ create failed: ${err.message}`, 'error');
+                    });
+                }
+            }
+
+            // ─── MODAL ───
+            function openEditModal(card) {
+                state.editingCardId = card.id;
+                modalTitle.textContent = `✏️ Edit ${card.id}`;
+                formId.value = card.id;
+                formId.readOnly = true;
+                formTitle.value = card.title || '';
+                formDesc.value = card.desc || '';
+                formLane.value = card.lane || 'assigned';
+                formPriority.value = card.priority || 'medium';
+                formAgents.value = (card.agents || []).join(', ');
+                formEvidence.value = card.evidence || '';
+                formDate.value = card.date || new Date().toISOString().split('T')[0];
+                modalDelete.style.display = 'inline-flex';
+                if (card.archived) {
+                    modalRestore.style.display = 'inline-flex';
+                    archivedHint.style.display = 'block';
+                } else {
+                    modalRestore.style.display = 'none';
+                    archivedHint.style.display = 'none';
+                }
+                modalOverlay.classList.add('open');
+                formTitle.focus();
+            }
+
+            let tmpNewCardId = null;
+            function openNewCardModal(laneId) {
+                state.editingCardId = null;
+                const newId = getNextCardId();
+                tmpNewCardId = newId;
+                modalTitle.textContent = `🆕 New Card — ${newId}`;
+                formId.value = newId;
+                formId.readOnly = true;
+                formTitle.value = '';
+                formDesc.value = '';
+                formLane.value = laneId || 'assigned';
+                formPriority.value = 'medium';
+                formAgents.value = 'unclaimed';
+                formEvidence.value = '';
+                formDate.value = new Date().toISOString().split('T')[0];
+                modalDelete.style.display = 'none';
+                modalRestore.style.display = 'none';
+                archivedHint.style.display = 'none';
+                modalOverlay.classList.add('open');
+                formTitle.focus();
+            }
+
+            function closeModal() {
+                modalOverlay.classList.remove('open');
+                state.editingCardId = null;
+            }
+
+            function handleModalSave() {
+                const cardData = {
+                    id: formId.value.trim() || getNextCardId(),
+                    title: formTitle.value.trim() || 'Untitled',
+                    desc: formDesc.value.trim(),
+                    lane: formLane.value,
+                    priority: formPriority.value,
+                    agents: formAgents.value.split(',').map((a) => a.trim()).filter(Boolean),
+                    evidence: formEvidence.value.trim(),
+                    date: formDate.value || new Date().toISOString().split('T')[0],
+                };
+                if (!cardData.id || !cardData.title) {
+                    showToast('❌ Card ID and Title are required', 'error');
+                    return;
+                }
+                saveCard(cardData);
+            }
+
+            // ─── TOASTS ───
+            function showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+                toast.innerHTML = `<span class="toast-icon">${icon}</span> ${escapeHtml(message)}`;
+                toastContainer.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(30px)';
+                    toast.style.transition = 'all 0.3s ease';
+                    setTimeout(() => toast.remove(), 350);
+                }, 2800);
+            }
+
+            // ─── EXPORT / IMPORT ───
+            function exportData() {
+                const data = {
+                    version: 4,
+                    exportedAt: new Date().toISOString(),
+                    cards: state.cards,
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `mailroom-kanban-board-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('📥 Board exported as JSON', 'success');
+            }
+
+            function importData(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (!data.cards || !Array.isArray(data.cards)) {
+                            throw new Error('Invalid format: missing cards array');
+                        }
+                        data.cards.forEach((card) => {
+                            if (!card.id || !card.title) {
+                                throw new Error(`Invalid card: missing id or title`);
+                            }
+                        });
+                        state.cards = data.cards;
+                        renderBoard();
+                        renderArchive();
+                        updateStats();
+                        updateTabTitle();
+                        showToast(`📤 Imported ${data.cards.length} cards (session-local snapshot)`, 'info');
+                    } catch (err) {
+                        showToast(`❌ Import failed: ${err.message}`, 'error');
+                    }
+                };
+                reader.onerror = () => {
+                    showToast('❌ Failed to read file', 'error');
+                };
+                reader.readAsText(file);
+            }
+
+            // ─── UTILITY ───
+            function escapeHtml(str) {
+                if (!str) return '';
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            function debounce(fn, ms) {
+                let timeout;
+                return (...args) => {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => fn(...args), ms);
+                };
+            }
+
+            // ─── EVENT BINDING ───
+            function bindEvents() {
+                const debouncedSearch = debounce((query) => {
+                    state.searchQuery = query;
+                    clearSearchBtn.classList.toggle('visible', !!query);
+                    renderBoard();
+                    renderArchive();
+                }, 200);
+
+                searchInput.addEventListener('input', (e) => {
+                    debouncedSearch(e.target.value);
+                });
+
+                clearSearchBtn.addEventListener('click', () => {
+                    searchInput.value = '';
+                    state.searchQuery = '';
+                    clearSearchBtn.classList.remove('visible');
+                    renderBoard();
+                    renderArchive();
+                    searchInput.focus();
+                });
+
+                $$('.filter-chip[data-filter-priority]').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const val = btn.dataset.filterPriority;
+                        state.priorityFilter = state.priorityFilter === val ? null : val;
+                        updateFilterUI();
+                        renderBoard();
+                        renderArchive();
+                    });
+                });
+                $$('.filter-chip[data-filter-agent]').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const val = btn.dataset.filterAgent;
+                        state.agentFilter = state.agentFilter === val ? null : val;
+                        updateFilterUI();
+                        renderBoard();
+                        renderArchive();
+                    });
+                });
+                btnClearFilters.addEventListener('click', () => {
+                    state.priorityFilter = null;
+                    state.agentFilter = null;
+                    updateFilterUI();
+                    renderBoard();
+                    renderArchive();
+                });
+
+                archiveHeader.addEventListener('click', () => {
+                    state.archiveOpen = !state.archiveOpen;
+                        savePrefs();
+                    renderArchive();
+                });
+                archiveHeader.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        state.archiveOpen = !state.archiveOpen;
+                        savePrefs();
+                        renderArchive();
+                    }
+                });
+
+                modalClose.addEventListener('click', closeModal);
+                modalCancel.addEventListener('click', closeModal);
+                modalOverlay.addEventListener('click', (e) => {
+                    if (e.target === modalOverlay) closeModal();
+                });
+                modalSave.addEventListener('click', handleModalSave);
+                modalDelete.addEventListener('click', () => {
+                    if (state.editingCardId) {
+                        deleteCard(state.editingCardId);
+                    }
+                });
+                modalRestore.addEventListener('click', () => {
+                    if (state.editingCardId) {
+                        unarchiveCard(state.editingCardId);
+                        closeModal();
+                    }
+                });
+
+                btnNewCard.addEventListener('click', () => openNewCardModal('assigned'));
+
+                btnExport.addEventListener('click', exportData);
+
+                btnImport.addEventListener('click', () => importFileInput.click());
+                importFileInput.addEventListener('change', (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                        importData(e.target.files[0]);
+                    }
+                    e.target.value = '';
+                });
+
+                btnStats.addEventListener('click', () => {
+                    state.statsOpen = !state.statsOpen;
+                    statsBar.style.display = state.statsOpen ? "flex" : "none";
+                    savePrefs();
+                });
+                statsBar.style.display = state.statsOpen ? 'flex' : 'none';
+
+                document.addEventListener('keydown', (e) => {
+                    const tag = e.target.tagName;
+                    const isTyping = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+                    if (e.key === 'Escape' && modalOverlay.classList.contains('open')) {
+                        closeModal();
+                    } else if (e.key === '/' && !isTyping) {
+                        e.preventDefault();
+                        searchInput.focus();
+                    } else if (e.key === 'n' && !isTyping && !e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                        openNewCardModal('assigned');
+                    }
+                });
+            }
+
+            // ─── START ───
+            init();
+
+            window.__kanban = {
+                state,
+                renderBoard,
+                renderArchive,
+                updateStats,
+                getCardsByLane,
+                getArchivedCards,
+                savePrefs,
+                loadPrefs,
+                refreshBoard,
+                writeThrough,
+                moveCard,
+                archiveCard,
+                unarchiveCard,
+                deleteCard,
+                saveCard,
+                exportData,
+                importData,
+                showToast,
+            };
+
+            console.log('📋 Mailroom Kanban Dispatch Board — live GitHub-issue backed (Vercel /api/board)');
+            console.log(`   ${state.cards.length} total cards (${state.cards.filter(c => !c.archived).length} active, ${state.cards.filter(c => c.archived).length} archived)`);
+
+        })();
+    </script>
+</body>
+</html>
