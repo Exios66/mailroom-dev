@@ -23,6 +23,30 @@ and is recorded there, not here.
 
 ### Added
 
+- **Served Kanban Dispatch Board (HUB-055, 2026-09-05):** the composed
+  `mailroom-dispatch-board.html` enhanced board is now wired into a served
+  path — a live, issue-backed dispatch board on Vercel. Every board card
+  became a synced GitHub issue (seeded #23–#30 + relabeled #22 as HUB-055's
+  mirror; one card = one issue with `kanban`/`stage/*`/`priority/*`/
+  `domain/*` labels). Serve path is `board-site/` (Vercel Root Directory):
+  `api/board.js` GETs live cards from `labels=kanban` issues and POSTs new
+  ones, `api/board/[id].js` PATCHes lane/priority/body/assignees (lane moves
+  swap the `stage/*` label and post a dated "Board lane move" comment;
+  archive = close, restore = reopen), `index.html` is the adapted dispatch
+  board fetching `/api/board` with a LIVE/OFFLINE badge and write-through on
+  every move/save. Tokenized proxy is zero-dependency (`fetch` only).
+  `board_state.py pull-issues` reversed the sync (issues → TASKS.md lanes +
+  dated Evidence note, never auto-creates cards) so the board stays
+  canonical after site edits; `sync-issues` remains the board → labels leg.
+  Docs: AGENTS.md "Served Kanban board" section.
+
+### Fixed
+
+- `board_state.py` parse_board now splits open-table rows on unescaped pipes
+  only and unescapes `\|` — board rows embedding literal pipes inside code
+  spans (e.g. HUB-054's `corpus ls|show|search|stats`) previously mangled
+  the Owner cell and hid the issue link (HUB-055).
+
 - **Insurance-claim subclass alignment with the v8 synthetic LOB claims**
   (HUB-041, 2026-09-03): the mailroom-corpus v8 GT (`eafe1ab4`) carries SIX
   insurance subclasses (carrier/inpatient/outpatient/pde + property 200

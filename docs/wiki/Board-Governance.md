@@ -33,9 +33,38 @@ python scripts/board_state.py card HUB-014          # one card + commits referen
 python scripts/board_state.py check                 # invariants; exit 1 on structural errors
 python scripts/board_state.py check --with-issues   # + verify synced issues/labels via gh
 python scripts/board_state.py sync-issues --apply   # push board-derived labels onto issues
+python scripts/board_state.py pull-issues --apply   # reverse-sync served-board lane moves into TASKS.md
 python scripts/board_state.py project-init          # one-time Projects v2 mirror setup
 python scripts/board_state.py project-sync --apply  # mirror the open table into the project
 ```
+
+## The served dispatch board (`board-site/`, Vercel)
+
+Since HUB-055 the board also runs as a **live, issue-backed web site** — a
+dispatch board any agent can view and edit in a browser, deployed from the
+monorepo to Vercel (project Root Directory = `board-site/`). The GitHub
+issues are the store, which makes the site auto-updating + shared:
+
+- **Read:** `GET /api/board` lists every open + closed issue labeled
+  `kanban` and normalizes each to a board card (id from title/body, lane
+  from `stage/*`, priority from `priority/*`, desc/evidence from the
+  `### Task` / `### Evidence plan` body sections, archived = closed).
+- **Write:** the UI PATCHes `/api/board/HUB-0NN` on every move/save. Lane
+  moves swap the `stage/*` label and post a dated "Board lane move"
+  comment (the mirror law); priority swaps, body-section rewrites, and
+  assignee changes PATCH the issue; archive = close, restore = reopen.
+- **Config (Vercel env secrets):** `GITHUB_TOKEN` (or `MAILROOM_GH_TOKEN`)
+  with Issues read/write on `Exios66/mailroom-dev`; `MAILROOM_GITHUB_REPO` to
+  override. Never commit these.
+- **Reconciliation:** TASKS.md stays canonical. After served-site edits
+  (which write issues, not TASKS.md), run `board_state.py pull-issues` to
+  see issue-side lane moves that haven't landed, then `--apply` to rewrite
+  the Lane cells + append a dated Evidence note. `sync-issues` is the
+  board → labels leg; `pull-issues` is the reverse.
+- **Card↔issue law is now the norm:** the site only shows `kanban` issues,
+  so every board card needs a synced issue (one card = one issue, `kanban`
+  + `stage/*` + `priority/*` + `domain/*` labels) opened from the
+  `hub_card.yml` template, or it won't appear on the served board.
 
 `check` **errors** are structural contradictions (duplicate IDs, invalid
 lanes, malformed issue links, missing attention tags, phantom commit

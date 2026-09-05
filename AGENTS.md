@@ -50,6 +50,8 @@ tooling" for the full command list):
 ```bash
 python scripts/board_state.py status            # live board snapshot (--json for machines)
 python scripts/board_state.py check             # board invariants; exit 1 on structural errors
+python scripts/board_state.py sync-issues       # push board lane labels -> synced issues (--apply)
+python scripts/board_state.py pull-issues       # reverse-sync served-board lane moves back into TASKS.md (--apply)
 python scripts/github_labels.py audit           # label taxonomy drift (CI gate)
 python scripts/taxonomy_parity.py               # doc-class taxonomy drift (CI gate, HUB-019 §65A)
 python scripts/release_chain.py status          # hub release-chain snapshot (tags, sections, version)
@@ -117,6 +119,41 @@ mirrors lane state onto GitHub issues and an optional Projects v2 board.
 Run `check` before closing any card that touches the board; the CI gate
 (`.github/workflows/board-governance.yml`) enforces it on every change to
 `governance/`, `scripts/`, or `.github/`.
+
+### Served Kanban board (`board-site/`, Vercel)
+
+The board also runs as a **live, issue-backed web site** on Vercel
+(HUB-055) — a "dispatch board" any agent can view and edit in a browser.
+The issues themselves are the store, which is what makes the site
+auto-updating + shared:
+
+- **Deploy root is `board-site/`** (Vercel project → Root Directory:
+  `board-site`). Serverless functions under `board-site/api/`; static
+  `board-site/index.html` is the adapted `mailroom-dispatch-board.html`
+  (drag/move/edit + archive UI, filters, stats). `board-site/vercel.json`
+  and the root `vercel.json` carry the zero-config settings.
+- **Read path:** `GET /api/board` lists every open + closed issue labeled
+  `kanban` and normalizes it to a board card (id `HUB-0NN` from title/body,
+  lane from `stage/*`, priority from `priority/*`, desc/evidence from the
+  `### Task` / `### Evidence plan` body sections, archived = closed).
+- **Write-back:** the UI PATCHes `/api/board/HUB-0NN` on every move/save;
+  the proxy swaps the `stage/*` label (+ posts a dated "Board lane move"
+  comment for the board mirror law), swaps `priority/*`, rewrites the body
+  sections, sets assignees, and closes/reopens for archive/restore.
+- **Config (Vercel env secrets):** `GITHUB_TOKEN` (or `MAILROOM_GH_TOKEN`)
+  with repo `Exios66/mailroom-dev` Issues read/write; `MAILROOM_GITHUB_REPO`
+  to override. Never commit these.
+- **Canonical board reconciliation:** TASKS.md stays the source of truth.
+  After edits made on the served site (which write issues, not TASKS.md),
+  run `python scripts/board_state.py pull-issues` — it reports issue-side
+  lane moves that haven't landed in TASKS.md yet, then `--apply` rewrites
+  the Lane cells + appends a dated `pull-issues` Evidence note. `sync-issues`
+  still pushes board → labels; `pull-issues` is the reverse leg.
+- **Card↔issue law is now the norm:** because the site reads `kanban`
+  issues, every board card must have a synced issue (one card = one issue,
+  `kanban` + `stage/*` + `priority/*` + `domain/*` labels). Open a card's
+  issue from the `hub_card.yml` template and fill the Issue column, or the
+  card won't appear on the served board.
 
 Test gates: run the surgically relevant suite for the package you touched by
 default; run that package's FULL suite (and any dependent suites) for
