@@ -23,41 +23,26 @@ and is recorded there, not here.
 
 ### Added
 
-- **Served Kanban Dispatch Board (HUB-055, 2026-09-05):** the composed
-  `mailroom-dispatch-board.html` enhanced board is now wired into a served
-  path — a live, issue-backed dispatch board on Vercel. Every board card
-  became a synced GitHub issue (seeded #23–#30 + relabeled #22 as HUB-055's
-  mirror; one card = one issue with `kanban`/`stage/*`/`priority/*`/
-  `domain/*` labels). Serve path is `board-site/` (Vercel Root Directory):
-  `api/board.js` GETs live cards from `labels=kanban` issues and POSTs new
-  ones, `api/board/[id].js` PATCHes lane/priority/body/assignees (lane moves
-  swap the `stage/*` label and post a dated "Board lane move" comment;
-  archive = close, restore = reopen), `index.html` is the adapted dispatch
-  board fetching `/api/board` with a LIVE/OFFLINE badge and write-through on
-  every move/save. Tokenized proxy is zero-dependency (`fetch` only).
-  `board_state.py pull-issues` reversed the sync (issues → TASKS.md lanes +
-  dated Evidence note, never auto-creates cards) so the board stays
-  canonical after site edits; `sync-issues` remains the board → labels leg.
-  Docs: AGENTS.md "Served Kanban board" section.
-
-### Fixed
-
-- `board_state.py` parse_board now splits open-table rows on unescaped pipes
-  only and unescapes `\|` — board rows embedding literal pipes inside code
-  spans (e.g. HUB-054's `corpus ls|show|search|stats`) previously mangled
-  the Owner cell and hid the issue link (HUB-055).
-- **Stray `v0.4.0` hub tag retargeted (removal, HUB-056):** the annotated
-  `v0.4.0` tag (pointing at The-Mailroom's package-release commit
-  `fc55be3`) was cut on the hub by mistake during the HUB-054 session — the
-  hub `pyproject.toml` was (and is) `0.2.0`, and no `## [0.4.0]` CHANGELOG
-  section ever existed. It broke the release chain
-  (`release_chain.py check`: tag with no section + version-skew errors) and
-  the `board-governance` CI gate. Per human directive the tag was retargeted
-  out of the chain (deleted locally + remotely); the hub release chain now
-  resolves to the correct `v0.2.0`. Upstream package releases (llm-mailroom
-  `v0.6.0`, The-Mailroom `v0.4.0`) were never implicated — they live in
-  their own repos.
-
+- **Relations agent — semantic linking + auditable relations ledger + knowledge
+  graphs** (HUB-040, 2026-09-03): the mailroom pipeline learns document
+  relationships across the archive. Storage: new `relation_edges`/`log`/
+  `embeddings`/`scan_state` SQLite tables with an independent hash-chained
+  ledger (own SHA-256 chain, monotonic-timestamp fix for `verify_chain`
+  compat). Signals: deterministic scanner — same-matter, keyword-Jaccard,
+  party-overlap, and embedding-cosine (per-type best edges, compute-once
+  embedding cache, watermark-incremental sweeps). Judgment: the `RelationsAgent`
+  closed-vocabulary LLM pass narrows ambiguous near-misses (mailroom-relations
+  prompt, taxonomy `relations` block, `llm:false` pilot default, config-gated)
+  and refuses to propose unvetted pairs. Delivery: post-archive dispatch x3 +
+  handoff-context RELATED block + echo RELATED section + watcher-embedded
+  sweeper; knowledge graphs (matter/global/ego projections; stdlib
+  GraphJSON+GraphML, optional Plotly HTML+PNG; ledger render events); 13-test
+  hermetic suite (ledger integrity/tamper, upsert novelty, signals,
+  compute-once cache, kill-switches, incremental sweep, context block, LLM
+  validator, KG projections/renderers); hermetic + hang-proof embedding path
+  (env kill-switch + 90s bounded model load — a dojo model download never
+  stalls a scan) and the relations background dispatch killed in tests to fix
+  a failed `tmpdir` teardown race in the Gmail triage suite.
 - **Insurance-claim subclass alignment with the v8 synthetic LOB claims**
   (HUB-041, 2026-09-03): the mailroom-corpus v8 GT (`eafe1ab4`) carries SIX
   insurance subclasses (carrier/inpatient/outpatient/pde + property 200
@@ -84,6 +69,145 @@ and is recorded there, not here.
   inventory) with extras tolerated only from documented rosters; CI path
   triggers extended to the new surface files; verified pre-fix drift is
   detected (mutation checks).
+- **Gmail triage free-swarm failover** (HUB-039, 2026-09-04): the single-doc
+  pilot hit OpenRouter's shared free-pool saturation (all 5 retry attempts on
+  the SAME `z-ai/glm-5.2:free` → review park). Fix: ordered free-model
+  failover in the retry ladder — `taxonomy.yaml: free_model_swarm`
+  (glm-5.2 → ling-3.0-flash-fin → nemotron-3.5-lightning → inkling →
+  inkling-small → dots-3-note → laguna-s → laguna-xs → lfm-2.5), rotation on
+  `RateLimitError` AND model-capability 400s (`_is_model_capability_error` —
+  generic 400s never rotate), paid models NEVER rotate, a request parks only
+  when the whole swarm is limited; full triage I/O debug capture
+  (`data/debug/triage/<UTC>_<file>/`, `triage_llm_io`/`parse_failed`/
+  `llm_call_failed` events) + robust JSON recovery (markdown fences /
+  prose-wrapped). `llm/client.py:is_free_model` extracted as the shared
+  predicate; the vendored ChatOpenAI chokepoint enforces the free-only pilot
+  guardrail; `llm_free_failover`/`llm_free_swarm` events. Live chain proof:
+  glm-5.2 429 → ling capability-400 → nemotron served the read
+  (`insurance_claim`, 0.95).
+- **Gmail echo depth expansion** (2026-09-04): HTML multipart report +
+  processing timeline + WHAT HAPPENED narrative + `friendly_reason`;
+  reviewer escalation now carries the exception text; station-signoff;
+  multipart support in smoke/tests; `gmail_intake` state file written via
+  atomic `tmp`+`replace` (crash-safe persistence).
+- **intake-provenance-aware already-processed dedup** (HUB-043, 2026-09-04):
+  the watcher's filename-only rule silently dropped legitimate re-sent
+  documents forever — a new email (new Message-ID) carrying an
+  already-processed filename was refused every sweep. A file's `/upload`
+  sidecar (`message_id`/`upload_id`) must now MATCH the terminal manifest's
+  intake provenance to count as processed; mismatch = a NEW document that
+  MUST claim. The triage lane also dispatches the relations scan on terminal
+  manifests (`relations_sweeper`).
+- **Watcher status channel** (HUB-050, 2026-09-04): 🔴 down alerts + 🟢
+  relaunch confirmations to the operator email (`pipeline/status_notify.py`,
+  (exactly three kinds — running/down/still_down) — HTML+text, fail-soft,
+  kill-switch `MAILROOM_WATCHER_STATUS`); EXTERNAL watchdog
+  (`python -m pipeline.watchdog`) — pid-dead/missing-heartbeat →
+  immediate 🔴, pid-alive-but-stale → 2 consecutive stale checks, 🟠 reminders
+  only while an outage is active; enriched atomic heartbeat
+  (`touch_watcher_heartbeat(extra)` — pid/host/started_at/git-sha). Live drill
+ 2026-09-04: kill → down in 30s, relaunch → running; anti-spam posture
+  (no periodic healthy-status digests). Watchdog alert-retry hardened in
+  the same audit pass.
+- **Relations clerk production-readiness** (HUB-051, 2026-09-04): the
+  research/review clerk was archived code-complete but a NO-OP on live
+  (triage lane never wrote the `documents` catalog row → scanner skipped
+  everything; the LLM judgment pass was dead code; the documented
+  `relations_scan` CLI crashed; embedding cosine never worked outside tests).
+  Landed: `pipeline/relations_scan.py` CLI, triage catalog upserts on BOTH
+  triage terminal paths (+ `file_sha256` persistence), wired `_llm_judgment_
+  edges` (top-K on the ambiguous band, `llm_confidence_gate` 0.55,
+  `llm_asserted` edges, re-validation), `_embed` driven by the dojo's shared
+  `_EmbeddingMatcher` singleton (local ST + remote fallback, 90s-bounded,
+  fail-soft), 7 stale `processing` catalog rows reconciled, judgment
+  I/O debug capture (`recover_processing.py --catalog`). Live proof: 4 docs
+  → 7 edges (6 same_matter + 1 party_overlap), ledger chain OK (189 entries),
+  real LLM judgment ran through the free-swarm failover and was correctly
+  refused by the gate.
+- **Relations clerk mode toggle** (HUB-052, 2026-09-04):
+  `pipeline/relations_mode.py` — `python -m pipeline.relations_mode
+  status|pilot|live [--model] [--restart-watcher]`: `status` prints the
+  effective posture + every knob; `pilot`/`live` edit taxonomy.yaml SURGICALLY
+  (section-tracked line rewrite, comments byte-preserved, atomic
+  temp+replace), remove a stale `MAILROOM_RELATIONS_LLM` kill-switch, clear
+  in-process config caches so the current thread honors the flip immediately;
+  model validation (cost_models / `:free`), paid-under-free-only refused.
+  The smoother path: authenticated `GET/POST /api/relations/mode` on the
+  FastAPI — POST applies + clears caches, embedded watcher honors it with NO
+  restart.
+- **claims-data-eda: real insurance-claim corpus PDF samples** (HUB-046,
+  2026-09-04): 8 real corpus documents from `Lucius-Morningstar/mailroom-corpus`
+  (`ground_truth_hardened.jsonl`, 950 insurance_claim rows; sampled
+  carrier/inpatient/outpatient/pde ×2, seed 42) rendered as byte-faithful A4
+  PDFs of the verbatim `doc_text` via deterministic zero-dep
+  `scripts/render_samples.py` into `docs/examples/` with `manifest.json`
+  (provenance + sha256) + README; guard tests, managed PDF writer (Courier/
+  WinAnsi, xref-valid, multi-page). Prune-doctrine exception recorded
+  (like HUB-008).
+- **Enron-Evaluation-Environment: cleanly formatted Markdown samples of the
+  Enron email correspondence** (HUB-047, 2026-09-04): regenerable
+  `scripts/build_samples.py` walks the maildir via the index walker and
+  renders a taxonomy-stratified, seeded, bounded selection into `samples/`
+  (16 samples + generated README index; 2 per subclass key; reservoir 120
+  per stratum; walk cap 517,401 = full corpus; body cap 6000; seed 20150507
+  = the tarball date). Clean formatting law: H1 subject, header metadata
+  table, maildir provenance, subclass label + labeler evidence, attachments;
+  body `>`-quoted replies as Markdown blockquotes, forwarded content split
+  via the shared `_strip_forwarded`. `voicemail`/`other` strata empty (the
+  documented text-only labeler limitation).
+- **Gmail triage key/concise entity extraction for ALL document types via
+  the EXISTING EXTRACTION_SCHEMAS** (HUB-048, 2026-09-04): `triage()` now
+  returns BOTH the classification read AND a per-class `extraction` object
+  driven by `schemas.documents.EXTRACTION_SCHEMAS` (the same Pydantic models
+  the paid specialists use): `extraction_schema_for()` derives the field map
+  per class (normalizing `float|None`/`anyOf` to real JSON `number`), short-
+  document emphasis in the prompt, `_clamp_extraction` drops cross-class
+  fields/caps lists(10)/strings(200). Rides `intake_meta["triage"]
+  ["extraction"]` → manifest → echo "EXTRACTED KEY ENTITIES (triage)".
+  Advisory + fail-soft preserved.
+- **Gmail triage lane: unknown-class extraction fallback + confidence gate +
+  transient-LLM review parking** (HUB-049, 2026-09-04): `unknown` primary
+  class no longer yields empty extraction — `_unknown_class_extraction()`
+  merges model correspondence keys with `_deterministic_header_extraction()`
+  (regex `From:/To:/Date:/Subject:` + Enron markdown-table forms; grounded
+  values only); `validate_triage` routes unknown → fallback. Watcher
+  confidence gate: `unknown` class or confidence < taxonomy `low` (0.88)
+  parks the doc in REVIEW (`triage_unknown_class`/`triage_low_confidence`,
+  `triage_reviewed` audit, ⏸ echo) instead of archiving an untrusted read.
+  Transient LLM failures park with `triage_llm_unavailable: <type>: <msg>`.
+- **Repo-wide mailroom-corpus HF dataset loader + corpus-sourced Gmail pilot
+  notebook** (HUB-053, 2026-09-04): `pipeline/hf_corpus_loader.py` — the
+  canonical loading path for the mailroom-corpus family (labels from the
+  `ground_truth` config joined with `doc_text` from the blind `default`
+  config on `filename`): /parquet ladder + on-disk cache + load-time
+  integrity proof (`content_sha256` == sha256(`doc_text`), verified
+  1792/1792 live), `/rows` pagination fallback, literal-slash sha
+  provenance, `datasets` optional (never a dependency).
+  `notebooks/gmail_pilot_lab.py` + `14_gmail_pilot.ipynb` — the expert
+  pilot loop: config → preflight (heartbeat/channel/allowlist/corpus) →
+  corpus pick (integrity-verified snapshot offline / live Hub behind
+  `NB-OPT-IN-NETWORK`) → FIRE interlock (mock inbox drop w/ the poller's
+  exact sidecar | real SMTP w/ fail-fast allowlist guard) → watch →
+  evidence (catalog row, audit hash-chain, relations edges, echo) → corpus
+  GT comparison → `data/pilot_runs/<stamp>_<token>/report.{json,md}`.
+  LIVE: record 65s/30s real+post-fix fires, 9 relations edges, verdict FAIL
+  7/10 (honest GT surface).
+- **Propagation sweep — all 10 feeder repositories in line with the monorepo
+  (third sweep)** (HUB-005, 2026-09-04): llm-mailroom, The-Mailroom,
+  agent-mailroom, llm-dojo-scoring, local-mailroom-sandbox pushed upstream;
+  cursors re-baselined; the sanctioned all-packages one-liner
+  (`push --all --patch`) verified; the ingest/intake consolidation tail —
+  every remaining package mention consolidated; git `commit-message` doctrine
+  + reword session note (human directive 2026-09-04).
+
+### Changed
+
+- The sorter's live doc-class surface now comes from `get_all_doc_types()` —
+  `status: retired` entries are filtered, so the sorter schema/classifier/
+  gmail triage prompts reflect only the 5 primary doc classes + `unknown`
+  (2026-09-04).
+- `compliance_filing` retired from live docs + the visualizer schema (HUB-054
+  #15) — the 5-class + `unknown` set is the live roster.
 
 ### Fixed
 
