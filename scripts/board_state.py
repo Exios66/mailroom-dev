@@ -13,6 +13,7 @@ Usage:
     python scripts/board_state.py check          [--with-issues] [--stale-days N]
                                                  [--log-limit N] [--strict] [--json]
     python scripts/board_state.py sync-issues    [--apply] [--repo OWNER/NAME]
+    python scripts/board_state.py pull-issues    [--apply] [--repo OWNER/NAME]
     python scripts/board_state.py project-init   [--title T] [--owner OWNER]
     python scripts/board_state.py project-sync   [--apply]
 
@@ -22,6 +23,10 @@ Usage:
                 (warnings stay warnings unless --strict)
   sync-issues   apply stage/attention/kanban/domain/priority labels to synced
                 issues so they match the board (dry-run default)
+  pull-issues   REVERSE sync — import issue-side lane moves (made on the
+                served dispatch board) back into TASKS.md Lane cells +
+                Evidence notes, so the board stays canonical after site
+                edits (dry-run default; one-way, never auto-creates cards)
   project-init  one-time: create the Projects v2 mirror + Lane/Owner/Card
                 fields, record them in scripts/board_config.json
   project-sync  make the project mirror match the open table (dry-run default)
@@ -594,6 +599,147 @@ def cmd_sync_issues(args: argparse.Namespace) -> int:
     return 1 if failures else 0
 
 
+# ------------------------------------------------------- issues -> board
+
+# Reverse sync: the served dispatch board writes through to GitHub ISSUES
+# (lane moves = stage/* label changes + comments). TASKS.md stays the
+# canonical board, so pull-issues imports those issue-side moves back into
+# the "Lane" cell + appends a dated Evidence note. One-way, never auto-creates.
+
+
+def _reverse_lane_from_issue(issue: dict) -> str | None:
+    """stage/* label wins; closed issue => done; else assigned."""
+    for entry in issue.get("labels") or []:
+        name = entry.get("name", "")
+        if "stage/" in name and name in LANE_LABELS.values():
+            for lane, label in LANE_LABELS.items():
+                if label == name:
+                    return lane
+    state_str = issue.get("state") or "open"
+    return "done" if state_str == "closed" else "assigned"
+
+
+def _list_kanban_issues(repo: str) -> list[dict]:
+    data = gh_json(["issue", "list", "--repo", repo, "--label", "kanban",
+                    "--state", "all", "--limit", "100", "--json",
+                    "number,title,labels,state,updatedAt"])
+    return data or []
+
+
+def _card_id_from_issue(issue: dict) -> str | None:
+    match = re.search(r"\b(HUB-\d{3,})\b", issue.get("title") or "", re.I)
+    if match:
+        return match.group(1).upper()
+    if issue.get("body"):
+        section = issue_body_section(issue["body"], "Card ID")
+        if section:
+            match = re.search(r"\b(HUB-\d{3,})\b", section, re.I)
+            if match:
+                return match.group(1).upper()
+    return None
+
+
+LANE_RE = re.compile(r"^\|\s*(HUB-\d{3,})\s*\|\s*`([a-z_]+)`")
+
+
+def cmd_pull_issues(args: argparse.Namespace) -> int:
+    state = parse_board()
+    repo = args.repo or default_repo()
+    lines = BOARD_PATH.read_text(encoding="utf-8").splitlines(keepends=True)
+
+    issues = _list_kanban_issues(repo)
+    if not issues:
+        print("pull-issues: no kanban issues found (board feed empty?)", file=sys.stderr)
+        return 1
+
+    by_id: dict[str, list[dict]] = {}
+    for issue in issues:
+        cid = _card_id_from_issue(issue)
+        if cid:
+            by_id.setdefault(cid, []).append(issue)
+
+    if not args.apply:
+        print("dry run — pass --apply to write the board\n")
+
+    drift: list[str] = []
+    applied = 0
+    failures: list[str] = []
+
+    open_by_id = {c.id: c for c in state.open_cards}
+
+    # 1. lane drift on synced open cards (issue -> board)
+    for cid, card in open_by_id.items():
+        if not card.issue_number:
+            continue
+        possibles = by_id.get(cid, [])
+        issue = next((i for i in possibles if i.get("number") == card.issue_number), None)
+        if issue is None:
+            failures.append(f"{cid}: linked issue #{card.issue_number} missing/superseded on the kanban list")
+            continue
+        issue_lane = _reverse_lane_from_issue(issue)
+        if issue_lane is None or issue_lane == card.lane:
+            continue
+        if issue_lane == "done" and card.lane != "done":
+            drift.append(f"{cid}: issue #{issue['number']} CLOSED (lane done) but board says `{card.lane}` — card should move to done + archive pending")
+        else:
+            drift.append(f"{cid}: issue #{issue['number']} lane {issue_lane} but board says `{card.lane}`")
+
+    # 2. issues that reference a card not on the board (orphan / duplicate / phantom)
+    board_ids = {c.id for c in [*state.open_cards, *state.archived_cards]}
+    for cid, issue_list in sorted(by_id.items()):
+        if cid not in board_ids:
+            drift.append(f"kanban issue(s) {[i['number'] for i in issue_list]} reference {cid} which is NOT on the board (orphan)")
+        elif len(issue_list) > 1:
+            drift.append(f"{cid}: multiple kanban issues mirror one card: {[i['number'] for i in issue_list]} — one-card-one-issue law violated")
+
+    for entry in drift:
+        print(entry)
+    for entry in failures:
+        print(f"FAILED  {entry}", file=sys.stderr)
+
+    if args.apply:
+        applied = 0
+        for cid, card in open_by_id.items():
+            if not card.issue_number:
+                continue
+            issue = next((i for i in by_id.get(cid, []) if i.get("number") == card.issue_number), None)
+            if issue is None:
+                continue
+            issue_lane = _reverse_lane_from_issue(issue)
+            if issue_lane is None or issue_lane == card.lane:
+                continue
+            row_idx = next((i for i, ln in enumerate(lines)
+                            if ln.startswith(f"| {cid} |")), None)
+            if row_idx is None:
+                failures.append(f"{cid}: open-table row not found — cannot rewrite")
+                continue
+            row = lines[row_idx]
+            if not LANE_RE.match(row):
+                failures.append(f"{cid}: row not in a rewritable shape: {row[:60].strip()}…")
+                continue
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            new_row = re.sub(r"^\|\s*(HUB-\d{3,})\s*\|\s*`[a-z_]+`",
+                             rf"| \1 | `{issue_lane}`", row, count=1)
+            note = f" **pull-issues {today}:** lane synced from issue #{issue['number']} (`{card.lane}` → `{issue_lane}`)"
+            # Append the note to the LAST cell (Evidence), before the row's closing " |".
+            new_row = new_row.rstrip()
+            if new_row.endswith("|"):
+                new_row = new_row[:-1].rstrip() + note + " |"
+            else:
+                new_row = new_row + note
+            lines[row_idx] = new_row + ("\n" if not new_row.endswith("\n") else "")
+            applied += 1
+
+        if lines:
+            BOARD_PATH.write_text("".join(lines), encoding="utf-8")
+
+    verb = "applied" if args.apply else "would apply"
+    print(f"\npull-issues {verb} {applied} lane rewrite(s); {len(drift)} drift line(s); {len(failures)} failure(s)")
+    if drift and not args.apply:
+        print("re-run with --apply to rewrite the board lanes")
+    return 1 if failures else (1 if drift or applied else 0)
+
+
 # ---------------------------------------------------------------- project v2
 
 
@@ -836,6 +982,11 @@ def main(argv: list[str] | None = None) -> int:
     p_sync.add_argument("--apply", action="store_true", help="write (default: dry run)")
     p_sync.add_argument("--repo", help="OWNER/NAME (default: git origin)")
     p_sync.set_defaults(func=cmd_sync_issues)
+
+    p_pull = sub.add_parser("pull-issues", help="reverse-sync issue lane moves back into TASKS.md")
+    p_pull.add_argument("--apply", action="store_true", help="write the board (default: dry run)")
+    p_pull.add_argument("--repo", help="OWNER/NAME (default: git origin)")
+    p_pull.set_defaults(func=cmd_pull_issues)
 
     p_init = sub.add_parser("project-init", help="create the Projects v2 mirror + fields")
     p_init.add_argument("--title", default=DEFAULT_PROJECT_TITLE)
