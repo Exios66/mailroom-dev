@@ -21,7 +21,68 @@ and is recorded there, not here.
 
 ## [Unreleased]
 
+### Added
+
+- **Terminal-stylized TUI + terminal GH Pages site for The-Mailroom
+  (HUB-054, 2026-09-04):** the The-Mailroom package's TUI was rebuilt as a
+  full typed-command REPL over a rich Live frame — `mailroom@floor:~$` prompt,
+  status header + scrollback + prompt, raw-key line editor (backspace/arrows/
+  Tab completion/Ctrl+L/Ctrl+C), background floor poller pushing AgentLab
+  banners, split into `tui/commands.py` (registry + man pages) / `views.py`
+  (renderers) / `corpus.py` (Hub corpus client over `mailroom_ui/hf_corpus.py`)
+  / `repos.py` (constellation manifest + fail-soft GitHub enrichment). Command
+  set: help/man/clear/history/date/echo/uname/neofetch/floor/review/sessions/
+  metrics/inspect/debug/filter + `corpus ls|show|search|stats` + `repos ls|
+  open` + `open <name>`. `mailroom_console.py` re-exports every legacy
+  renderer (existing 24 TUI tests pass unchanged; extended to 37). New CLI
+  flags `--view corpus|repos`, `--corpus …`, `--repos …`. A new terminal
+  GH Pages site (`terminal/` — owlcot-family: CRT overlay, amber/green/cyan
+  themes, ghost-text Tab completion, history + prefs in localStorage, boot
+  sequence, animated man pages) is staged to `gh-pages:/docs/terminal/` by
+  `publish_pages.sh` (pixel console stays the root); commands cover the
+  snapshot traces + LIVE corpus browsing via datasets-server (CORS verified)
+  + the constellation repo browser. `scripts/export_corpus_catalog.py` writes
+  the slim `site/data/corpus.json` catalog (filename/class/subclass/sha/split
+  + row-index offsets; `--check` verifies counts + sha integrity; 2,000 rows
+  live-verified). `hf_corpus.fetch_rows` gains offset/page_sleep/429 backoff.
+  The-Mailroom release 0.3.0 → 0.4.0 (its own package cut). Pipeline
+  architecture diagrams updated for the v0.4.0 agent roster.
+- **Served Kanban Dispatch Board — live, issue-backed web site (HUB-055,
+  2026-09-05):** the composed `mailroom-dispatch-board.html` enhanced board is
+  wired into a served path on Vercel with automatic site updates + editability.
+  Every board card is now a synced GitHub issue (seeded #23–#30 + relabeled
+  #22 as HUB-055's mirror; one card = one issue with `kanban`/`stage/*`/
+  `priority/*`/`domain/*` labels). Serve path is `board-site/` (Vercel Root
+  Directory): `api/board.js` GETs live cards from `labels=kanban` issues and
+  POSTs new ones; `api/board/[id].js` PATCHes lane/priority/body/assignees
+  (lane moves swap the `stage/*` label + post a dated "Board lane move"
+  comment; archive = close, restore = reopen); `index.html` is the adapted
+  dispatch board fetching `/api/board` with a LIVE/OFFLINE badge and
+  write-through on every move/save. Tokenized proxy is zero-dependency
+  (`fetch` only). `board_state.py pull-issues` reversed the sync (issues →
+  TASKS.md lanes + a dated Evidence note, never auto-creates cards) so the
+  board stays canonical after site edits; `sync-issues` remains the
+  board → labels leg. Docs: AGENTS.md "Served Kanban board" section.
+
+### Fixed
+
+- `board_state.py` parse_board now splits open-table rows on unescaped pipes
+  only and unescapes `\|` — board rows embedding literal pipes inside code
+  spans (e.g. HUB-054's `corpus ls|show|search|stats`) previously mangled
+  the Owner cell and hid the issue link (HUB-055).
+- **Stray `v0.4.0` hub tag retargeted (removal, HUB-056, 2026-09-05):** the
+  annotated `v0.4.0` tag (pointing at The-Mailroom's package-release commit
+  `fc55be3`) was cut on the hub by mistake during the HUB-054 session — the
+  hub `pyproject.toml` stayed `0.2.0` and no `## [0.4.0]` CHANGELOG section
+  ever existed. It broke the release chain (`release_chain.py check`: tag
+  with no section + version-skew errors). Per human directive the stray tag
+  was retargeted out of the chain (deleted locally + remotely) and this
+  release cuts the real official `## [0.4.0]` hub section + annotated
+  `mailroom-hub v0.4.0` tag in its place. Upstream package releases
+  (llm-mailroom `v0.6.0`, The-Mailroom `v0.4.0`) were never implicated.
+
 ## [0.3.0] - 2026-09-05
+
 ### Added
 
 - **Relations agent — semantic linking + auditable relations ledger + knowledge
