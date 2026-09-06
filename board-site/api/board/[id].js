@@ -11,6 +11,8 @@
 //   agents     -> set issue assignees
 //   archived:true  -> close the issue (done lane, auto appears in archive)
 //   archived:false -> reopen it
+//
+// Lane flow: unassigned → assigned → in-progress → needs-attention → done
 "use strict";
 
 const ghx = require("../../lib/gh.js");
@@ -19,10 +21,18 @@ function sendJson(res, status, obj) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
+  ghx.cors(res);
   res.end(JSON.stringify(obj));
 }
 
 module.exports = async function handler(req, res) {
+  // Handle CORS preflight
+  ghx.cors(res);
+  if (req.method === "OPTIONS") {
+    res.statusCode = 204;
+    return res.end();
+  }
+
   try {
     if (req.method !== "PATCH") return sendJson(res, 405, { error: "method not allowed (use PATCH)" });
     const cardId = String((req.url || "").split("?")[0].split("/").pop()).toUpperCase();

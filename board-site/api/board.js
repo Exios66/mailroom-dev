@@ -1,5 +1,8 @@
 // GET /api/board — live kanban cards from GitHub issues (labels=kanban).
 // POST /api/board — create a new card (opens a GitHub issue).
+//
+// Lane flow: unassigned → assigned → in-progress → needs-attention → done
+// New cards created WITHOUT agents default to "unassigned" (triage queue).
 "use strict";
 
 const ghx = require("../lib/gh.js");
@@ -8,10 +11,18 @@ function sendJson(res, status, obj) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
+  ghx.cors(res);
   res.end(JSON.stringify(obj));
 }
 
 module.exports = async function handler(req, res) {
+  // Handle CORS preflight
+  ghx.cors(res);
+  if (req.method === "OPTIONS") {
+    res.statusCode = 204;
+    return res.end();
+  }
+
   try {
     if (req.method === "GET") {
       const cards = await ghx.listKanbanIssues();
@@ -27,12 +38,14 @@ module.exports = async function handler(req, res) {
       const body = await readBody(req);
       const title = (body.title || "").trim();
       const desc = (body.desc || "").trim();
-      const lane = (body.lane || "assigned").trim();
+      const lane = (body.lane || "unassigned").trim();
       const priority = (body.priority || "medium").trim();
       const agents = Array.isArray(body.agents) ? body.agents.map((a) => String(a).trim()).filter(Boolean) : [];
       if (!title) return sendJson(res, 400, { error: "title is required" });
 
-      const laneObj = ghx.LANES.find((l) => l.id === lane) || ghx.LANES[0];
+      // Route: cards with NO agents → unassigned; cards WITH agents → assigned
+      const effectiveLane = agents.length === 0 ? "unassigned" : lane;
+      const laneObj = ghx.LANES.find((l) => l.id === effectiveLane) || ghx.LANES[0];
       const id = await ghx.nextCardId();
       const labels = ["kanban", "type/task", laneObj.label, `priority/${priority}`];
 
@@ -43,7 +56,7 @@ module.exports = async function handler(req, res) {
         "",
         `### Card ID\n\n${id}`,
         "",
-        `### Lane\n\n${lane}`,
+        `### Lane\n\n${effectiveLane}`,
         "",
         `### Priority\n\n${priority}`,
         "",

@@ -1,17 +1,33 @@
 // Zero-dependency GitHub REST proxy helpers for the Kanban dispatch board.
 // Auth: GITHUB_TOKEN (or MAILROOM_GH_TOKEN) Vercel secret. Repo:
 // MAILROOM_GITHUB_REPO (default Exios66/mailroom-dev).
+//
+// Lane flow: unassigned → assigned → in-progress → needs-attention → done
+// Issues with no stage/* label AND no assignees land in "unassigned" (triage queue).
 "use strict";
 
 const GITHUB_API = "https://api.github.com";
 const LANES = [
-  { id: "assigned", title: "Assigned", label: "stage/assigned" },
+  { id: "unassigned",  title: "Unassigned",  label: "stage/unassigned" },
+  { id: "assigned",    title: "Assigned",    label: "stage/assigned" },
   { id: "in-progress", title: "In Progress", label: "stage/in-progress" },
   { id: "needs-attention", title: "Needs Attention", label: "stage/needs-attention" },
-  { id: "done", title: "Done", label: "stage/done" },
+  { id: "done",        title: "Done",        label: "stage/done" },
 ];
 const PRI_LABELS = ["priority/critical", "priority/high", "priority/medium", "priority/low"];
 const STAGE_LABELS = LANES.map((l) => l.label);
+
+// ── CORS helpers ──────────────────────────────────────────────────────
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, X-Mailroom-Actor",
+  "Access-Control-Max-Age": "86400",
+};
+
+function cors(res) {
+  for (const [k, v] of Object.entries(CORS_HEADERS)) res.setHeader(k, v);
+}
 
 class HttpError extends Error {
   constructor(status, message) {
@@ -35,7 +51,7 @@ function actor(req) {
   return raw ? raw.slice(0, 60) : "anonymous";
 }
 
-async function gh(path, { method = "GET", body, query } = {}) {
+async function gh(path, { method = "GET", body, query, ifNoneMatch } = {}) {
   let url = `${GITHUB_API}${path}`;
   if (query) {
     const qs = new URLSearchParams(query);
@@ -47,6 +63,7 @@ async function gh(path, { method = "GET", body, query } = {}) {
     "User-Agent": "mailroom-dispatch-board",
     Authorization: `Bearer ${token()}`,
   };
+  if (ifNoneMatch) headers["If-None-Match"] = ifNoneMatch;
   const opts = { method, headers };
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
@@ -58,6 +75,8 @@ async function gh(path, { method = "GET", body, query } = {}) {
   } catch (err) {
     throw new HttpError(502, `GitHub unreachable: ${err.message}`);
   }
+  // Return 304 Not Modified upstream to caller for conditional-request flow
+  if (res.status === 304) return { _notModified: true, _etag: res.headers.get("etag") };
   const text = await res.text();
   let data = null;
   try {
@@ -69,7 +88,12 @@ async function gh(path, { method = "GET", body, query } = {}) {
     const msg = (data && (data.message || JSON.stringify(data))) || `GitHub ${res.status}`;
     throw new HttpError(res.status, msg);
   }
-  return data;
+  // Attach _etag metadata without corrupting arrays
+  if (Array.isArray(data)) {
+    data._etag = res.headers.get("etag");
+    return data;
+  }
+  return { ...data, _etag: res.headers.get("etag") };
 }
 
 // ---- issue -> board card normalization ---------------------------------
@@ -81,12 +105,22 @@ function cardIdFromIssue(issue) {
   return b ? b[0].toUpperCase() : null;
 }
 
+// Lane detection logic:
+//   1. Explicit stage/* label wins (stage/unassigned, stage/assigned, etc.)
+//   2. Closed issues → done
+//   3. Open issue with no stage label AND no assignees → unassigned (triage queue)
+//   4. Open issue with no stage label but HAS assignees → assigned (someone claimed it)
 function laneFromIssue(issue) {
+  // Check for explicit stage label first
   for (const l of issue.labels || []) {
     const lane = LANES.find((x) => x.label === l.name);
     if (lane) return lane.id;
   }
-  return issue.state === "closed" ? "done" : "assigned";
+  // Closed with no label = done
+  if (issue.state === "closed") return "done";
+  // Open, no stage label: unassigned if no one is on it, otherwise assigned
+  const hasAssignees = (issue.assignees || []).length > 0;
+  return hasAssignees ? "assigned" : "unassigned";
 }
 
 function priorityFromIssue(issue) {
@@ -127,25 +161,57 @@ function toCard(issue) {
   };
 }
 
-async function listKanbanIssues() {
-  const data = await gh(`/repos/${repo()}/issues`, {
-    query: { labels: "kanban", state: "all", per_page: 100, sort: "created", direction: "asc" },
-  });
-  return (data || []).map(toCard).filter((c) => c.id);
+// ── Paginated issue fetch (handles >100 issues) ────────────────────────
+async function fetchAllKanbanIssues() {
+  const all = [];
+  let page = 1;
+  while (true) {
+    const batch = await gh(`/repos/${repo()}/issues`, {
+      query: { labels: "kanban", state: "all", per_page: "100", page: String(page), sort: "created", direction: "asc" },
+    });
+    const items = Array.isArray(batch) ? batch : [];
+    if (items.length === 0) break;
+    all.push(...items);
+    if (items.length < 100) break; // last page
+    page++;
+  }
+  return all;
 }
 
+async function listKanbanIssues() {
+  const data = await fetchAllKanbanIssues();
+  return data.map(toCard).filter((c) => c.id);
+}
+
+// ── FIX: use GitHub search API for efficient single-issue lookup ──────
+// Instead of listing ALL kanban issues to find one, search by title.
 async function findIssueByCardId(cardId) {
+  try {
+    const searchResult = await gh(`/search/issues`, {
+      query: {
+        q: `repo:${repo()} is:issue "${cardId}" label:kanban`,
+        per_page: "5",
+      },
+    });
+    const items = searchResult.items || [];
+    const hit = items.find((issue) => cardIdFromIssue(issue) === cardId);
+    if (hit) {
+      const issue = await gh(`/repos/${repo()}/issues/${hit.number}`);
+      return issue;
+    }
+  } catch (_) {
+    // Search API may fail on some configs; fall back to list scan
+  }
+  // Fallback: scan all kanban issues (slower, but reliable)
   const cards = await listKanbanIssues();
-  const hit = cards.find((c) => c.id === cardId);
-  if (!hit) throw new HttpError(404, `no kanban issue mirrors ${cardId}`);
-  const issue = await gh(`/repos/${repo()}/issues/${hit.issueNumber}`);
+  const fallback = cards.find((c) => c.id === cardId);
+  if (!fallback) throw new HttpError(404, `no kanban issue mirrors ${cardId}`);
+  const issue = await gh(`/repos/${repo()}/issues/${fallback.issueNumber}`);
   return issue;
 }
 
 async function nextCardId() {
-  const data = await gh(`/repos/${repo()}/issues`, {
-    query: { labels: "kanban", state: "all", per_page: 100 },
-  });
+  const data = await fetchAllKanbanIssues();
   let max = 0;
   for (const issue of data || []) {
     const m = (issue.title || "").match(/HUB-(\d{3,})/i);
@@ -159,6 +225,8 @@ module.exports = {
   LANES,
   PRI_LABELS,
   STAGE_LABELS,
+  CORS_HEADERS,
+  cors,
   repo,
   actor,
   gh,

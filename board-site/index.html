@@ -174,6 +174,12 @@
             border-color: rgba(34, 211, 238, 0.4);
             background: var(--cyan-dim);
         }
+        .sync-badge.triage {
+            color: var(--pink);
+            border-color: rgba(244, 114, 182, 0.4);
+            background: var(--pink-dim);
+            animation: unassignedPulse 2s ease-in-out infinite;
+        }
 
         .search-box {
             position: relative;
@@ -409,6 +415,9 @@
         .lane.drag-over .lane-header {
             background: var(--accent-glow);
         }
+        .lane[data-lane-id="unassigned"] .lane-header {
+            background: rgba(244, 114, 182, 0.08);
+        }
 
         .lane-header {
             display: flex;
@@ -436,6 +445,11 @@
         .lane-dot.assigned {
             background: var(--cyan);
             box-shadow: 0 0 8px var(--cyan);
+        }
+        .lane-dot.unassigned {
+            background: var(--pink);
+            box-shadow: 0 0 8px var(--pink);
+            animation: unassignedPulse 2s ease-in-out infinite;
         }
         .lane-dot.in-progress {
             background: var(--accent);
@@ -540,6 +554,10 @@
         }
         .card.priority-low {
             border-left: 3px solid var(--green);
+        }
+        .card.lane-unassigned {
+            border-left: 3px solid var(--pink);
+            background: rgba(244, 114, 182, 0.04);
         }
 
         .card-top {
@@ -1083,6 +1101,10 @@
             0% { box-shadow: 0 0 0 3px var(--accent-glow); }
             100% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
         }
+        @keyframes unassignedPulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--pink); }
+            50% { opacity: 0.6; box-shadow: 0 0 14px var(--pink); }
+        }
         .card.flash {
             animation: cardFlash 0.6s ease;
         }
@@ -1101,6 +1123,13 @@
         .empty-state .empty-icon {
             font-size: 1.5rem;
             opacity: 0.5;
+        }
+        .empty-state.triage-empty {
+            color: var(--pink);
+            border: 1px dashed rgba(244, 114, 182, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            background: rgba(244, 114, 182, 0.05);
         }
 
         /* ─── Responsive ─── */
@@ -1194,6 +1223,7 @@
             </span>
         </a>
         <span class="sync-badge" id="syncBadge">● loading…</span>
+        <span class="sync-badge" id="triageBadge" style="display:none" title="Cards awaiting triage">🔔 Triage: <span id="triageCount">0</span></span>
         <div class="top-actions">
             <div class="search-box">
                 <span class="search-icon">🔍</span>
@@ -1209,6 +1239,7 @@
 
     <!-- ═══ STATS BAR ═══ -->
     <div class="stats-bar" id="statsBar" role="region" aria-label="Board statistics">
+        <span class="stat-chip"><span class="dot" style="background:var(--pink)"></span> Unassigned: <span class="count" id="statUnassigned">0</span></span>
         <span class="stat-chip"><span class="dot" style="background:var(--cyan)"></span> Assigned: <span class="count" id="statAssigned">0</span></span>
         <span class="stat-chip"><span class="dot" style="background:var(--accent)"></span> In Progress: <span class="count" id="statInProgress">0</span></span>
         <span class="stat-chip"><span class="dot" style="background:var(--orange)"></span> Needs Attention: <span class="count" id="statNeedsAttention">0</span></span>
@@ -1279,6 +1310,7 @@
                     <div class="form-group">
                         <label class="form-label" for="formLane">Lane</label>
                         <select class="form-select" id="formLane">
+                            <option value="unassigned">Unassigned</option>
                             <option value="assigned">Assigned</option>
                             <option value="in-progress">In Progress</option>
                             <option value="needs-attention">Needs Attention</option>
@@ -1329,7 +1361,9 @@
             'use strict';
 
             // ─── CONSTANTS ───
+            // Lane flow: unassigned → assigned → in-progress → needs-attention → done
             const LANES = [
+                { id: 'unassigned', title: 'Unassigned', dotClass: 'unassigned' },
                 { id: 'assigned', title: 'Assigned', dotClass: 'assigned' },
                 { id: 'in-progress', title: 'In Progress', dotClass: 'in-progress' },
                 { id: 'needs-attention', title: 'Needs Attention', dotClass: 'needs-attention' },
@@ -1347,6 +1381,19 @@
             // ─── REAL DATA FROM TASKS.md ───
             function getRealData() {
                 return [
+                    // ═══ UNASSIGNED CARDS (new issues awaiting triage) ═══
+                    {
+                        id: 'HUB-055',
+                        title: 'Board site audit + unassigned lane',
+                        desc: 'Add an Unassigned triage lane for new issues awaiting claim. Route untagged open issues here.',
+                        lane: 'unassigned',
+                        priority: 'high',
+                        agents: [],
+                        evidence: 'dispatched at session start 2026-09-06',
+                        date: '2026-09-06',
+                        archived: false,
+                        createdAt: '2026-09-06'
+                    },
                     // ═══ OPEN CARDS (active lanes) ═══
                     {
                         id: 'HUB-006',
@@ -2097,6 +2144,20 @@
                     if (!state.cards.length) state.cards = getRealData();
                     setSyncBadge('offline', '● OFFLINE · snapshot');
                 }
+                // Show triage badge if there are unassigned cards
+                const unassignedCount = state.cards.filter((c) => !c.archived && c.lane === 'unassigned').length;
+                const triageBadge = $('#triageBadge');
+                const triageCount = $('#triageCount');
+                if (triageBadge && triageCount) {
+                    if (unassignedCount > 0) {
+                        triageBadge.style.display = '';
+                        triageBadge.classList.add('triage');
+                        triageCount.textContent = unassignedCount;
+                    } else {
+                        triageBadge.style.display = 'none';
+                        triageBadge.classList.remove('triage');
+                    }
+                }
                 savePrefs();
                 renderBoard();
                 renderArchive();
@@ -2298,9 +2359,9 @@
                     </div>
                     <div class="lane-cards" data-lane-cards="${lane.id}">
                         ${cards.length === 0 ? `
-                            <div class="empty-state">
-                                <span class="empty-icon">📭</span>
-                                <span>No cards${filtersActive ? ' matching filters' : ''}</span>
+                            <div class="empty-state${lane.id === 'unassigned' ? ' triage-empty' : ''}">
+                                <span class="empty-icon">${lane.id === 'unassigned' ? '📬' : '📭'}</span>
+                                <span>${lane.id === 'unassigned' ? 'All clear — no issues awaiting triage' : `No cards${filtersActive ? ' matching filters' : ''}`}</span>
                             </div>
                         ` : ''}
                         ${cards.map((card) => createCardElement(card).outerHTML).join('')}
@@ -2347,7 +2408,8 @@
 
             function createCardElement(card) {
                 const el = document.createElement('div');
-                el.className = `card priority-${card.priority || 'medium'}`;
+                const laneClass = card.lane === 'unassigned' ? ' lane-unassigned' : '';
+                el.className = `card priority-${card.priority || 'medium'}${laneClass}`;
                 el.dataset.cardId = card.id;
                 el.draggable = true;
                 el.setAttribute('role', 'button');
@@ -2525,11 +2587,12 @@
                 const archived = state.cards.filter((c) => c.archived);
                 const critical = activeCards.filter((c) => c.priority === 'critical').length;
 
-                const counts = { assigned: 0, 'in-progress': 0, 'needs-attention': 0, done: 0 };
+                const counts = { unassigned: 0, assigned: 0, 'in-progress': 0, 'needs-attention': 0, done: 0 };
                 activeCards.forEach((c) => {
                     if (counts[c.lane] !== undefined) counts[c.lane]++;
                 });
 
+                $('#statUnassigned').textContent = counts.unassigned;
                 $('#statAssigned').textContent = counts.assigned;
                 $('#statInProgress').textContent = counts['in-progress'];
                 $('#statNeedsAttention').textContent = counts['needs-attention'];
@@ -2537,6 +2600,26 @@
                 $('#statTotal').textContent = activeCards.length;
                 $('#statArchived').textContent = archived.length;
                 $('#statCritical').textContent = critical;
+
+                // Count unique agents across all active cards
+                const agentSet = new Set();
+                activeCards.forEach((c) => (c.agents || []).forEach((a) => agentSet.add(a)));
+                $('#statAgents').textContent = agentSet.size || 0;
+
+                // Update triage badge
+                const triageBadge = $('#triageBadge');
+                const triageCount = $('#triageCount');
+                if (triageBadge && triageCount) {
+                    const unassignedCount = counts.unassigned || 0;
+                    if (unassignedCount > 0) {
+                        triageBadge.style.display = '';
+                        triageBadge.classList.add('triage');
+                        triageCount.textContent = unassignedCount;
+                    } else {
+                        triageBadge.style.display = 'none';
+                        triageBadge.classList.remove('triage');
+                    }
+                }
 
                 LANES.forEach((lane) => {
                     const badge = document.querySelector(`[data-lane-count="${lane.id}"]`);
@@ -2585,13 +2668,13 @@
                 const card = getCardById(cardId);
                 if (!card) return;
                 card.archived = false;
-                card.lane = 'assigned';
+                card.lane = 'unassigned';
                 renderBoard();
                 renderArchive();
                 updateStats();
                 updateTabTitle();
                 ensureAgent();
-                writeThrough(cardId, { archived: false, lane: 'assigned' });
+                writeThrough(cardId, { archived: false, lane: 'unassigned' });
             }
 
             function deleteCard(cardId) {
@@ -2695,9 +2778,9 @@
                 formId.readOnly = true;
                 formTitle.value = '';
                 formDesc.value = '';
-                formLane.value = laneId || 'assigned';
+                formLane.value = laneId || 'unassigned';
                 formPriority.value = 'medium';
-                formAgents.value = 'unclaimed';
+                formAgents.value = '';
                 formEvidence.value = '';
                 formDate.value = new Date().toISOString().split('T')[0];
                 modalDelete.style.display = 'none';
@@ -2888,7 +2971,7 @@
                     }
                 });
 
-                btnNewCard.addEventListener('click', () => openNewCardModal('assigned'));
+                btnNewCard.addEventListener('click', () => openNewCardModal('unassigned'));
 
                 btnExport.addEventListener('click', exportData);
 
@@ -2917,7 +3000,7 @@
                         searchInput.focus();
                     } else if (e.key === 'n' && !isTyping && !e.ctrlKey && !e.metaKey) {
                         e.preventDefault();
-                        openNewCardModal('assigned');
+                        openNewCardModal('unassigned');
                     }
                 });
             }
