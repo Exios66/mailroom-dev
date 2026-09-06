@@ -72,7 +72,9 @@ module.exports = async function handler(req, res) {
           title: `${id}: ${title}`,
           body: issueBody,
           labels,
-          assignees: agents,
+          // Agents ride the body "### Owner" section (agent/persona/harness),
+          // NOT GitHub assignees — arbitrary agent names aren't repo users and
+          // GitHub rejects them (422). Leave assignees unset.
         },
       });
       return sendJson(res, 201, ghx.toCard(created));

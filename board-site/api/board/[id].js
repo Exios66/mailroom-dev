@@ -93,8 +93,8 @@ module.exports = async function handler(req, res) {
       if ("agents" in want) nb = ghx.setBodySection(nb, "Owner", want.agents.join(", ") || "—");
       patch.body = nb;
     }
-    // 4. Assignees
-    if ("agents" in want) patch.assignees = want.agents;
+    // 4. Agents -> the body "### Owner" section (agent/persona/harness). Never
+    //    set GitHub assignees to arbitrary agent names (non-collaborators 422).
     // 5. archive = close issue
     if ("archived" in want) patch.state = want.archived ? "closed" : "open";
 
