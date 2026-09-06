@@ -93,6 +93,17 @@ vercel env add GITHUB_TOKEN production --token "$VERCEL_TOKEN"   # once
 vercel deploy --prod --token "$VERCEL_TOKEN"
 ```
 
+**Pin the production alias after every deploy.** The `mailroom-dev.vercel.app`
+alias is shared with any parallel deploy of the same project, so a
+concurrent/auto deploy can overwrite the alias with a bad build and the live
+site 404s on every route (observed 2026-09-06, HUB-059: a parallel
+`--prod` deploy hijacked the alias mid-work). After your `--prod` deploy,
+re-assert the alias onto the deployment you verified:
+
+```bash
+vercel alias set <your-deployment-url> mailroom-dev.vercel.app --token "$VERCEL_TOKEN"
+```
+
 Then verify against the alias:
 
 ```bash
