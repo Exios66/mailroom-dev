@@ -8,11 +8,15 @@ each mirroring an independent, standalone-operational `Exios66/*` repository.
 The monorepo is the **development source of truth**; the standalone repos
 remain the release vehicles for the deployed surfaces.
 
+The board is also served live at **https://mailroom-dev.vercel.app**
+(issue-backed, auto-updating; see [[Served-Board]]).
+
 ## Start here
 
 - [[Getting-Started]] — workspace setup, suites, offline sandbox quickstart
 - [[Architecture]] — every repository, with direct links + GitHub Pages sites
 - [[Board-Governance]] — the task board, its laws, and the tooling that keeps it honest
+- [[Served-Board]] — the live Vercel dispatch-board site, its API + deploy
 - [[Sub-Package-Sync]] — the current-only sync doctrine and the sync driver
 - [[HF-Corpus]] — the mailroom-corpus corpus family and its EDA pipeline
 - [[Offline-Sandbox]] — local providers, reduced agent profile, Docker
@@ -23,11 +27,12 @@ remain the release vehicles for the deployed surfaces.
 
 | Thing | Value |
 | --- | --- |
-| Hub repo | [Exios66/mailroom-dev](https://github.com/Exios66/mailroom-dev) |
+| Hub repo | [Exios66/mailroom-dev](https://github.com/Exios66/mailroom-dev) — latest hub release **v0.4.0** |
 | Task board | [`governance/TASKS.md`](https://github.com/Exios66/mailroom-dev/blob/main/governance/TASKS.md) — machine-readable via `scripts/board_state.py` |
+| Served board | [mailroom-dev.vercel.app](https://mailroom-dev.vercel.app) — live, issue-backed ([[Served-Board]]) |
 | Conventions | [`AGENTS.md`](https://github.com/Exios66/mailroom-dev/blob/main/AGENTS.md) — read first, every session |
-| Packages | 10 (7 built + 3 virtual members) |
+| Packages | 10 (6 built + 4 virtual members) |
 | Python | 3.11+ (workspace `requires-python >= 3.11`) |
 | Family pins | llm-mailroom **v0.6.0** · llm-dojo-scoring **v0.12.2** · llm-entity-extraction **v0.20.0** |
-| HF corpus | [mailroom-corpus](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus) — schema v7, 1,650 rows |
+| HF corpus | [mailroom-corpus](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus) — schema v8, 2,000 rows |
 | CI gate | `.github/workflows/board-governance.yml` — board invariants + label drift |

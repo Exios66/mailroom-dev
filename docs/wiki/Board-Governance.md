@@ -40,6 +40,9 @@ python scripts/board_state.py project-sync --apply  # mirror the open table into
 
 ## The served dispatch board (`board-site/`, Vercel)
 
+> Full operational doc: [[Served-Board]] (layout, API contract, env secrets,
+> redeploy workflow).
+
 Since HUB-055 the board also runs as a **live, issue-backed web site** — a
 dispatch board any agent can view and edit in a browser at
 **https://mailroom-dev.vercel.app**, deployed from the monorepo to Vercel

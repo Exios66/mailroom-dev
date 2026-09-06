@@ -17,11 +17,12 @@
 │  shared scoring engine │ import │  LangGraph multi-agent pipeline       │
 └────────────────────────┘        └──────────────────┬────────────────────┘
                                                      ▼
-                    ┌── surfaces ──────────────────────────────────────────┐
+┌── surfaces ──────────────────────────────────────────┐
                     │  The-Mailroom (visualizer)     agent-mailroom        │
                     │  local-mailroom-sandbox        llm-mailroom-graph    │
+                    │  mailroom-dev.vercel.app (served board, board-site/) │
                     └──────────────────────────┬───────────────────────────┘
-                                               ▼
+                                                ▼
                     ┌──────────────────────────────────────────────────────┐
                     │              mailroom-dev — this monorepo            │
                     │        (central truth; every box lives in it)        │
@@ -37,13 +38,14 @@ operational. GitHub Pages sites exist for three of them.
 | Layer | Repository | GitHub Pages |
 | --- | --- | --- |
 | Hub (central truth, this repo) | [Exios66/mailroom-dev](https://github.com/Exios66/mailroom-dev) | — |
+| Hub — served board (`board-site/`, Vercel) | [mailroom-dev.vercel.app](https://mailroom-dev.vercel.app) | — |
 | Corpus feed | [Exios66/Enron-Evaluation-Environment](https://github.com/Exios66/Enron-Evaluation-Environment) | — |
 | Corpus feed | [Exios66/claims-data-eda](https://github.com/Exios66/claims-data-eda) | — |
 | Corpus EDA + HF upload helpers | [Exios66/Mailroom-Corpus-EDA](https://github.com/Exios66/Mailroom-Corpus-EDA) | — |
 | Prompt-experiment loop | [Exios66/llm-entity-extraction](https://github.com/Exios66/llm-entity-extraction) | [exios66.github.io/llm-entity-extraction](https://exios66.github.io/llm-entity-extraction/) |
 | Shared scoring engine | [Exios66/llm-dojo-scoring](https://github.com/Exios66/llm-dojo-scoring) | — |
 | LangGraph pipeline | [Exios66/llm-mailroom](https://github.com/Exios66/llm-mailroom) | — |
-| Pixel-art visualizer console | [Exios66/The-Mailroom](https://github.com/Exios66/The-Mailroom) | [exios66.github.io/The-Mailroom](https://exios66.github.io/The-Mailroom/) |
+| Pixel-art visualizer console | [Exios66/The-Mailroom](https://github.com/Exios66/The-Mailroom) | [exios66.github.io/The-Mailroom](https://exios66.github.io/The-Mailroom/) (pixel console root) + [terminal console](https://exios66.github.io/The-Mailroom/docs/terminal/) |
 | Walking-office-floor mailroom | [Exios66/agent-mailroom](https://github.com/Exios66/agent-mailroom) | — |
 | Local-first LLM sandbox | [Exios66/local-mailroom-sandbox](https://github.com/Exios66/local-mailroom-sandbox) | — |
 | Derived knowledge-graph site | [Exios66/llm-mailroom-graph](https://github.com/Exios66/llm-mailroom-graph) | [exios66.github.io/llm-mailroom-graph](https://exios66.github.io/llm-mailroom-graph/) |
@@ -72,7 +74,8 @@ live.
 mailroom-dev/
 ├── AGENTS.md                    # workspace conventions (read before editing)
 ├── governance/TASKS.md          # the task board (single source of truth)
-├── scripts/                     # sync_packages.py, board_state.py, github_labels.py
+├── board-site/                  # served Kanban dispatch board (Vercel deploy root)
+├── scripts/                     # sync_packages.py, board_state.py, github_labels.py, release_chain.py
 ├── .github/                     # YAML issue/PR templates, labels.json, CI workflow
 ├── docs/wiki/                   # THIS wiki (version-controlled; sync-wiki.sh)
 └── packages/                    # one directory per standalone repo (git subtree)

@@ -43,6 +43,15 @@ python scripts/sync_packages.py snapshot [--package <name>] [--force]  # re-base
   prints the plan first).
 - `status` shows per-package `CURSOR GAP` flags and the monorepo-ahead file
   count — the unpushed delta, i.e. the release-train payload (HUB-005).
+- **The release-train sweep (HUB-005 propagation):** the all-packages
+  one-liner is `python scripts/sync_packages.py push --all --patch` — one
+  command fetches every upstream tip, lands the monorepo delta as a single
+  fast-forward commit per package, and re-baselines the cursors. Follow with
+  `sync_packages.py status` (expect 10/10 in sync, 0 monorepo-ahead) and
+  commit the cursor file. **Race caveat (HUB-044):** `patch_push` copies the
+  package subtree from the WORKTREE while the clean-tree guard runs only once
+  at script start — never run a sweep while any `packages/*` file is
+  uncommitted in a parallel session (a mid-run save gets swept upstream).
 - After a pull, **re-apply monorepo-side prunes** the merge may resurrect
   (e.g. `packages/llm-entity-extraction/docs/{data,posit,posit-src}/` are
   gitignored-heavy-asset paths; gitignore does not apply to tracked files,

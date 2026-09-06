@@ -38,8 +38,27 @@ version key (see the llm-entity-extraction AGENTS.md).
 
 **Q: Which HF dataset is canonical?**
 [mailroom-corpus](https://huggingface.co/datasets/Lucius-Morningstar/mailroom-corpus)
-schema v7, 1,650 rows, data rev `1acd2600` ([[HF-Corpus]]). Uploads go
-through the centralized `mailroom_eda` helpers only.
+schema v8, 2,000 rows ([[HF-Corpus]]). Uploads go through the centralized
+`mailroom_eda` helpers only.
+
+**Q: A card is missing from the served board at mailroom-dev.vercel.app.**
+The site only lists issues labeled `kanban` — every board card needs a
+synced issue (one card = one issue, `kanban` + `stage/*` + `priority/*` +
+`domain/*` labels) with the link in the card's Issue column, otherwise it
+won't appear. Run `python scripts/board_state.py sync-issues --apply` to
+apply board-derived labels onto the synced issues ([[Served-Board]]).
+
+**Q: I moved a card on the served board — why isn't TASKS.md updated?**
+The served board writes **issues**, not `governance/TASKS.md`. After
+served-site edits run `python scripts/board_state.py pull-issues` to see
+the issue-side lane moves, then `--apply` to rewrite the Lane cells +
+append a dated Evidence note ([[Board-Governance]], [[Served-Board]]).
+
+**Q: How do I redeploy the served board / change its code?**
+The deploy root is `board-site/` (project `mailroom-dev`, Root Directory
+unset). `vercel link --project mailroom-dev` → optional
+`vercel env add GITHUB_TOKEN production` → `vercel deploy --prod` from
+`board-site/`. Full workflow + smoke checks in [[Served-Board]].
 
 **Q: Where did the reporter agent go?**
 Retired (HUB-015): the graph's `compile_report` node is the computational

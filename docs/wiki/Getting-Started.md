@@ -61,3 +61,9 @@ Live local-LLM tests need `SANDBOX_LOCAL_LLM=1`. See [[Offline-Sandbox]].
 [[Board-Governance]] is not optional: every agent (and human) reads
 `governance/TASKS.md` FIRST every session, claims cards before edits, and
 closes them with proof.
+
+The board is also served live at https://mailroom-dev.vercel.app — view and
+edit cards in a browser (issue-backed, auto-updating). Site edits write
+issues, not TASKS.md: run `python scripts/board_state.py pull-issues
+--apply` afterward to pull lane moves back into the canonical board
+([[Served-Board]]).

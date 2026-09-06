@@ -26,10 +26,15 @@ Semantic Versioning chain:
 - Cut a release:
 
   ```bash
-  python scripts/release_chain.py cut X.Y.Z --apply --tag
-  git push origin main vX.Y.Z     # the commit (with its HUB-0NN reference), then the tag
-  gh release create vX.Y.Z --notes-from-tag --title "vX.Y.Z"
+  python scripts/release_chain.py cut X.Y.Z --apply --tag   # stamps section + bumps pyproject + tags
+  git push origin main vX.Y.Z                               # the commit (with its HUB-0NN reference), then the tag
+  gh release create vX.Y.Z --title "Mailroom Hub vX.Y.Z" --notes-file <section-body.md>
   ```
+
+  The GitHub Release body is cut from the freshly-stamped changelog section
+  (the text between the new `## [X.Y.Z]` header and the previous section) —
+  extract it with a small script, never hand-typed. Mirror the section title
+  (`Mailroom Hub vX.Y.Z — <epoch>`) as the release name.
 
 - Package versions at a hub release are recorded in that release's
   changelog section (see the `[0.1.0]` section for the baseline).
@@ -64,5 +69,11 @@ Semantic Versioning chain:
   `railway.json`) stay standalone-repo aware — build images from the
   package directory as before.
 - GitHub Pages sites: [llm-entity-extraction](https://exios66.github.io/llm-entity-extraction/),
-  [The-Mailroom](https://exios66.github.io/The-Mailroom/),
+  [The-Mailroom](https://exios66.github.io/The-Mailroom/) (pixel console
+  root; the new [terminal console](https://exios66.github.io/The-Mailroom/docs/terminal/)
+  lives under `/docs/terminal/`),
   [llm-mailroom-graph](https://exios66.github.io/llm-mailroom-graph/).
+- **The served Kanban board — Vercel:** https://mailroom-dev.vercel.app
+  (project `mailroom-dev`, deploy root `board-site/`). It is its own deploy
+  surface with its own `vercel.json`, a `GITHUB_TOKEN` production secret,
+  and the redeploy workflow documented in [[Served-Board]].

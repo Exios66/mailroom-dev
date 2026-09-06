@@ -125,7 +125,10 @@ Run `check` before closing any card that touches the board; the CI gate
 The board also runs as a **live, issue-backed web site** on Vercel
 (HUB-055) — a "dispatch board" any agent can view and edit in a browser
 at **https://mailroom-dev.vercel.app**. The issues themselves are the
-store, which is what makes the site auto-updating + shared:
+store, which is what makes the site auto-updating + shared. The full
+operational doc (API contract, env secrets, redeploy, reconciliation) is
+the wiki page `docs/wiki/Served-Board.md` (mirror to
+<https://github.com/Exios66/mailroom-dev/wiki/Served-Board>):
 
 - **Deploy root is `board-site/`** (Vercel project `mailroom-dev`, live
   production; Root Directory is unset so the deploy runs from `board-site/`,

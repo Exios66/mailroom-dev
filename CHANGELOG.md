@@ -30,6 +30,19 @@ and is recorded there, not here.
   verified end-to-end in production against `Exios66/mailroom-dev` via the
   zero-dependency token proxy; `GITHUB_TOKEN` stored as a Vercel production
   secret.
+- **Served-board docs + governance integration (HUB-058, 2026-09-06):** new
+  wiki page `docs/wiki/Served-Board.md` documents the live dispatch board
+  end to end (layout, read/write API contract, config/env secrets, redeploy
+  workflow, `pull-issues` reconciliation) and is cross-linked from the wiki +
+  AGENTS.md; stale wiki pages refreshed (Home facts → corpus v8/2,000 rows +
+  6-built/4-virtual + hub v0.4.0 + served-board row; Architecture surfaces +
+  layout; Releases deploy surfaces + actual `--notes-file` cut practice; FAQ
+  canonical-dataset + served-board Q&A; Getting-Started live-board pointer;
+  Sub-Package-Sync sweep one-liner + HUB-044 caveat). Governance law
+  reconciled in TASKS.md §"Issues vs board": the board-only carve-out is
+  retired for the card↔issue law — every board card carries a `kanban`
+  synced issue (or it won't appear on the served board) + the post-site-edit
+  `pull-issues` obligation.
 
 ## [0.4.0] - 2026-09-05
 ### Added
