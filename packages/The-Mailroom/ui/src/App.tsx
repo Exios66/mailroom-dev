@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { useAuthStore } from '@/stores/authStore'
 import Layout from '@/components/Layout'
 import LoginForm from '@/components/LoginForm'
@@ -45,6 +46,7 @@ export default function App() {
           }
         />
       </Routes>
+      <Analytics />
     </ErrorBoundary>
   )
 }
