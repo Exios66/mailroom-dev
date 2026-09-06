@@ -141,10 +141,27 @@ the wiki page `docs/wiki/Served-Board.md` (mirror to
   `kanban` and normalizes it to a board card (id `HUB-0NN` from title/body,
   lane from `stage/*`, priority from `priority/*`, desc/evidence from the
   `### Task` / `### Evidence plan` body sections, archived = closed).
+- **Agents = the `### Owner` body section (never GitHub assignees).** The
+  board displays the actual agent/persona/harness conducting the work
+  (e.g. `opencode (GLM-5.3-Flash)`, `lucius`, `human`, `unclaimed`) from the
+  issue's `### Owner` section, synced from the TASKS.md Owner column — NOT
+  the issue's GitHub assignee (the repo owner's profile would otherwise show
+  on every card). `sync-issues` pushes `### Owner`/`### Task`/`### Evidence
+  plan`/`### Card ID`/`### Lane` into each synced issue body, so the served
+  board always reflects the real agent, description and evidence trace.
+- **Always reads the most-recent state.** `GET /api/board` is served with
+  `Cache-Control: no-store`, and the frontend auto-refreshes every 30s + on
+  tab refocus, so the board never shows stale data. The served board is
+  LIVE-ONLY: if the proxy is unreachable it shows an offline banner, never a
+  snapshot. The canonical board stays `governance/TASKS.md` — `pull-issues`
+  imports served-site moves back into TASKS.md, `sync-issues` pushes
+  TASKS.md truth into the issues (labels + body sections).
 - **Write-back:** the UI PATCHes `/api/board/HUB-0NN` on every move/save;
   the proxy swaps the `stage/*` label (+ posts a dated "Board lane move"
   comment for the board mirror law), swaps `priority/*`, rewrites the body
-  sections, sets assignees, and closes/reopens for archive/restore.
+  sections (incl. `### Owner` for agent changes), and closes/reopens for
+  archive/restore. It never sets GitHub assignees to agent names (those
+  aren't repo users).
 - **Config (Vercel env secrets):** `GITHUB_TOKEN` (or `MAILROOM_GH_TOKEN`)
   with repo `Exios66/mailroom-dev` Issues read/write; `MAILROOM_GITHUB_REPO`
   to override. Never commit these.

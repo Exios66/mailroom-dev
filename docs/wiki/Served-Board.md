@@ -55,8 +55,12 @@ board card:
 - `priority` — from the `priority/*` label
 - `desc` / `evidence` — from the `### Task` / `### Evidence plan` body
   sections
+- `agents` — **the `### Owner` body section** (the agent/persona/harness
+  doing the work, e.g. `opencode (GLM-5.3-Flash)`, `lucius`, `human`,
+  `unclaimed`), falling back to GitHub assignees only when absent — never a
+  blanket GitHub profile
 - `archived` — true when the issue is closed
-- Plus issue number, assignees, timestamps, and the issue's HTML URL.
+- Plus issue number, timestamps, and the issue's HTML URL.
 
 ### Write-back — `PATCH /api/board/HUB-0NN`
 
@@ -66,7 +70,9 @@ The UI PATCHes on every move/save. Only the changed keys need to be sent:
   comment** (the board mirror law); `priority` swaps the `priority/*` label.
 - `desc` / `evidence` / `title` → rewrites the corresponding body sections
   (Lane/Priority cells are preserved) + the issue title.
-- `agents` → sets the issue assignees.
+- `agents` → rewrites the `### Owner` body section. It never sets GitHub
+  assignees (agent names aren't repo users and GitHub rejects them with
+  422).
 - `archived: true` → **closes** the issue (lands in the archive);
   `archived: false` → **reopens** it.
 - Any other HTTP method → `405`; malformed card ids → `400`; missing token –
@@ -74,6 +80,22 @@ The UI PATCHes on every move/save. Only the changed keys need to be sent:
 
 Operator identity rides the `X-Mailroom-Actor` header (bounded to 60 chars)
 and is recorded on lane-move comments.
+
+## Body sections are the data store
+
+The served board renders **only** from the issue's body sections (never a
+snapshot). The `### Owner`, `### Task`, `### Evidence plan`, `### Card ID`,
+`### Lane`, `### Priority` and `### Domain` sections are what the read path
+displays. `sync-issues` pushes these from `governance/TASKS.md` (the source
+of truth) into every synced issue, so the board shows the real agent,
+description and evidence trace:
+
+```bash
+python scripts/board_state.py sync-issues --apply   # labels + body sections
+```
+
+The section parser/writer is glue-proof (headings are never joined onto a
+section's content) and recovers bodies previously corrupted by an old bug.
 
 ## Config / env (Vercel secrets — never commit)
 
@@ -104,6 +126,15 @@ re-assert the alias onto the deployment you verified:
 vercel alias set <your-deployment-url> mailroom-dev.vercel.app --token "$VERCEL_TOKEN"
 ```
 
+**The project's Root Directory must be UNSET.** If it gets set (e.g. to
+`board-site`) the deploy fails with "Root Directory 'board-site' does not
+exist". Reset it via the API, then deploy from `board-site/`:
+
+```bash
+curl -X PATCH -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" \
+  -d '{"rootDirectory": null}' https://api.vercel.com/v9/projects/mailroom-dev
+```
+
 Then verify against the alias:
 
 ```bash
@@ -125,13 +156,31 @@ The served board writes **issues**, not `governance/TASKS.md`:
   Lane cells + appends a dated `pull-issues` Evidence note.
 - **board → site:** `python scripts/board_state.py sync-issues --apply` is
   the reverse leg — it pushes board-derived `stage/*` / `priority/*` /
-  `attention/*` / `domain/*` / `kanban` labels onto the synced issues.
+  `attention/*` / `domain/*` / `kanban` labels **and the `### Owner` /
+  `### Task` / `### Evidence plan` / `### Card ID` / `### Lane` body
+  sections** onto the synced issues, so the served board reflects the real
+  agent, description and evidence trace from TASKS.md.
 - **The card↔issue law is the norm:** the site only shows `kanban` issues,
   so every board card needs a synced issue (one card = one issue, opened
   from the `.github/ISSUE_TEMPLATE/hub_card.yml` template) with the full
   link in the card's Issue column — otherwise the card won't appear on the
   served board. Lane moves on the board are mirrored as issue comments, and
   the issue is closed in the same commit that archives the card.
+
+## Always read the most-recent state
+
+The board is **live-only** and never shows stale data:
+
+- `GET /api/board` is served with `Cache-Control: no-store`.
+- The frontend auto-refreshes every 30s and on tab refocus
+  (`visibilitychange`), and shows a 🕒 freshness badge for the last read.
+- If the proxy is unreachable it shows an explicit offline banner — it never
+  falls back to a baked-in snapshot.
+
+An agent keeping the board honest runs `sync-issues --apply` after editing
+`governance/TASKS.md` (pushes the new agent/desc/evidence/labels into the
+issues the served board reads) and `pull-issues --apply` after editing on the
+served site (pulls lane moves back into TASKS.md).
 
 The `board-governance.yml` CI gate runs `board_state.py check` (+ the label
 audit + taxonomy parity) on every change to `governance/`, `scripts/`, or
