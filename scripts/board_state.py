@@ -532,6 +532,56 @@ def issue_body_section(body: str, heading: str) -> str | None:
     return match.group(1).strip() or None
 
 
+def issue_body_set_section(body: str, heading: str, content: str) -> str:
+    """Set/replace one '### heading' section, rebuilding the body cleanly so
+    headings are never glued together (mirrors board-site/lib/gh.js). Returns
+    the new body. The section is inserted at the end if not already present."""
+    body = (body or "").replace(r"\r\n", "\n")
+    lines = body.split("\n")
+    sections: list[tuple[str, list[str]]] = []
+    preamble: list[str] = []
+    cur: list[str] | None = None
+    cur_head = ""
+    for line in lines:
+        m = re.match(r"^###\s+([^\n]+)$", line)
+        if m:
+            if cur is not None:
+                sections.append((cur_head, cur))
+            cur_head = m.group(1).strip()
+            cur = []
+        elif cur is not None:
+            cur.append(line)
+        else:
+            preamble.append(line)
+    if cur is not None:
+        sections.append((cur_head, cur))
+    clean = (content or "").strip()
+    clean = clean if clean else "—"
+    found = False
+    out_sections: list[tuple[str, str]] = []
+    for h, ln in sections:
+        if h.lower() == heading.lower():
+            out_sections.append((h, clean))
+            found = True
+        else:
+            out_sections.append((h, "\n".join(ln).rstrip()))
+    if not found:
+        out_sections.append((heading, clean))
+    rebuilt = "\n\n".join(
+        [preamble_text.rstrip()] + [f"### {h}\n{c}" for h, c in out_sections]
+    ) if (preamble_text := "\n".join(preamble)) else "\n\n".join(
+        [f"### {h}\n{c}" for h, c in out_sections]
+    )
+    return rebuilt.rstrip() + "\n"
+
+
+def owner_identity(owner: str) -> str:
+    """The agent/persona/harness conducting the work, without the claim date
+    that rides the board Owner cell (e.g. 'opencode (GLM-5.3-Flash) 2026-09-03'
+    -> 'opencode (GLM-5.3-Flash)')."""
+    return re.sub(r"\s+\d{4}-\d{2}-\d{2}\s*$", "", owner.strip()) or owner.strip()
+
+
 def domain_label_from_answer(answer: str) -> str | None:
     value = answer.strip().lower().split(" (")[0].strip()
     known = {"hub": "domain/hub", "governance": "domain/governance", "tooling": "domain/tooling"}
@@ -558,11 +608,35 @@ def desired_labels(card: Card, body: str | None) -> list[str]:
     return list(dict.fromkeys(labels))
 
 
+def desired_body(card: Card, body: str) -> str:
+    """Sync the board's source-of-truth fields into the issue body so the
+    served board can show the actual agent, description and evidence trace.
+    Only touches the sections it owns; returns the body unchanged if none
+    drift."""
+    nb = body
+    updates = {
+        "Card ID": card.id,
+        "Owner": owner_identity(card.owner),
+        "Lane": card.lane or "assigned",
+        "Priority": "",
+        "Task": card.task,
+        "Evidence plan": card.evidence,
+    }
+    changed = False
+    for heading, content in updates.items():
+        if content == "":
+            continue
+        if issue_body_section(nb, heading) != content:
+            nb = issue_body_set_section(nb, heading, content)
+            changed = True
+    return nb if changed else body
+
+
 def cmd_sync_issues(args: argparse.Namespace) -> int:
     state = parse_board()
     repo = args.repo or default_repo()
     if not args.apply:
-        print("dry run — pass --apply to write labels\n")
+        print("dry run — pass --apply to write labels + body sections\n")
     failures = 0
     touched = 0
     for card in state.open_cards:
@@ -581,16 +655,22 @@ def cmd_sync_issues(args: argparse.Namespace) -> int:
         want = desired_labels(card, issue.get("body") or "")
         have = {entry["name"] for entry in issue["labels"]}
         missing = [label for label in want if label not in have]
-        if not missing:
-            print(f"{card.id}: issue #{card.issue_number} labels current ({len(have)})")
+        body_delta = desired_body(card, issue.get("body") or "")
+        body_changed = body_delta != (issue.get("body") or "")
+        if not missing and not body_changed:
+            print(f"{card.id}: issue #{card.issue_number} labels + body current")
             continue
         touched += 1
-        print(f"{card.id}: issue #{card.issue_number} add {missing}")
+        print(f"{card.id}: issue #{card.issue_number}"
+              + (f" add labels {missing}" if missing else "")
+              + (" body-sync" if body_changed else ""))
         if args.apply:
-            add = ["gh", "issue", "edit", str(card.issue_number), "--repo", repo]
+            edit = ["gh", "issue", "edit", str(card.issue_number), "--repo", repo]
             for label in missing:
-                add += ["--add-label", label]
-            result = run(add)
+                edit += ["--add-label", label]
+            if body_changed:
+                edit += ["--body", body_delta]
+            result = run(edit)
             if result.returncode != 0:
                 failures += 1
                 print(f"  FAILED: {result.stderr.strip()}", file=sys.stderr)

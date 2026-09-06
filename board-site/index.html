@@ -174,6 +174,17 @@
             border-color: rgba(34, 211, 238, 0.4);
             background: var(--cyan-dim);
         }
+        .sync-badge#freshBadge {
+            color: var(--text-muted);
+            background: transparent;
+            border-style: dashed;
+            letter-spacing: 0;
+            cursor: help;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.45; }
+        }
         .offline-banner {
             grid-column: 1 / -1;
             color: var(--orange);
@@ -183,6 +194,17 @@
             background: var(--orange-dim);
             font-weight: 600;
             margin-bottom: 1rem;
+        }
+        .loading-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-height: 40vh;
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            gap: 0.5rem;
+            animation: pulse 1.4s ease-in-out infinite;
         }
         .sync-badge.triage {
             color: var(--pink);
@@ -1233,6 +1255,7 @@
             </span>
         </a>
         <span class="sync-badge" id="syncBadge">● loading…</span>
+        <span class="sync-badge" id="freshBadge" title="When the board last read the live GitHub issues">…</span>
         <span class="sync-badge" id="triageBadge" style="display:none" title="Cards awaiting triage">🔔 Triage: <span id="triageCount">0</span></span>
         <div class="top-actions">
             <div class="search-box">
@@ -1392,7 +1415,10 @@
             // ─── STATE ───
             let state = {
                 cards: [],
+                loading: true,
                 offlineError: null,
+                lastSyncedAt: null,
+                generatedAt: null,
                 searchQuery: '',
                 priorityFilter: null,
                 agentFilter: null,
@@ -1443,6 +1469,7 @@
             const formDate = $('#formDate');
 
             // ─── INIT ───
+            const REFRESH_MS = 30000; // re-read the live board every 30s
             function init() {
                 loadPrefs();
                 renderBoard();
@@ -1452,6 +1479,31 @@
                 bindEvents();
                 updateTabTitle();
                 refreshBoard();
+                startAutoRefresh();
+                setInterval(updateFreshBadge, 1000);
+            }
+
+            // Always read the most-recent state: poll the live proxy on an
+            // interval AND refresh immediately when the tab regains focus.
+            function startAutoRefresh() {
+                setInterval(() => {
+                    if (document.visibilityState === 'visible') refreshBoard();
+                }, REFRESH_MS);
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') refreshBoard();
+                });
+            }
+
+            function updateFreshBadge() {
+                const el = $('#freshBadge');
+                if (!el) return;
+                if (state.lastSyncedAt) {
+                    const seconds = Math.max(0, Math.floor((Date.now() - state.lastSyncedAt) / 1000));
+                    const label = seconds < 5 ? 'just now' : seconds < 60 ? `${seconds}s ago` : `${Math.floor(seconds / 60)}m ago`;
+                    el.textContent = `🕒 ${label}`;
+                } else {
+                    el.textContent = '🕒 …';
+                }
             }
 
             // ─── LIVE SOURCE: /api/board (GitHub issues) ───
@@ -1482,6 +1534,9 @@
                     const data = await apiFetch('GET', '/api/board');
                     state.cards = data.cards || [];
                     state.offlineError = null;
+                    state.loading = false;
+                    state.lastSyncedAt = Date.now();
+                    state.generatedAt = data.generatedAt || null;
                     setSyncBadge('live', `● LIVE · ${state.cards.length} cards`);
                 } catch (err) {
                     // Live-only board: never inject a snapshot. If the proxy is
@@ -1490,8 +1545,11 @@
                     console.warn('board unreachable:', err);
                     state.cards = [];
                     state.offlineError = err.message || 'cannot reach the live board';
+                    state.loading = false;
+                    state.lastSyncedAt = null;
                     setSyncBadge('offline', '● OFFLINE · no live connection');
                 }
+                updateFreshBadge();
                 // Show triage badge if there are unassigned cards
                 const unassignedCount = state.cards.filter((c) => !c.archived && c.lane === 'unassigned').length;
                 const triageBadge = $('#triageBadge');
@@ -1663,6 +1721,14 @@
             // ─── RENDERING ───
             function renderBoard() {
                 boardContainer.innerHTML = '';
+                if (state.loading) {
+                    const el = document.createElement('div');
+                    el.className = 'loading-state';
+                    el.setAttribute('role', 'status');
+                    el.textContent = '⟳ Reading the live board from GitHub…';
+                    boardContainer.appendChild(el);
+                    return;
+                }
                 if (state.offlineError) {
                     const banner = document.createElement('div');
                     banner.className = 'offline-banner';

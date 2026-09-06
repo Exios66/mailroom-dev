@@ -21,13 +21,12 @@ function sendJson(res, status, obj) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
-  ghx.cors(res);
   res.end(JSON.stringify(obj));
 }
 
 module.exports = async function handler(req, res) {
   // Handle CORS preflight
-  ghx.cors(res);
+  ghx.cors(req, res);
   if (req.method === "OPTIONS") {
     res.statusCode = 204;
     return res.end();
@@ -85,12 +84,13 @@ module.exports = async function handler(req, res) {
     // 3. Title / body sections
     const patch = { labels: nextLabels };
     if ("title" in want && want.title) patch.title = `${cardId}: ${want.title}`;
-    if ("desc" in want || "evidence" in want || "lane" in want || "priority" in want) {
+    if ("desc" in want || "evidence" in want || "lane" in want || "priority" in want || "agents" in want) {
       let nb = issue.body || "";
       if ("desc" in want) nb = ghx.setBodySection(nb, "Task", want.desc || "—");
       if ("evidence" in want) nb = ghx.setBodySection(nb, "Evidence plan", want.evidence || "—");
       if ("lane" in want) nb = ghx.setBodySection(nb, "Lane", want.lane);
       if ("priority" in want) nb = ghx.setBodySection(nb, "Priority", want.priority);
+      if ("agents" in want) nb = ghx.setBodySection(nb, "Owner", want.agents.join(", ") || "—");
       patch.body = nb;
     }
     // 4. Assignees

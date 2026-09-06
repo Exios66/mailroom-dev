@@ -11,13 +11,12 @@ function sendJson(res, status, obj) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
-  ghx.cors(res);
   res.end(JSON.stringify(obj));
 }
 
 module.exports = async function handler(req, res) {
   // Handle CORS preflight
-  ghx.cors(res);
+  ghx.cors(req, res);
   if (req.method === "OPTIONS") {
     res.statusCode = 204;
     return res.end();
@@ -55,6 +54,8 @@ module.exports = async function handler(req, res) {
         "Synced from the Mailroom Dispatch Board (served site).",
         "",
         `### Card ID\n\n${id}`,
+        "",
+        `### Owner\n\n${agents.length ? agents.join(", ") : "—"}`,
         "",
         `### Lane\n\n${effectiveLane}`,
         "",

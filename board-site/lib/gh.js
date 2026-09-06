@@ -18,14 +18,27 @@ const PRI_LABELS = ["priority/critical", "priority/high", "priority/medium", "pr
 const STAGE_LABELS = LANES.map((l) => l.label);
 
 // ── CORS helpers ──────────────────────────────────────────────────────
+// The board is served from its own origin, so cross-origin calls are not
+// needed for normal use. Allow only the known served origins (and no
+// cross-origin at all for unknown ones) so a third-party website cannot use
+// a visitor's browser to PATCH the board.
+const ALLOWED_ORIGINS = new Set([
+  "https://mailroom-dev.vercel.app",
+  "https://mailroom-dev-lucius-projects-54efe0bb.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:8787",
+  "null",
+]);
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, X-Mailroom-Actor",
   "Access-Control-Max-Age": "86400",
 };
 
-function cors(res) {
+function cors(req, res) {
+  const origin = (req.headers["origin"] || "").toString().trim();
+  if (origin && !ALLOWED_ORIGINS.has(origin)) return; // no ACAO -> browser blocks
+  res.setHeader("Access-Control-Allow-Origin", origin || ALLOWED_ORIGINS.values().next().value);
   for (const [k, v] of Object.entries(CORS_HEADERS)) res.setHeader(k, v);
 }
 
@@ -128,19 +141,64 @@ function priorityFromIssue(issue) {
   return "medium";
 }
 
+// Robust section handling: tokenize the body by `### ` headings so sections
+// are never glued together or dropped (previous regex-based rewrite corrupted
+// bodies on PATCH — e.g. "### Lane\ndone### Task"). Every section is rebuilt
+// with a blank-line separator.
+function parseSections(body) {
+  // Repair bodies previously corrupted by the old glue bug: a heading glued
+  // onto a section's content ("### Lane\ndone### Task") is split back out.
+  const text = (body || "").replace(/([^\n])###\s/g, "$1\n### ");
+  const lines = text.split("\n");
+  const sections = [];
+  const preamble = [];
+  let cur = null;
+  for (const line of lines) {
+    const m = /^###\s+([^\n]+)$/.exec(line);
+    if (m) {
+      if (cur) sections.push(cur);
+      cur = { heading: m[1].trim(), lines: [] };
+    } else if (cur) {
+      cur.lines.push(line);
+    } else {
+      preamble.push(line);
+    }
+  }
+  if (cur) sections.push(cur);
+  return {
+    preamble: preamble.join("\n"),
+    sections: sections.map((s) => ({ heading: s.heading, content: s.lines.join("\n").replace(/\s+$/, "") })),
+  };
+}
+
 function bodySection(body, heading) {
-  const re = new RegExp(`^### ${heading}\\s*\\n([\\s\\S]*?)(?=^### |\\Z)`, "m");
-  const m = (body || "").match(re);
-  return m ? m[1].replace(/^\s+|\s+$/g, "") : "";
+  const { sections } = parseSections(body || "");
+  const hit = sections.find((s) => s.heading.toLowerCase() === heading.toLowerCase());
+  return hit ? hit.content.trim() : "";
 }
 
 function setBodySection(body, heading, content) {
   const clean = (content || "").trim();
-  if (!body) body = "";
-  const section = `### ${heading}\n${clean ? clean : "—"}`;
-  const re = new RegExp(`^### ${heading}\\s*\\n[\\s\\S]*?(?=^### |\\Z)`, "m");
-  if (re.test(body)) return body.replace(re, section);
-  return `${body.replace(/\s*$/, "")}\n\n${section}\n`;
+  const { preamble, sections } = parseSections(body || "");
+  const idx = sections.findIndex((s) => s.heading.toLowerCase() === heading.toLowerCase());
+  if (idx >= 0) sections[idx] = { heading, content: clean || "—" };
+  else sections.push({ heading, content: clean || "—" });
+  const rebuilt = [
+    preamble.trim(),
+    ...sections.map((s) => `### ${s.heading}\n${s.content}`),
+  ].join("\n\n");
+  return rebuilt.endsWith("\n") ? rebuilt : rebuilt + "\n";
+}
+
+// Agents reflect the actual agent/persona/harness conducting the work, which
+// is carried in the issue body's "### Owner" section (synced from the board's
+// Owner column). Fall back to GitHub assignees only when no Owner is present.
+function agentsFromIssue(issue) {
+  const owner = bodySection(issue.body, "Owner");
+  if (owner && owner !== "—") {
+    return owner.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+  }
+  return (issue.assignees || []).map((a) => a.login);
 }
 
 function toCard(issue) {
@@ -151,8 +209,8 @@ function toCard(issue) {
     desc: bodySection(issue.body, "Task"),
     lane: laneFromIssue(issue),
     priority: priorityFromIssue(issue),
-    agents: (issue.assignees || []).map((a) => a.login),
-    evidence: bodySection(issue.body, "Evidence plan"),
+    agents: agentsFromIssue(issue),
+    evidence: bodySection(issue.body, "Evidence plan") || bodySection(issue.body, "Evidence"),
     date: (issue.created_at || "").slice(0, 10),
     archived: issue.state === "closed",
     createdAt: issue.created_at,
@@ -233,6 +291,7 @@ module.exports = {
   toCard,
   bodySection,
   setBodySection,
+  agentsFromIssue,
   listKanbanIssues,
   findIssueByCardId,
   nextCardId,
