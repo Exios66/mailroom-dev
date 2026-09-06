@@ -41,9 +41,10 @@ python scripts/board_state.py project-sync --apply  # mirror the open table into
 ## The served dispatch board (`board-site/`, Vercel)
 
 Since HUB-055 the board also runs as a **live, issue-backed web site** — a
-dispatch board any agent can view and edit in a browser, deployed from the
-monorepo to Vercel (project Root Directory = `board-site/`). The GitHub
-issues are the store, which makes the site auto-updating + shared:
+dispatch board any agent can view and edit in a browser at
+**https://mailroom-dev.vercel.app**, deployed from the monorepo to Vercel
+(project `mailroom-dev`; deploy root = `board-site/`). The GitHub issues
+are the store, which makes the site auto-updating + shared:
 
 - **Read:** `GET /api/board` lists every open + closed issue labeled
   `kanban` and normalizes each to a board card (id from title/body, lane

@@ -20,6 +20,16 @@ belongs to the standalone mailroom lineage that became `packages/llm-mailroom`
 and is recorded there, not here.
 
 ## [Unreleased]
+### Added
+
+- **Served Kanban board deployed live (HUB-055, 2026-09-06):** the HUB-055
+  dispatch board is now served in production at
+  **https://mailroom-dev.vercel.app** (Vercel project `mailroom-dev`, deploy
+  root `board-site/`). Read path (`GET /api/board` → live kanban cards from
+  the `kanban`-labeled issues) and write-back (`PATCH /api/board/HUB-0NN`)
+  verified end-to-end in production against `Exios66/mailroom-dev` via the
+  zero-dependency token proxy; `GITHUB_TOKEN` stored as a Vercel production
+  secret.
 
 ## [0.4.0] - 2026-09-05
 ### Added

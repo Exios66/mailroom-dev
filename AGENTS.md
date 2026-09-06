@@ -123,15 +123,17 @@ Run `check` before closing any card that touches the board; the CI gate
 ### Served Kanban board (`board-site/`, Vercel)
 
 The board also runs as a **live, issue-backed web site** on Vercel
-(HUB-055) — a "dispatch board" any agent can view and edit in a browser.
-The issues themselves are the store, which is what makes the site
-auto-updating + shared:
+(HUB-055) — a "dispatch board" any agent can view and edit in a browser
+at **https://mailroom-dev.vercel.app**. The issues themselves are the
+store, which is what makes the site auto-updating + shared:
 
-- **Deploy root is `board-site/`** (Vercel project → Root Directory:
-  `board-site`). Serverless functions under `board-site/api/`; static
-  `board-site/index.html` is the adapted `mailroom-dispatch-board.html`
-  (drag/move/edit + archive UI, filters, stats). `board-site/vercel.json`
-  and the root `vercel.json` carry the zero-config settings.
+- **Deploy root is `board-site/`** (Vercel project `mailroom-dev`, live
+  production; Root Directory is unset so the deploy runs from `board-site/`,
+  which carries its own `board-site/vercel.json`). Serverless functions
+  under `board-site/api/`; static `board-site/index.html` is the adapted
+  `mailroom-dispatch-board.html` (drag/move/edit + archive UI, filters,
+  stats). Project secret `GITHUB_TOKEN` (gh keyring token, repo scope:
+  Issues read/write) powers the proxy; never commit it.
 - **Read path:** `GET /api/board` lists every open + closed issue labeled
   `kanban` and normalizes it to a board card (id `HUB-0NN` from title/body,
   lane from `stage/*`, priority from `priority/*`, desc/evidence from the
