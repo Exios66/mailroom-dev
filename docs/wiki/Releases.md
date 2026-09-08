@@ -28,13 +28,46 @@ Semantic Versioning chain:
   ```bash
   python scripts/release_chain.py cut X.Y.Z --apply --tag   # stamps section + bumps pyproject + tags
   git push origin main vX.Y.Z                               # the commit (with its HUB-0NN reference), then the tag
-  gh release create vX.Y.Z --title "Mailroom Hub vX.Y.Z" --notes-file <section-body.md>
+  python scripts/release_notes.py X.Y.Z --title "<epoch>" --out release-notes-vX.Y.Z.md
+  gh release create vX.Y.Z --title "Mailroom Hub vX.Y.Z — <epoch>" --notes-file release-notes-vX.Y.Z.md
   ```
 
-  The GitHub Release body is cut from the freshly-stamped changelog section
-  (the text between the new `## [X.Y.Z]` header and the previous section) —
-  extract it with a small script, never hand-typed. Mirror the section title
+  The GitHub Release body is **generated** by `scripts/release_notes.py` from
+  the freshly-stamped changelog section, so every release carries a summary
+  of the changes, the highlights, the merged PRs, the key (HUB-card) commits,
+  and references to the changelog + compare. Mirror the section title
   (`Mailroom Hub vX.Y.Z — <epoch>`) as the release name.
+
+## Release-notes template (`.github/RELEASE_TEMPLATE.md`)
+
+All hub GitHub Releases use the `scripts/release_notes.py` generator, which
+renders the `.github/RELEASE_TEMPLATE.md` template with real data from the
+release window:
+
+- **Highlights** — one line per landed card, derived from the changelog
+  section's bolded headlines.
+- **Changes** — the full `## [X.Y.Z]` changelog section body (the detailed
+  per-card record).
+- **Pull requests merged** — every PR whose merge commit landed in
+  `v<previous>..v<X.Y.Z>` (resolved via `gh`; the offline fallback lists the
+  merge commits from git only).
+- **Key commits** — the HUB-card-referenced commits in the window (the
+  critical evidence), then the non-card commits to complete the trace.
+- **Verify + reference** — the changelog link, the `v<prev>...v<ver>` compare
+  URL, and the board note pointing to each card's Evidence.
+
+Usage:
+
+```bash
+python scripts/release_notes.py X.Y.Z                # print the notes body
+python scripts/release_notes.py X.Y.Z --out notes.md # write the --notes-file
+python scripts/release_notes.py X.Y.Z --title "visualizer epoch"
+python scripts/release_notes.py X.Y.Z --no-net       # offline (git-only PRs)
+python scripts/release_notes.py X.Y.Z --json         # machine-readable
+```
+
+The template placeholders mirror the generated sections; edit the template to
+change what every release carries, never hand-type a release body.
 
 - Package versions at a hub release are recorded in that release's
   changelog section (see the `[0.1.0]` section for the baseline).

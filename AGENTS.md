@@ -57,6 +57,7 @@ python scripts/taxonomy_parity.py               # doc-class taxonomy drift (CI g
 python scripts/release_chain.py status          # hub release-chain snapshot (tags, sections, version)
 python scripts/release_chain.py check           # chain invariants; exit 1 on structural errors (CI gate)
 python scripts/release_chain.py cut X.Y.Z       # stamp [Unreleased] -> section + bump hub version (dry run; --apply/--tag)
+python scripts/release_notes.py X.Y.Z           # render the GitHub Release body from the changelog section + PRs + commits (template: .github/RELEASE_TEMPLATE.md)
 ./docs/wiki/sync-wiki.sh                        # push docs/wiki/ source to the GitHub wiki (--check for drift)
 ```
 

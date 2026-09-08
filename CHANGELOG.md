@@ -22,6 +22,19 @@ and is recorded there, not here.
 ## [Unreleased]
 ### Added
 
+- **Release-notes generator + template (`.github/RELEASE_TEMPLATE.md` +
+  `scripts/release_notes.py`):** all hub GitHub Releases now render their body
+  with `python scripts/release_notes.py X.Y.Z` — it compiles the freshly-cut
+  `## [X.Y.Z]` changelog section (the detailed change summary) with the merged
+  pull requests in the release window (`gh`-resolved, offline git fallback)
+  and the key HUB-card commits into a single `--notes-file` body that always
+  carries: a summary + epoch title, highlights (one line per landed card), the
+  full changelog section, the related PRs, the critical commits, and
+  changelog + `v<prev>...v<ver>` compare references. Options: `--title`
+  (epoch suffix), `--out` (write the notes file), `--no-net`, `--json`.
+  Template placeholders mirror the generated sections — edit the template to
+  change what every release carries, never hand-type a body. Docs: wiki
+  Releases.md "Release-notes template" section + AGENTS.md command index.
 - **Served Kanban board deployed live (HUB-055, 2026-09-06):** the HUB-055
   dispatch board is now served in production at
   **https://mailroom-dev.vercel.app** (Vercel project `mailroom-dev`, deploy
