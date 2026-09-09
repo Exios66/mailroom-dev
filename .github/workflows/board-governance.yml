@@ -78,7 +78,7 @@ jobs:
     continue-on-error: true  # needs the `project` token scope; advisory until enforced
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Projects v2 mirror drift (advisory)

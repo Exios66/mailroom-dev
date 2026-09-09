@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mailroom Kanban Dispatch Board — Agent-to-Agent Task Orchestration</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
     <meta name="description" content="Interactive Kanban task dispatch board for multi-agent orchestration — drag, drop, assign, and track HUB cards across lanes.">
     <style>
         :root {
@@ -397,15 +398,17 @@
             color: var(--accent);
             font-weight: 600;
         }
+        .filter-chip-group {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
         .filter-chip[data-filter-priority="critical"].active { background: var(--red-dim); border-color: var(--red); color: var(--red); }
         .filter-chip[data-filter-priority="high"].active { background: var(--orange-dim); border-color: var(--orange); color: var(--orange); }
         .filter-chip[data-filter-priority="medium"].active { background: var(--yellow-dim); border-color: var(--yellow); color: var(--yellow); }
         .filter-chip[data-filter-priority="low"].active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
-        .filter-chip[data-filter-agent="human"].active { background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan); }
-        .filter-chip[data-filter-agent="opencode"].active { background: var(--purple-dim); border-color: var(--purple); color: var(--purple); }
-        .filter-chip[data-filter-agent="lucius"].active { background: var(--pink-dim); border-color: var(--pink); color: var(--pink); }
-        .filter-chip[data-filter-agent="cursor"].active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
-        .filter-chip[data-filter-agent="unclaimed"].active { background: var(--bg-card); border-color: var(--text-dim); color: var(--text); }
+        .filter-chip[data-filter-agent].active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
         #filterResultCount {
             font-size: 0.68rem;
             color: var(--text-dim);
@@ -634,6 +637,27 @@
         .card-priority-badge.low {
             background: var(--green-dim);
             color: var(--green);
+        }
+        .card-top-right {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex-shrink: 0;
+        }
+        .card-gh-link {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            padding: 0.12rem 0.3rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            transition: all var(--transition);
+            line-height: 1;
+        }
+        .card-gh-link:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: var(--accent-glow);
         }
 
         .card-title {
@@ -895,6 +919,21 @@
         .archive-body.open {
             display: flex;
         }
+        .archive-footer-note {
+            font-size: 0.62rem;
+            color: var(--text-dim);
+            padding: 0.55rem 0.85rem;
+            border-top: 1px solid var(--border);
+            background: var(--bg);
+            line-height: 1.5;
+        }
+        .archive-footer-note code {
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+            padding: 0.05rem 0.3rem;
+            border-radius: 4px;
+        }
         .archive-card {
             flex: 1 0 200px;
             max-width: 260px;
@@ -977,6 +1016,24 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+        }
+        .modal-meta {
+            margin-top: 0.4rem;
+            font-size: 0.66rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .modal-meta a {
+            color: var(--accent);
+            text-decoration: none;
+            font-family: var(--font-mono);
+        }
+        .modal-meta a:hover {
+            text-decoration: underline;
         }
         .modal-close {
             background: none;
@@ -1261,6 +1318,7 @@
         </a>
         <span class="sync-badge" id="syncBadge">● loading…</span>
         <span class="sync-badge" id="freshBadge" title="When the board last read the live GitHub issues">…</span>
+        <span class="sync-badge" id="repoContext" title="Source repository" style="display:none"></span>
         <span class="sync-badge" id="triageBadge" style="display:none" title="Cards awaiting triage">🔔 Triage: <span id="triageCount">0</span></span>
         <div class="top-actions">
             <div class="search-box">
@@ -1269,8 +1327,9 @@
                 <button class="clear-btn" id="clearSearch" aria-label="Clear search">✕</button>
             </div>
             <button class="btn btn-icon" id="btnStats" title="Toggle statistics" aria-label="Toggle statistics">📊</button>
-            <button class="btn btn-icon" id="btnExport" title="Export board data" aria-label="Export board data">📥</button>
-            <button class="btn btn-icon" id="btnImport" title="Import board data" aria-label="Import board data">📤</button>
+            <button class="btn btn-icon" id="btnRefresh" title="Re-read the live board now (r)" aria-label="Refresh board now">⟳</button>
+            <button class="btn btn-icon" id="btnExport" title="Export board data (JSON backup)" aria-label="Export board data">📥</button>
+            <button class="btn btn-icon" id="btnImport" title="Load a JSON backup (session-local preview only)" aria-label="Import board data">📤</button>
             <button class="btn btn-primary" id="btnNewCard" aria-label="Create new card">+ <span class="btn-text">New Card</span></button>
         </div>
     </header>
@@ -1297,11 +1356,7 @@
         <button class="filter-chip" data-filter-priority="low" type="button">Low</button>
         <span class="filter-divider"></span>
         <span class="filter-label">Agent</span>
-        <button class="filter-chip" data-filter-agent="human" type="button">human</button>
-        <button class="filter-chip" data-filter-agent="opencode" type="button">opencode</button>
-        <button class="filter-chip" data-filter-agent="lucius" type="button">Lucius</button>
-        <button class="filter-chip" data-filter-agent="cursor" type="button">cursor</button>
-        <button class="filter-chip" data-filter-agent="unclaimed" type="button">unclaimed</button>
+        <span class="filter-chip-group" id="agentFilterChips"></span>
         <button class="btn btn-sm" id="btnClearFilters" type="button">✕ Clear</button>
         <span id="filterResultCount"></span>
     </div>
@@ -1322,6 +1377,7 @@
             <span style="font-size:0.68rem;color:var(--text-dim)">Click to toggle</span>
         </div>
         <div class="archive-body" id="archiveBody"></div>
+        <div class="archive-footer-note" id="archiveFooterNote">📜 This archive shows GitHub-issue-backed cards. The full append-only history lives in <code>governance/TASKS.md</code>.</div>
     </section>
 
     <!-- ═══ MODAL ═══ -->
@@ -1335,6 +1391,7 @@
                 <div class="form-group">
                     <label class="form-label" for="formId">Card ID</label>
                     <input class="form-input" type="text" id="formId" placeholder="HUB-000" readonly>
+                    <div class="modal-meta" id="modalMeta"></div>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="formTitle">Title</label>
@@ -1368,7 +1425,8 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="formAgents">Agents (comma-separated)</label>
-                    <input class="form-input" type="text" id="formAgents" placeholder="human, opencode, Lucius, cursor">
+                    <input class="form-input" type="text" id="formAgents" list="agentSuggestions" placeholder="human, opencode, Lucius, cursor">
+                    <datalist id="agentSuggestions"></datalist>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="formEvidence">Evidence Trace</label>
@@ -1454,6 +1512,7 @@
             const modalRestore = $('#modalRestore');
             const modalCancel = $('#modalCancel');
             const modalSave = $('#modalSave');
+            const modalMeta = $('#modalMeta');
             const archivedHint = $('#archivedHint');
             const btnNewCard = $('#btnNewCard');
             const btnExport = $('#btnExport');
@@ -1481,6 +1540,8 @@
                 renderArchive();
                 updateStats();
                 updateFilterUI();
+                updateRepoContext();
+                updateAgentSuggestions();
                 bindEvents();
                 updateTabTitle();
                 refreshBoard();
@@ -1555,6 +1616,8 @@
                     setSyncBadge('offline', '● OFFLINE · no live connection');
                 }
                 updateFreshBadge();
+                updateRepoContext();
+                updateAgentSuggestions();
                 // Show triage badge if there are unassigned cards
                 const unassignedCount = state.cards.filter((c) => !c.archived && c.lane === 'unassigned').length;
                 const triageBadge = $('#triageBadge');
@@ -1643,8 +1706,9 @@
             function cardPassesFilters(card) {
                 if (state.priorityFilter && card.priority !== state.priorityFilter) return false;
                 if (state.agentFilter) {
+                    const needle = state.agentFilter.toLowerCase();
                     const agents = (card.agents || []).map((a) => (a || '').toLowerCase());
-                    if (!agents.includes(state.agentFilter)) return false;
+                    if (!agents.includes(needle)) return false;
                 }
                 return true;
             }
@@ -1761,9 +1825,62 @@
                 $$('.filter-chip[data-filter-priority]').forEach((btn) => {
                     btn.classList.toggle('active', btn.dataset.filterPriority === state.priorityFilter);
                 });
-                $$('.filter-chip[data-filter-agent]').forEach((btn) => {
-                    btn.classList.toggle('active', btn.dataset.filterAgent === state.agentFilter);
+                // Dynamic agent chips: rebuild from the agents actually present
+                // on live cards (agent names like "opencode (GLM-5.3-Flash)" are
+                // real and filterable — never a hardcoded roster).
+                const chipContainer = $('#agentFilterChips');
+                if (chipContainer) {
+                    const present = agentCounts();
+                    const names = ['unclaimed', ...Object.keys(present).filter((a) => a !== 'unclaimed' && present[a] > 0)]
+                        .filter((a) => present[a] > 0 || a === 'unclaimed');
+                    document.querySelectorAll('.filter-chip[data-filter-agent]').forEach((el) => el.remove());
+                    names.forEach((name) => {
+                        const chip = document.createElement('button');
+                        chip.type = 'button';
+                        chip.className = 'filter-chip';
+                        chip.dataset.filterAgent = name;
+                        chip.textContent = `${name}${present[name] ? ` (${present[name]})` : ''}`;
+                        chip.setAttribute('aria-pressed', String(state.agentFilter === name));
+                        chip.classList.toggle('active', state.agentFilter === name);
+                        chipContainer.appendChild(chip);
+                        chip.addEventListener('click', () => {
+                            const val = chip.dataset.filterAgent;
+                            state.agentFilter = state.agentFilter === val ? null : val;
+                            updateFilterUI();
+                            renderBoard();
+                            renderArchive();
+                            updateFilterResultCount();
+                        });
+                    });
+                }
+            }
+
+            function agentCounts() {
+                const counts = {};
+                state.cards.filter((c) => !c.archived).forEach((c) => {
+                    const agents = (c.agents || []).length ? c.agents : ['unclaimed'];
+                    agents.forEach((a) => {
+                        const key = a || 'unclaimed';
+                        counts[key] = (counts[key] || 0) + 1;
+                    });
                 });
+                return counts;
+            }
+
+            function updateAgentSuggestions() {
+                const datalist = $('#agentSuggestions');
+                if (!datalist) return;
+                const names = Object.keys(agentCounts()).filter((a) => a !== 'unclaimed');
+                datalist.innerHTML = names.map((a) => `<option value="${escapeAttr(a)}"></option>`).join('');
+            }
+
+            function updateRepoContext() {
+                const el = $('#repoContext');
+                if (!el) return;
+                const repo = state.generatedAt ? 'Exios66/mailroom-dev' : '';
+                el.textContent = repo ? `⎇ ${repo}` : '';
+                el.title = repo ? 'Source repository: ' + repo : '';
+                el.style.display = repo ? '' : 'none';
             }
 
             function createLaneElement(lane) {
@@ -1847,7 +1964,7 @@
                     const agentClass = AGENT_COLORS[agent.toLowerCase()] || 'unclaimed';
                     const avatarLetter = (agent || '?').charAt(0).toUpperCase();
                     return `<span class="agent-chip ${agentClass}">
-                        <span class="agent-avatar">${avatarLetter}</span>${agent}
+                        <span class="agent-avatar">${escapeHtml(avatarLetter)}</span>${escapeHtml(agent)}
                     </span>`;
                 }).join('');
 
@@ -1862,11 +1979,17 @@
                 const ageDays = daysAgo(card.date);
                 const staleClass = (ageDays !== null && ageDays > 7 && card.lane !== 'done') ? ' stale' : '';
                 const ageHtml = ageLabel(card.date) ? `<span class="card-age${staleClass}">${ageLabel(card.date)}</span>` : '';
+                const ghLink = card.htmlUrl
+                    ? `<a class="card-gh-link" href="${escapeAttr(card.htmlUrl)}" target="_blank" rel="noopener noreferrer" title="Open issue #${card.issueNumber} on GitHub" data-gh-link>↗</a>`
+                    : '';
 
                 el.innerHTML = `
                     <div class="card-top">
-                        <span class="card-id" data-copy-id title="Tap to copy ID">${card.id || 'N/A'}</span>
-                        <span class="card-priority-badge ${card.priority || 'medium'}">${priorityLabel}</span>
+                        <span class="card-id" data-copy-id title="Tap to copy ID">${escapeHtml(card.id || 'N/A')}</span>
+                        <span class="card-top-right">
+                            <span class="card-priority-badge ${card.priority || 'medium'}">${escapeHtml(priorityLabel)}</span>
+                            ${ghLink}
+                        </span>
                     </div>
                     <div class="card-title">${escapeHtml(card.title || 'Untitled')}</div>
                     ${card.desc ? `<div class="card-desc">${escapeHtml(card.desc)}</div>` : ''}
@@ -1908,6 +2031,7 @@
                 cardEl.addEventListener('click', (e) => {
                     if (e.target.closest('[data-card-action]')) return;
                     if (e.target.closest('[data-copy-id]')) return;
+                    if (e.target.closest('[data-gh-link]')) return;
                     const card = getCardById(cardEl.dataset.cardId);
                     if (card) openEditModal(card);
                 });
@@ -2056,7 +2180,13 @@
 
             function updateTabTitle() {
                 const activeCount = state.cards.filter((c) => !c.archived).length;
-                document.title = `📋 ${activeCount} Cards — Mailroom Dispatch Board`;
+                const archivedTotal = state.cards.filter((c) => c.archived).length;
+                const title = `${activeCount} active · ${archivedTotal} archived`;
+                document.title = `📋 ${title} — Mailroom Dispatch Board`;
+                const el = $('#statArchived');
+                if (el) el.textContent = archivedTotal;
+                const elTotal = $('#statTotal');
+                if (elTotal) elTotal.textContent = activeCount;
             }
 
             // ─── ACTIONS ───
@@ -2183,6 +2313,13 @@
                 formAgents.value = (card.agents || []).join(', ');
                 formEvidence.value = card.evidence || '';
                 formDate.value = card.date || new Date().toISOString().split('T')[0];
+                const meta = [];
+                if (card.htmlUrl) meta.push(`<a href="${escapeAttr(card.htmlUrl)}" target="_blank" rel="noopener noreferrer">#${card.issueNumber} ↗</a>`);
+                if (card.createdAt || card.updatedAt) {
+                    const fmt = (t) => (t ? new Date(t).toISOString().slice(0, 16).replace('T', ' ') : '?');
+                    meta.push(`created ${fmt(card.createdAt)} · updated ${fmt(card.updatedAt)}`);
+                }
+                modalMeta.innerHTML = meta.join(' &nbsp;·&nbsp; ') || '';
                 modalDelete.style.display = 'inline-flex';
                 if (card.archived) {
                     modalRestore.style.display = 'inline-flex';
@@ -2286,12 +2423,22 @@
                                 throw new Error(`Invalid card: missing id or title`);
                             }
                         });
+                        // Live-only doctrine (HUB-059): the board's truth is the
+                        // GitHub issues. A JSON import is a SESSION-LOCAL preview
+                        // only — it never writes to GitHub — so confirm intent.
+                        if (!window.confirm('⚠ Live-only board: a JSON import only previews a local snapshot in this tab. It does NOT write to the GitHub issues (the real board). Continue as a read-only preview?')) {
+                            renderBoard();
+                            renderArchive();
+                            return;
+                        }
                         state.cards = data.cards;
+                        state.offlineError = null;
                         renderBoard();
                         renderArchive();
                         updateStats();
                         updateTabTitle();
-                        showToast(`📤 Imported ${data.cards.length} cards (session-local snapshot)`, 'info');
+                        updateFilterUI();
+                        showToast('📤 Imported ' + data.cards.length + ' cards (session-local read-only preview — not written to GitHub)', 'info');
                     } catch (err) {
                         showToast(`❌ Import failed: ${err.message}`, 'error');
                     }
@@ -2308,6 +2455,10 @@
                 const div = document.createElement('div');
                 div.textContent = str;
                 return div.innerHTML;
+            }
+
+            function escapeAttr(str) {
+                return String(str == null ? '' : str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             }
 
             function debounce(fn, ms) {
@@ -2347,17 +2498,11 @@
                         updateFilterUI();
                         renderBoard();
                         renderArchive();
+                        updateFilterResultCount();
                     });
                 });
-                $$('.filter-chip[data-filter-agent]').forEach((btn) => {
-                    btn.addEventListener('click', () => {
-                        const val = btn.dataset.filterAgent;
-                        state.agentFilter = state.agentFilter === val ? null : val;
-                        updateFilterUI();
-                        renderBoard();
-                        renderArchive();
-                    });
-                });
+                // Agent chips are rebuilt dynamically by updateFilterUI() — their
+                // click handlers are attached there.
                 btnClearFilters.addEventListener('click', () => {
                     state.priorityFilter = null;
                     state.agentFilter = null;
@@ -2398,9 +2543,12 @@
                     }
                 });
 
-                btnNewCard.addEventListener('click', () => openNewCardModal('unassigned'));
+btnNewCard.addEventListener('click', () => openNewCardModal('unassigned'));
 
-                btnExport.addEventListener('click', exportData);
+const btnRefresh = $('#btnRefresh');
+if (btnRefresh) btnRefresh.addEventListener('click', () => refreshBoard());
+
+btnExport.addEventListener('click', exportData);
 
                 btnImport.addEventListener('click', () => importFileInput.click());
                 importFileInput.addEventListener('change', (e) => {
@@ -2428,6 +2576,12 @@
                     } else if (e.key === 'n' && !isTyping && !e.ctrlKey && !e.metaKey) {
                         e.preventDefault();
                         openNewCardModal('unassigned');
+                    } else if ((e.key === 'r' || e.key === 'R') && !isTyping && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                        e.preventDefault();
+                        refreshBoard();
+                    } else if ((e.key === 'a' || e.key === 'A') && !isTyping && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                        e.preventDefault();
+                        archiveHeader.click();
                     }
                 });
             }
@@ -2440,8 +2594,12 @@
                 renderBoard,
                 renderArchive,
                 updateStats,
+                updateFilterUI,
+                updateRepoContext,
+                updateAgentSuggestions,
                 getCardsByLane,
                 getArchivedCards,
+                agentCounts,
                 savePrefs,
                 loadPrefs,
                 refreshBoard,

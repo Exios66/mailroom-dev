@@ -182,6 +182,26 @@ An agent keeping the board honest runs `sync-issues --apply` after editing
 issues the served board reads) and `pull-issues --apply` after editing on the
 served site (pulls lane moves back into TASKS.md).
 
+## UX / interactions (agent + human)
+
+- **Live agent filters:** the Agent filter chips are derived from the agents
+  actually present on the live cards — no hardcoded roster. Any agent/persona/
+  harness name (e.g. `opencode (GLM-5.3-Flash)`) becomes a one-click filter
+  with a live count. The agent input in the card editor offers datalist
+  suggestions from the same set.
+- **Manual refresh + context:** the ⟳ button (or the `r` key) re-reads the
+  live board on demand, and a `⎇ repo` badge shows the backing repository.
+  `n` opens a new card, `a` toggles the archive, `/` focuses search.
+- **GitHub trace:** every card carries a `↗` link straight to its synced issue,
+  and the edit modal shows `created`/`updated` timestamps + the issue link —
+  evidence cross-referencing without leaving the board.
+- **Import is read-only + gated:** the live-only doctrine (HUB-059) means a
+  JSON import only previews a snapshot in the local tab — it never writes to
+  GitHub — and now confirms intent before applying.
+- **Archived history pointer:** the archive footer notes that the full
+  append-only history lives in `governance/TASKS.md` (the served archive only
+  shows issue-backed cards).
+
 The `board-governance.yml` CI gate runs `board_state.py check` (+ the label
 audit + taxonomy parity) on every change to `governance/`, `scripts/`, or
 `.github/`.
