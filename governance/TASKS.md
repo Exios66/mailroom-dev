@@ -1,1 +1,1 @@
-{{file:/workspace/mailroom-dev/governance/TASKS.md}}
+# TASKS.md — PLACEHOLDER_REPLACE_WITH_FULL_FILE
