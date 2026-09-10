@@ -19,6 +19,14 @@ Multi-agent legal-document pipeline · Prompt-experiment loop · Deterministic s
 
 ---
 
+> **Standalone successor (2026-09-09):** active standalone development
+> continues in
+> [`LLM-Mailroom-Services/Digital-Mailroom`](https://github.com/LLM-Mailroom-Services/Digital-Mailroom)
+> — the standalone Digital-Mailroom monorepo, with its own DMR task board at
+> https://digital-mailroom-theta.vercel.app and org governance. This repo
+> remains the canonical HUB-era board, history, and package release home for
+> its own scope; the two served boards are cross-linked (HUB-066).
+
 > **Canonical architecture & taxonomy:** See the [canonical Mailroom pipeline](docs/assets/mailroom-pipeline.svg) and the [v7 taxonomy specification](docs/v7-taxonomy.md). These are the root-level sources of truth for the pipeline visualization and v7 terminology.
 
 ## Architecture

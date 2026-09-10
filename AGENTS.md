@@ -81,6 +81,12 @@ simplified counterpart of
 `packages/llm-entity-extraction/governance/MESSAGE_BOARD.md` (same laws,
 fewer steps); package-scoped work keeps its own board.
 
+**Standalone successor (HUB-067, 2026-09-09):** the standalone
+[`LLM-Mailroom-Services/Digital-Mailroom`](https://github.com/LLM-Mailroom-Services/Digital-Mailroom)
+repo (board https://digital-mailroom-theta.vercel.app, DMR cards) is the
+successor for standalone/org-scoped work; this board remains canonical for
+HUB-era scope in this repo. The served boards cross-link both ways (HUB-066).
+
 The four lanes: `assigned` (queued/claimed, nothing underway) →
 `in_progress` (any work exists — label the card before the code, never after)
 → `needs_attention` (blocked / review / decision, tagged in Evidence) →
